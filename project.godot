@@ -16,7 +16,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-EventBus="*res://autoload/EventBus.gd"
+EventBus="*res://scripts/singletons/EventBus.gd"
 
 [display]
 
