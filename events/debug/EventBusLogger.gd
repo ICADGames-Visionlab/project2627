@@ -2,18 +2,17 @@
 # Motivação: a maior objeção ao padrão Event Bus é a dificuldade de depuração; a resposta do
 # projeto é instrumentar, não abandonar o padrão.
 #
-# Mecanismo: GDScript não tem callbacks variádicas, então existe um handler por aridade e a
-# chave do evento chega por Callable.bind() — argumentos ligados vêm DEPOIS dos do sinal.
+# Mecanismo: GDScript não tem callbacks variádicas, então existe um handler por aridade e o nome
+# do evento chega por Callable.bind() — argumentos ligados vêm DEPOIS dos do sinal.
 # A varredura usa Script.get_script_signal_list(), que devolve só os sinais declarados no
-# script do domínio (get_signal_list() traria também ready, renamed, tree_entered etc.).
+# EventBus.gd (get_signal_list() traria também ready, renamed, tree_entered etc.).
 class_name EventBusLogger
 extends Node
 
-# Aridade máxima instrumentada. Sinais com parâmetros soltos vão até 3;
-# 4 é a folga para o caso raro que precisa de um campo a mais antes de virar payload.
+# Aridade máxima instrumentada: acima disso, o evento deveria usar uma classe de payload.
 const MAX_TRACKED_ARITY: int = 4
 const HISTORY_SIZE: int = 256
-const COMMAND_SUFFIX: String = "_requested"
+const REQUEST_SUFFIX: String = "_requested"
 const TOGGLE_ACTION: StringName = &"debug_toggle_event_bus"
 const OVERLAY_SCENE_PATH: String = "res://events/debug/EventBusOverlay.tscn"
 const HANDLER_REFRESH_INTERVAL_FRAMES: int = 60
@@ -33,11 +32,12 @@ var _history: Array = []
 var _history_head: int = 0
 var _history_count: int = 0
 
-var _signals: Dictionary = {}              # StringName(key) -> SignalInfo
-var _total_by_event: Dictionary = {}       # StringName(key) -> int
-var _repeat_frame: Dictionary = {}         # StringName(key) -> int
-var _repeat_count: Dictionary = {}         # StringName(key) -> int
-var _silent_events: Dictionary = {}        # StringName(key) -> true
+var _bus: Node
+var _signals: Dictionary = {}              # StringName(evento) -> SignalInfo
+var _total_by_event: Dictionary = {}       # StringName(evento) -> int
+var _repeat_frame: Dictionary = {}         # StringName(evento) -> int
+var _repeat_count: Dictionary = {}         # StringName(evento) -> int
+var _silent_events: Dictionary = {}        # StringName(evento) -> true
 var _handler_ids: Dictionary = {}          # "script::method" -> true, usado pelo deep_trace
 
 var _current_frame: int = -1
@@ -48,7 +48,7 @@ var _overlay: CanvasLayer
 
 # Registro de uma emissão, guardado no histórico circular exibido pelo overlay de debug.
 class EventRecord:
-	var key: StringName = &""
+	var event_name: StringName = &""
 	var frame: int = 0
 	var msec: int = 0
 	var listeners: int = 0
@@ -58,9 +58,8 @@ class EventRecord:
 # Metadados de um sinal instrumentado, resolvidos uma vez no attach para evitar
 # custo de lookup a cada emissão.
 class SignalInfo:
-	var domain: Node
-	var signal_name: StringName = &""
-	var is_command: bool = false
+	var event_name: StringName = &""
+	var is_request: bool = false
 	# Quantas conexões pertencem ao próprio logger e precisam ser descontadas da contagem.
 	var probe_count: int = 1
 
@@ -82,94 +81,91 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-# Varre todos os domínios do bus e conecta um handler de log a cada sinal declarado.
-# Chamado uma única vez pelo EventBus, logo após o registro dos domínios.
+# Conecta um handler de log a cada sinal declarado no EventBus.
+# Chamado uma única vez pelo próprio bus, no _ready().
 func attach_to_bus(bus: Node) -> void:
-	for domain: Node in bus.get_domains():
-		var script: Script = domain.get_script() as Script
-		if script == null:
-			push_warning("[EventBus] - Domínio %s sem script; ignorado pela instrumentação" % domain.name)
-			continue
-		for signal_data: Dictionary in script.get_script_signal_list():
-			_attach_signal(domain, signal_data)
+	_bus = bus
+	var script: Script = bus.get_script() as Script
+	if script == null:
+		push_warning("[EventBus] - Bus sem script; instrumentação desligada")
+		return
+	for signal_data: Dictionary in script.get_script_signal_list():
+		_attach_signal(signal_data)
 	print("[EventBus] - Instrumentação ativa em %d eventos" % _signals.size())
 
 
 # Conecta o handler da aridade correspondente e guarda os metadados do sinal.
-func _attach_signal(domain: Node, signal_data: Dictionary) -> void:
-	var signal_name: StringName = signal_data["name"]
+func _attach_signal(signal_data: Dictionary) -> void:
+	var event_name: StringName = signal_data["name"]
 	var arity: int = (signal_data["args"] as Array).size()
 	if arity > MAX_TRACKED_ARITY:
-		push_warning("[EventBus] - %s.%s tem %d parâmetros; acima do limite instrumentável de %d"
-			% [domain.name, signal_name, arity, MAX_TRACKED_ARITY])
+		push_warning("[EventBus] - %s tem %d parâmetros; acima do limite instrumentável de %d"
+			% [event_name, arity, MAX_TRACKED_ARITY])
 		return
 
-	var key: StringName = StringName("%s.%s" % [domain.name, signal_name])
 	var info: SignalInfo = SignalInfo.new()
-	info.domain = domain
-	info.signal_name = signal_name
-	info.is_command = String(signal_name).ends_with(COMMAND_SUFFIX)
-	_signals[key] = info
+	info.event_name = event_name
+	info.is_request = String(event_name).ends_with(REQUEST_SUFFIX)
+	_signals[event_name] = info
 
-	var handler: Callable = Callable(self, "_on_event_%d" % arity).bind(key)
-	domain.connect(signal_name, handler)
+	_bus.connect(event_name, Callable(self, "_on_event_%d" % arity).bind(event_name))
 
 
-func _on_event_0(key: StringName) -> void:
-	_record(key, "")
+func _on_event_0(event_name: StringName) -> void:
+	_record(event_name, "")
 
 
-func _on_event_1(a0: Variant, key: StringName) -> void:
-	_record(key, str(a0))
+func _on_event_1(a0: Variant, event_name: StringName) -> void:
+	_record(event_name, str(a0))
 
 
-func _on_event_2(a0: Variant, a1: Variant, key: StringName) -> void:
-	_record(key, "%s, %s" % [a0, a1])
+func _on_event_2(a0: Variant, a1: Variant, event_name: StringName) -> void:
+	_record(event_name, "%s, %s" % [a0, a1])
 
 
-func _on_event_3(a0: Variant, a1: Variant, a2: Variant, key: StringName) -> void:
-	_record(key, "%s, %s, %s" % [a0, a1, a2])
+func _on_event_3(a0: Variant, a1: Variant, a2: Variant, event_name: StringName) -> void:
+	_record(event_name, "%s, %s, %s" % [a0, a1, a2])
 
 
-func _on_event_4(a0: Variant, a1: Variant, a2: Variant, a3: Variant, key: StringName) -> void:
-	_record(key, "%s, %s, %s, %s" % [a0, a1, a2, a3])
+func _on_event_4(a0: Variant, a1: Variant, a2: Variant, a3: Variant, event_name: StringName) -> void:
+	_record(event_name, "%s, %s, %s, %s" % [a0, a1, a2, a3])
 
 
 # Registra a emissão, atualiza contadores e dispara os alertas de fiação.
-# O logger é ele próprio um listener, por isso a contagem desconta as conexões de sondagem.
-func _record(key: StringName, payload_text: String) -> void:
-	var info: SignalInfo = _signals[key]
-	var listeners: int = info.domain.get_signal_connection_list(info.signal_name).size() - info.probe_count
+# O logger é ele próprio um listener, por isso a contagem desconta a conexão de sondagem.
+func _record(event_name: StringName, payload_text: String) -> void:
+	var info: SignalInfo = _signals[event_name]
+	var listeners: int = _bus.get_signal_connection_list(event_name).size() - info.probe_count
 
 	_track_frame()
 	_frame_emissions += 1
-	_total_by_event[key] = int(_total_by_event.get(key, 0)) + 1
-	_push_history(key, listeners, payload_text)
+	_total_by_event[event_name] = int(_total_by_event.get(event_name, 0)) + 1
+	_push_history(event_name, listeners, payload_text)
 
 	if log_every_emission:
-		print("[EventBus] - %s → %d listeners %s" % [key, listeners, payload_text])
+		print("[EventBus] - %s → %d listeners %s" % [event_name, listeners, payload_text])
 
 	if listeners == 0:
 		# O aviso sai uma única vez por evento: push_warning imprime backtrace inteiro e um
 		# evento órfão emitido em laço afogaria o console. A lista completa continua
 		# disponível em get_silent_events() e no overlay.
-		if warn_on_zero_listeners and not _silent_events.has(key):
-			push_warning("[EventBus] - AVISO: %s emitido sem nenhum listener conectado" % key)
-		_silent_events[key] = true
+		if warn_on_zero_listeners and not _silent_events.has(event_name):
+			push_warning("[EventBus] - AVISO: %s emitido sem nenhum listener conectado" % event_name)
+		_silent_events[event_name] = true
 
-	if info.is_command and listeners != 1:
-		push_error("[EventBus] - ERRO: comando %s tem %d listeners (esperado exatamente 1)"
-			% [key, listeners])
+	if info.is_request and listeners != 1:
+		push_error("[EventBus] - ERRO: pedido %s tem %d listeners (esperado exatamente 1)"
+			% [event_name, listeners])
 
-	if _count_repeat(key) == same_frame_repeat_threshold:
-		push_warning("[EventBus] - AVISO: %s emitido %d vezes no frame %d (possível laço de realimentação)"
-			% [key, same_frame_repeat_threshold, _current_frame])
+	if _count_repeat(event_name) == same_frame_repeat_threshold:
+		push_warning("[EventBus] - AVISO: %s emitido %d vezes no frame %d (possível laço)"
+			% [event_name, same_frame_repeat_threshold, _current_frame])
 
 	if deep_trace:
 		var depth: int = _measure_cascade_depth()
 		if depth > max_cascade_depth:
 			push_warning("[EventBus] - AVISO: %s em cascata de profundidade %d (o limite é %d)"
-				% [key, depth, max_cascade_depth])
+				% [event_name, depth, max_cascade_depth])
 
 
 # Detecta a virada de frame sem depender da ordem de _process entre logger e emissores:
@@ -187,19 +183,19 @@ func _track_frame() -> void:
 
 # Conta quantas vezes o evento já foi emitido dentro do frame corrente.
 # A contagem reinicia sozinha na virada de frame, sem varredura periódica.
-func _count_repeat(key: StringName) -> int:
-	if int(_repeat_frame.get(key, -1)) != _current_frame:
-		_repeat_frame[key] = _current_frame
-		_repeat_count[key] = 0
-	var count: int = int(_repeat_count[key]) + 1
-	_repeat_count[key] = count
+func _count_repeat(event_name: StringName) -> int:
+	if int(_repeat_frame.get(event_name, -1)) != _current_frame:
+		_repeat_frame[event_name] = _current_frame
+		_repeat_count[event_name] = 0
+	var count: int = int(_repeat_count[event_name]) + 1
+	_repeat_count[event_name] = count
 	return count
 
 
 # Grava a emissão no histórico circular usado pelo overlay para reconstruir cascatas.
-func _push_history(key: StringName, listeners: int, payload_text: String) -> void:
+func _push_history(event_name: StringName, listeners: int, payload_text: String) -> void:
 	var record: EventRecord = _history[_history_head]
-	record.key = key
+	record.event_name = event_name
 	record.frame = _current_frame
 	record.msec = Time.get_ticks_msec()
 	record.listeners = listeners
@@ -224,9 +220,8 @@ func _measure_cascade_depth() -> int:
 # Roda no máximo uma vez por segundo porque varre a lista de conexões de todos os sinais.
 func _refresh_handler_ids() -> void:
 	_handler_ids.clear()
-	for key: StringName in _signals:
-		var info: SignalInfo = _signals[key]
-		for connection: Dictionary in info.domain.get_signal_connection_list(info.signal_name):
+	for event_name: StringName in _signals:
+		for connection: Dictionary in _bus.get_signal_connection_list(event_name):
 			var callable: Callable = connection["callable"]
 			var target: Object = callable.get_object()
 			if target == null or target == self:
@@ -258,7 +253,7 @@ func get_silent_events() -> Array:
 	return _silent_events.keys()
 
 
-# Quantidade de eventos instrumentados; serve de conferência rápida contra o catálogo.
+# Quantidade de eventos instrumentados.
 func get_tracked_event_count() -> int:
 	return _signals.size()
 
