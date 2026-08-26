@@ -10,7 +10,7 @@ script = ExtResource("1_overlay")
 offset_left = 8.0
 offset_top = 8.0
 offset_right = 500.0
-offset_bottom = 470.0
+offset_bottom = 8.0
 
 [node name="Margin" type="MarginContainer" parent="Panel" unique_id=52362368]
 layout_mode = 2
@@ -23,4 +23,5 @@ theme_override_constants/margin_bottom = 8
 layout_mode = 2
 bbcode_enabled = true
 text = "EventBus — debug"
+fit_content = true
 scroll_active = false

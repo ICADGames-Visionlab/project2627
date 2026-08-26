@@ -14,7 +14,7 @@ const MAX_TRACKED_ARITY: int = 4
 const HISTORY_SIZE: int = 256
 const REQUEST_SUFFIX: String = "_requested"
 const TOGGLE_ACTION: StringName = &"debug_toggle_event_bus"
-const OVERLAY_SCENE_PATH: String = "res://events/debug/EventBusOverlay.tscn"
+const OVERLAY_SCENE_PATH: String = "res://scenes/debugs/EventBusOverlay.tscn"
 const HANDLER_REFRESH_INTERVAL_FRAMES: int = 60
 
 # Limiares de alerta exportados para permitir calibragem pelo Inspetor sem tocar no código.
@@ -111,22 +111,33 @@ func _attach_signal(signal_data: Dictionary) -> void:
 	_bus.connect(event_name, Callable(self, "_on_event_%d" % arity).bind(event_name))
 
 
+# Handlers de log, um por aridade: GDScript não tem callback variádica, então _attach_signal()
+# escolhe o handler pelo número de parâmetros do sinal. O nome do evento chega por
+# Callable.bind() e por isso é sempre o ÚLTIMO parâmetro, depois dos argumentos do sinal.
+# Cada handler só formata o payload para leitura humana; a contabilidade toda vive em _record().
+
+# Handler de eventos sem parâmetro.
 func _on_event_0(event_name: StringName) -> void:
 	_record(event_name, "")
 
 
+# Handler de eventos com um parâmetro.
 func _on_event_1(a0: Variant, event_name: StringName) -> void:
 	_record(event_name, str(a0))
 
 
+# Handler de eventos com dois parâmetros.
 func _on_event_2(a0: Variant, a1: Variant, event_name: StringName) -> void:
 	_record(event_name, "%s, %s" % [a0, a1])
 
 
+# Handler de eventos com três parâmetros.
 func _on_event_3(a0: Variant, a1: Variant, a2: Variant, event_name: StringName) -> void:
 	_record(event_name, "%s, %s, %s" % [a0, a1, a2])
 
 
+# Handler de eventos com quatro parâmetros — a maior aridade instrumentada
+# (ver MAX_TRACKED_ARITY). Acima disso o evento deve usar uma classe de payload.
 func _on_event_4(a0: Variant, a1: Variant, a2: Variant, a3: Variant, event_name: StringName) -> void:
 	_record(event_name, "%s, %s, %s, %s" % [a0, a1, a2, a3])
 
@@ -258,6 +269,8 @@ func get_tracked_event_count() -> int:
 	return _signals.size()
 
 
+# Quantas emissões ocorreram no frame anterior. É o anterior, e não o corrente, porque o frame
+# em curso ainda está sendo contado quando o overlay ou o profiler perguntam.
 func get_last_frame_emissions() -> int:
 	return _last_frame_emissions
 
@@ -279,10 +292,14 @@ func _remove_performance_monitors() -> void:
 		Performance.remove_custom_monitor(&"event_bus/tracked_events")
 
 
+# Alimenta o monitor "event_bus/emissions_per_frame" do profiler. A engine chama este Callable
+# uma vez por frame, então ele só devolve valor pronto — nada de cálculo aqui dentro.
 func _monitor_emissions_per_frame() -> int:
 	return _last_frame_emissions
 
 
+# Alimenta o monitor "event_bus/tracked_events" do profiler. Serve para flagrar no gráfico o
+# momento em que um evento novo entra ou some da instrumentação.
 func _monitor_tracked_events() -> int:
 	return _signals.size()
 
