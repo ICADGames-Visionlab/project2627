@@ -9,8 +9,11 @@ extends CanvasLayer
 # Intervalo de atualização. Propositalmente alto: a UI de debug não pode distorcer a métrica
 # de tempo por frame que ela própria existe para medir.
 @export var refresh_interval_seconds: float = 0.25
-@export var history_lines: int = 20
-@export var top_events_lines: int = 10
+# Quantas linhas cada seção mostra. O painel cresce para caber o que for pedido aqui
+# (o RichTextLabel usa fit_content), então valores altos empurram o rodapé para fora da tela em
+# resoluções pequenas. Os defaults cabem em 720p; suba pelo Inspetor durante uma investigação.
+@export var history_lines: int = 12
+@export var top_events_lines: int = 8
 
 var _logger: EventBusLogger
 var _elapsed: float = 0.0
