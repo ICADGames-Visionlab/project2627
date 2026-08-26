@@ -29,14 +29,14 @@ func _ready() -> void:
 	# A primeira emissão é adiada de propósito: em _ready os demais sistemas ainda não
 	# conectaram seus listeners, e um day_started emitido agora não seria ouvido por ninguém.
 	if announce_initial_day:
-		EventBus.world.day_started.emit.call_deferred(current_day)
+		EventBus.day_started.emit.call_deferred(current_day)
 
 
 func _process(delta: float) -> void:
 	_elapsed += delta
 	if not _night_announced and _elapsed >= day_duration_seconds * night_starts_at_ratio:
 		_night_announced = true
-		EventBus.world.night_started.emit()
+		EventBus.night_started.emit()
 	if _elapsed >= day_duration_seconds:
 		advance_day()
 
@@ -47,5 +47,5 @@ func advance_day() -> void:
 	current_day += 1
 	_elapsed = 0.0
 	_night_announced = false
-	EventBus.world.day_started.emit(current_day)
+	EventBus.day_started.emit(current_day)
 	print("[World] - Dia %d iniciado" % current_day)

@@ -4,41 +4,26 @@ Jogo em **Godot 4.7** (GL Compatibility, GDScript).
 
 ## Arquitetura
 
-A comunicação entre sistemas usa um **Event Bus** — um único Autoload (`EventBus`) que expõe domínios de
-eventos e apenas transporta fatos, sem guardar estado nem conter lógica.
+Os sistemas conversam por um **Event Bus**: um Singleton (`EventBus`) onde quem faz algo anuncia o fato e
+quem se interessa escuta, sem que os dois se conheçam.
 
-> Esta branch (`2.1(DEBUG)-teste-event-bus`) inclui uma **camada de validação**: domínios de exemplo,
-> sistemas mínimos, uma cena de playground e um verificador de fluxo. Ela serve para exercitar o bus e não
-> é design de gameplay.
+Todos os eventos do jogo ficam em [`autoload/EventBus.gd`](autoload/EventBus.gd), cada um com um comentário
+dizendo quem emite e quem escuta.
 
-| Documento | O que contém |
-| --- | --- |
-| **[`docs/event_bus.md`](docs/event_bus.md)** | Documentação da feature: o que é, por que é assim, como criar um domínio, ouvir, emitir, depurar e verificar |
-| [`docs/event_catalog.md`](docs/event_catalog.md) | Catálogo dos eventos: payload, emissor, ouvintes esperados e frequência |
+📖 **[Guia do Event Bus](docs/event_bus.md)** — como criar, emitir e escutar um evento, e como depurar.
 
-## Verificação local
-
-Rodar antes de abrir PR, a partir da raiz do projeto:
-
-```bash
-godot --headless --path . --script res://tools/CheckEventBudgets.gd
-```
-
-Confere orçamento de sinais por domínio, tipagem das assinaturas, nomenclatura, imutabilidade dos payloads e
-sincronia com o catálogo.
-
-```bash
-godot --headless --path . res://tools/SmokeTestEventBus.tscn
-```
-
-Exercita o ciclo de produção e o ciclo dia/noite ponta a ponta e confere os efeitos que só podem ter
-acontecido através do bus. Ambos saem com código 1 se houver erro.
-
-Para regenerar o catálogo de eventos, abra `tools/GenerateEventCatalog.gd` no editor e rode com
-**File > Run** (`Ctrl+Shift+X`).
+> Esta branch (`2.1(DEBUG)-teste-event-bus`) inclui uma camada de validação: sistemas mínimos, uma cena de
+> playground e um verificador de fluxo. Serve para exercitar o bus e ensinar o padrão — não é design de
+> gameplay.
 
 ## Debug
 
 `scenes/dev/EventBusPlayground.tscn` permite iniciar produção, coletar, avançar dias e vender com botões.
-**F3** abre o overlay do Event Bus: emissões por frame, eventos mais emitidos, eventos sem nenhum listener
-e histórico das últimas emissões.
+**F3** abre o overlay do Event Bus: emissões por frame, eventos mais emitidos, eventos que ninguém escutou e
+histórico das últimas emissões.
+
+Para conferir o fluxo sem abrir o editor:
+
+```bash
+godot --headless --path . res://scenes/dev/SmokeTestEventBus.tscn
+```

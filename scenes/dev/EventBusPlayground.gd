@@ -77,4 +77,4 @@ func _on_sell_pressed() -> void:
 # Demonstra deliberadamente o alerta de comando sem dono: não existe SaveManager nesta cena,
 # então o logger deve acusar "comando ui.save_requested tem 0 listeners".
 func _on_save_pressed() -> void:
-	EventBus.ui.save_requested.emit()
+	EventBus.save_requested.emit()

@@ -24,8 +24,8 @@ class QuestProgress:
 
 
 func _ready() -> void:
-	EventBus.production.production_collected.connect(_on_production_collected)
-	EventBus.world.day_started.connect(_on_day_started)
+	EventBus.production_collected.connect(_on_production_collected)
+	EventBus.day_started.connect(_on_day_started)
 
 
 # Ativa uma missão do catálogo.

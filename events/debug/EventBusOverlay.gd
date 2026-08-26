@@ -81,6 +81,6 @@ func _build_history_section() -> PackedStringArray:
 	lines.append("[b]Histórico:[/b]")
 	for record: EventBusLogger.EventRecord in _logger.get_recent_history(history_lines):
 		lines.append("  f%d %-32s → %d  %s" % [
-			record.frame, record.key, record.listeners, record.payload_text
+			record.frame, record.event_name, record.listeners, record.payload_text
 		])
 	return lines

@@ -11,7 +11,7 @@ var _current_ambience: StringName = &""
 
 
 func _ready() -> void:
-	EventBus.world.night_started.connect(_on_night_started)
+	EventBus.night_started.connect(_on_night_started)
 
 
 # Troca o ambiente sonoro quando anoitece. Isto é reação a fato, e não a comando: o relógio

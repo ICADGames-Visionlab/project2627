@@ -28,7 +28,7 @@ func _ready() -> void:
 	var clock: WorldClock = get_tree().get_first_node_in_group(&"world_clock") as WorldClock
 	if clock != null:
 		_current_day = clock.current_day
-	EventBus.world.day_started.connect(_on_day_started)
+	EventBus.day_started.connect(_on_day_started)
 	_refresh_visual()
 
 
@@ -57,7 +57,7 @@ func collect() -> bool:
 		global_position, _current_day
 	)
 	_reset()
-	EventBus.production.production_collected.emit(collected)
+	EventBus.production_collected.emit(collected)
 	print("[Production] - Fonte %d coletada (%s x%d)"
 		% [source_id, collected.product_id, collected.amount])
 	return true

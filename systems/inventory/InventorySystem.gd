@@ -11,7 +11,7 @@ var _items: Dictionary = {}
 
 
 func _ready() -> void:
-	EventBus.production.production_collected.connect(_on_production_collected)
+	EventBus.production_collected.connect(_on_production_collected)
 
 
 # Adiciona itens ao inventário e publica o resultado consolidado.
@@ -24,7 +24,7 @@ func add_item(item_id: StringName, amount: int, source: StringName) -> bool:
 
 	var total: int = current + amount
 	_items[item_id] = total
-	EventBus.inventory.item_added.emit(ItemTransactionEvent.new(item_id, amount, source, total))
+	EventBus.item_added.emit(ItemTransactionEvent.new(item_id, amount, source, total))
 	print("[Inventory] - Item \"%s\" x%d adicionado ao inventário (total %d)" % [item_id, amount, total])
 	return true
 

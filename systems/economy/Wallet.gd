@@ -23,5 +23,5 @@ func add_gold(delta: int) -> void:
 	if delta == 0:
 		return
 	current_gold = maxi(current_gold + delta, 0)
-	EventBus.economy.gold_changed.emit(current_gold, delta)
+	EventBus.gold_changed.emit(current_gold, delta)
 	print("[Economy] - Ouro alterado em %d (total %d)" % [delta, current_gold])

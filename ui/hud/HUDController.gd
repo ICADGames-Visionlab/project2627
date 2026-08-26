@@ -21,9 +21,9 @@ func _ready() -> void:
 	_set_day(clock.current_day if clock != null else 1)
 	_last_item_label.text = ""
 
-	EventBus.economy.gold_changed.connect(_on_gold_changed)
-	EventBus.world.day_started.connect(_on_day_started)
-	EventBus.inventory.item_added.connect(_on_item_added)
+	EventBus.gold_changed.connect(_on_gold_changed)
+	EventBus.day_started.connect(_on_day_started)
+	EventBus.item_added.connect(_on_item_added)
 
 
 # O delta chega no evento, mas o HUD só precisa do valor novo: ignorá-lo é intencional.

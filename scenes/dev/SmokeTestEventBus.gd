@@ -4,7 +4,7 @@
 # crítico do bus. Confere efeitos que só podem ter acontecido através dele.
 #
 # Como usar (na raiz do projeto):
-#   godot --headless --path . res://tools/SmokeTestEventBus.tscn
+#   godot --headless --path . res://scenes/dev/SmokeTestEventBus.tscn
 #
 # Sai com código 1 se qualquer verificação falhar.
 #
@@ -134,10 +134,10 @@ func _verify_cascade_depth() -> void:
 		return
 
 	var totals: Dictionary = logger.get_total_by_event()
-	var collections: int = int(totals.get(&"production.production_collected", 0))
-	var additions: int = int(totals.get(&"inventory.item_added", 0))
+	var collections: int = int(totals.get(&"production_collected", 0))
+	var additions: int = int(totals.get(&"item_added", 0))
 	_expect(collections == SOURCE_COUNT,
-		"production.production_collected emitido %d vezes" % collections)
+		"production_collected emitido %d vezes" % collections)
 	_expect(additions == collections,
 		"cada coleta gerou exatamente um item_added: %d coletas, %d entradas"
 			% [collections, additions])
