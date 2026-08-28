@@ -18,8 +18,9 @@ O menu **se monta sozinho** a partir do que foi registrado — ninguém edita a 
 demanda) desenha os botões e chama o `Callable` no clique. Ninguém precisa desregistrar: um `Callable` cujo
 dono já saiu da árvore some sozinho na próxima abertura do menu.
 
-> **Estado atual:** o projeto ainda não tem gameplay, então só existe a seção **Sistema** (ver abaixo), que
-> não depende de nenhum sistema de jogo. Ela também serve de exemplo vivo de como registrar.
+> **Estado atual:** o projeto ainda não tem gameplay, então só existem as seções **Sistema** e
+> **Desempenho** (ver abaixo), que não dependem de nenhum sistema de jogo. Elas também servem de exemplo
+> vivo de como registrar.
 
 **Por que existe:** matar o jogador, pular o dia, travar o tempo — tudo isso é mais rápido de testar num
 botão do que reproduzindo a condição de jogo de verdade toda vez.
@@ -41,6 +42,17 @@ A primeira vez que F4 é apertado instancia a cena do menu; até lá, a ferramen
 mouse é liberado automaticamente ao abrir e volta ao estado anterior ao fechar.
 
 Em build de release o F4 não faz nada — a ferramenta não existe fora de editor/debug.
+
+### Teclas de debug do projeto
+
+| Tecla | Ferramenta |
+| --- | --- |
+| **F2** | Overlay de desempenho (ver [seção "Desempenho"](#overlay-de-desempenho-seção-desempenho)) |
+| **F3** | Overlay do EventBus (ver `docs/event_bus.md`) |
+| **F4** | Este menu |
+
+Todas caem para a tecla direta se a ação correspondente sumir do Input Map, então uma configuração quebrada
+não deixa nenhuma ferramenta inacessível.
 
 ---
 
@@ -89,6 +101,79 @@ O próprio `DebugMenu` registra estas cinco entradas no `_ready()`, antes de qua
 
 "Avançar 1 frame" é a ferramenta certa para investigar um bug que dura um frame só: pause o jogo no instante
 certo e avance de um em um.
+
+---
+
+## Overlay de desempenho (seção "Desempenho")
+
+Um OSD no canto da tela, no espírito do **MSI Afterburner** e do **RivaTuner Statistics Server**: fonte
+monoespaçada, fundo escuro translúcido, um mini-gráfico por métrica e cor por faixa (verde dentro do
+orçamento, amarelo no limite, vermelho acima). Serve para responder de canto de olho a única pergunta que
+importa quando o jogo engasga: **o gargalo é CPU ou GPU?**
+
+**Abre com F2**, ou pelo interruptor na seção Desempenho. Os dois caminhos são o mesmo código, então nunca
+divergem. O OSD é independente do menu — a ideia é justamente deixá-lo ligado enquanto se joga.
+
+| Entrada | Tipo | O que faz |
+| --- | --- | --- |
+| Overlay de desempenho (F2) | toggle | Liga/desliga o OSD |
+| Gráficos das métricas | toggle | Esconde os mini-gráficos, deixando só os números |
+| Mover para o próximo canto | action | Gira entre os quatro cantos da tela |
+
+### O que cada linha mede de verdade
+
+| Linha | Fonte | Cuidado ao ler |
+| --- | --- | --- |
+| **Quadro** | Relógio de parede entre dois quadros | Medido em `Time.get_ticks_usec()`, não em `delta` — a câmera lenta da seção Sistema **não** distorce este número |
+| **Quadro CPU** | Duração dos passos de física e de processamento da árvore + custo de CPU de submeter o desenho | Não inclui trabalho fora desses passos (threads de áudio, carregamento em background) |
+| **Quadro GPU** | Tempo de GPU do viewport, medido pelo driver | Pode ficar em `--` para sempre se o renderizador/driver não reportar. Verificado funcionando em GL Compatibility + AMD |
+| **RAM** | `OS.get_static_memory_usage()` | É a memória alocada **pela engine**, não o número do Gerenciador de Tarefas (que inclui binário, driver e afins e é sempre maior) |
+| **Uso CPU** | `Quadro CPU ÷ Quadro` | Ocupação do orçamento do quadro, **não** a utilização do sistema |
+| **Uso GPU** | `Quadro GPU ÷ Quadro` | Idem |
+
+> **A diferença mais importante em relação ao Afterburner.** O Afterburner lê a utilização de CPU e GPU do
+> driver (NVAPI/ADL) e mostra quanto do *hardware inteiro* está em uso. Um jogo não tem acesso a esse
+> número. O que este OSD mostra é quanto do **orçamento do quadro** cada lado ocupou: `100%` significa que
+> aquele lado não tem folga nenhuma e é o gargalo; `5%` significa que ele passou o quadro esperando (vsync,
+> ou o outro lado). Para a pergunta "quem está me segurando", essa é a métrica útil — só não é a mesma
+> métrica.
+>
+> Consequência prática: **sem vsync e sem limite de FPS, "Uso CPU" tende a 100%** porque o loop principal
+> nunca dorme. Isso é o número correto, não um bug.
+
+Uma linha mostra `--` enquanto nunca recebeu leitura válida. Preferimos isso a escrever `0,00`: zero é um
+valor, e uma métrica que a plataforma não reporta não é zero.
+
+### Detalhe: como o tempo de CPU é medido
+
+A engine expõe `Performance.TIME_PROCESS` e `TIME_PHYSICS_PROCESS`, mas eles **não servem** aqui: são
+publicados uma vez por segundo e trazem o *pior* quadro do segundo. Num teste com vsync a 60 fps eles
+reportavam 30 a 44 ms para quadros de 16,67 ms — usá-los deixava "Uso CPU" grudado em 100%.
+
+O OSD mede sozinho: um nó auxiliar (`FrameClock`) roda com a prioridade mínima e o overlay com a máxima, em
+ambos os passos. Como a ordem de processamento do Godot é global e ordenada por prioridade, a diferença
+entre os dois instantes é o tempo que a árvore inteira levou naquele passo. A esse valor soma-se o custo de
+CPU do render, que a `RenderingServer` mede por quadro.
+
+Pelo mesmo motivo as porcentagens são calculadas **na razão entre as médias do intervalo**, e não quadro a
+quadro: a razão por quadro e depois promediada infla o resultado, porque quadro curto leva a razão ao teto
+de 100% e puxa a média para cima. No mesmo teste, a razão errada dava 55% e a certa 18%.
+
+### Ajustes
+
+Tudo o que é ajustável está exposto via `@export` em `DebugStatsOverlay.gd`, agrupado em **Layout**,
+**Limites de alerta** e **Cores** — largura do painel, tamanho da fonte, intervalo de atualização e os
+limites em que cada linha vira amarela e vermelha (`frame_budget_ms`, `ram_budget_mb`, etc.).
+
+Os gráficos guardam ~3 s de histórico para as métricas medidas por quadro e ~15 s para as de uso (que ganham
+um ponto por atualização, não por quadro), e crescem da direita para a esquerda como no RivaTuner. A escala
+vertical de cada gráfico acompanha o próprio pico, com um piso para que ruído irrelevante não vire montanha.
+
+### O preço de deixar ligado
+
+Ligar o OSD pede à `RenderingServer` a medição de tempo de render do viewport, que custa uma consulta ao
+driver por quadro. Por isso desligar o OSD **libera a cena** em vez de só escondê-la: um medidor invisível
+que continua cobrando pela medição envenena exatamente o profiling que ele deveria ajudar.
 
 ---
 
