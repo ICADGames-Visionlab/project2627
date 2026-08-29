@@ -1,7 +1,7 @@
 # Debug Menu (Mod Menu)
 
-Uma tela, aberta com o jogo rodando, onde qualquer ação de debug fica a um clique — sem recompilar, sem
-console, sem mexer em código.
+Um menu (F4) e um console de comando (F1), abertos com o jogo rodando, onde qualquer ação de debug fica a
+um clique ou um comando — sem recompilar, sem mexer em código.
 
 ---
 
@@ -14,13 +14,15 @@ DebugMenu.register_action(&"Jogador", "Matar", _die)
 ```
 
 O menu **se monta sozinho** a partir do que foi registrado — ninguém edita a cena para adicionar um botão.
-`DebugMenu` (Autoload) guarda o registro e escuta a tecla de abrir; `DebugMenuOverlay` (cena instanciada sob
-demanda) desenha os botões e chama o `Callable` no clique. Ninguém precisa desregistrar: um `Callable` cujo
-dono já saiu da árvore some sozinho na próxima abertura do menu.
+`DebugMenu` (Autoload) guarda o registro e escuta as teclas de abrir; `DebugMenuOverlay` e
+`DebugConsoleOverlay` (cenas instanciadas sob demanda) são só dois jeitos de ler o mesmo registro — um botão
+ou um comando de texto, nunca um sem o outro. Ninguém precisa desregistrar: um `Callable` cujo dono já saiu
+da árvore some sozinho na próxima abertura do menu.
 
 > **Estado atual:** o projeto ainda não tem gameplay, então só existem as seções **Sistema** e
 > **Desempenho** (ver abaixo), que não dependem de nenhum sistema de jogo. Elas também servem de exemplo
-> vivo de como registrar.
+> vivo de como registrar. A seção **Eventos** (ver [abaixo](#eventos)) some por junto: ela só aparece depois
+> que o primeiro `signal` for declarado em `EventBus.gd`.
 
 **Por que existe:** matar o jogador, pular o dia, travar o tempo — tudo isso é mais rápido de testar num
 botão do que reproduzindo a condição de jogo de verdade toda vez.
@@ -47,6 +49,7 @@ Em build de release o F4 não faz nada — a ferramenta não existe fora de edit
 
 | Tecla | Ferramenta |
 | --- | --- |
+| **F1** | Console de comando livre (ver [seção "Console (F1)"](#console-f1)) |
 | **F2** | Overlay de desempenho (ver [seção "Desempenho"](#overlay-de-desempenho-seção-desempenho)) |
 | **F3** | Overlay do EventBus (ver `docs/event_bus.md`) |
 | **F4** | Este menu |
@@ -58,7 +61,7 @@ não deixa nenhuma ferramenta inacessível.
 
 ## Registrar uma ação
 
-Duas funções, chamadas de dentro do `_ready()` do sistema que tem o que depurar, sob o guard de debug:
+Quatro funções, chamadas de dentro do `_ready()` do sistema que tem o que depurar, sob o guard de debug:
 
 ```gdscript
 func _ready() -> void:
@@ -66,6 +69,12 @@ func _ready() -> void:
 		# [DEBUG] Ações deste sistema no menu de debug.
 		DebugMenu.register_action(&"Jogador", "Matar", _die)
 		DebugMenu.register_toggle(&"Jogador", "Invencível", _set_invincible)
+		DebugMenu.register_value(&"Jogador", "Velocidade", _set_speed,
+			DebugParam.float_value("", move_speed, 0.0, 600.0, 10.0),
+			func() -> float: return move_speed)
+		DebugMenu.register_input(&"Jogador", "Dar ouro", _give_gold, [
+			DebugParam.int_value("quantidade", 100, 1, 9999)
+		])
 
 
 # Liga/desliga a invencibilidade. Recebe o estado novo do interruptor do menu de debug.
@@ -73,16 +82,47 @@ func _set_invincible(enabled: bool) -> void:
 	_is_invincible = enabled
 ```
 
-- `register_action(section, label, action)` — um botão que dispara `action.call()` no clique.
+- `register_action(section, label, action, requires_confirmation = false)` — um botão que dispara
+  `action.call()` no clique. Ver ["Ação destrutiva"](#ação-destrutiva) para `requires_confirmation`.
 - `register_toggle(section, label, on_changed, initial)` — um interruptor. O **menu** guarda o `bool` e
   chama `on_changed(novo_valor)` quando ele muda. Se o sistema alterar o valor por outro caminho, o menu
-  desencontra até ser reaberto — não há getter.
+  desencontra até ser reaberto — não há getter. Não recebe `requires_confirmation`: um interruptor é
+  reversível por definição (desfazer é clicar de novo).
+- `register_value(section, label, on_changed, param, getter = Callable())` — um campo solto (número, texto,
+  bool ou opção), sem botão. O **menu** guarda o valor no `DebugParam` e chama `on_changed(novo_valor)` a
+  cada mudança do widget. `getter` é opcional: quando presente, o overlay lê o valor de verdade do sistema
+  ao remontar em vez da cópia guardada — resolve o mesmo desencontro do toggle, agora com saída.
+- `register_input(section, label, action, params, requires_confirmation = false)` — um botão que só dispara
+  depois de os campos declarados (`Array[DebugParam]`) serem preenchidos. O clique chama
+  `action.callv()` com os valores **na ordem declarada**. É o que substitui o `.bind(100)` hardcoded para
+  ações com argumento de verdade (ver ["Casos que aparecem na prática"](#casos-que-aparecem-na-prática)).
+
+### `DebugParam`: descrevendo um parâmetro
+
+`DebugParam` (`scripts/debug/DebugParam.gd`) guarda o **tipo** de um parâmetro — nunca como ele é exibido.
+É essa separação que faz o menu escolher um `SpinBox` e o console escolher uma conversão de texto a partir
+da mesma declaração, sem os dois nunca divergirem. Fábricas estáticas, uma por tipo:
+
+| Fábrica | Tipo | Widget no menu | Token no console |
+| --- | --- | --- | --- |
+| `DebugParam.int_value(nome, default, min, max, step)` | `INT` | `SpinBox` (+ `HSlider` se `use_slider = true`) | inteiro |
+| `DebugParam.float_value(nome, default, min, max, step)` | `FLOAT` | `SpinBox` (+ `HSlider` se `use_slider = true`) | decimal |
+| `DebugParam.string_value(nome, default, sugestões)` | `STRING` | `LineEdit` | texto (aspas para espaço) |
+| `DebugParam.bool_value(nome, default)` | `BOOL` | `CheckBox` | `1/true/sim/on` ou `0/false/nao/off` |
+| `DebugParam.enum_value(nome, opções, índice_default)` | `ENUM` | `OptionButton` | texto da opção (sem diferenciar maiúsculas) — o Callable recebe o **índice**, não o texto |
+
+`sugestões` (só em `string_value`) é um `Callable` sem argumento que devolve a lista de valores válidos
+**agora** — não uma lista assada no registro. É o que faz `DebugMenu.register_input(&"Inventário", "Dar item",
+_give_item, [DebugParam.string_value("id", "", ItemDatabase.get_all_ids), DebugParam.int_value("quantidade", 1, 1, 99)])`
+sempre sugerir os itens atuais no autocomplete do console, mesmo que o catálogo mude depois do registro.
 
 **Criar uma seção nova é grátis**: ela nasce sozinha na primeira vez que algo é registrado nela, na ordem em
 que as seções aparecem pela primeira vez. Não existe enum nem registro prévio de seção.
 
 **Registrar de novo com o mesmo par (seção, rótulo) substitui a entrada anterior** em vez de duplicar — é o
-que evita botão repetido quando a cena que registra recarrega.
+que evita botão repetido quando a cena que registra recarrega. Para `register_value`/`register_input`, se a
+nova lista de parâmetros tiver o mesmo tamanho e os mesmos tipos da anterior, o valor digitado sobrevive ao
+re-registro; se os tipos mudaram, o novo default vale (a assinatura mudou de verdade).
 
 ---
 
@@ -97,7 +137,7 @@ O próprio `DebugMenu` registra estas cinco entradas no `_ready()`, antes de qua
 | Câmera lenta (0.25x) | toggle | `Engine.time_scale` |
 | Avançar 1 frame | action | Despausa, espera um `process_frame`, pausa de novo — só faz sentido com o jogo pausado |
 | Recarregar cena | action | `get_tree().reload_current_scene()`, tirando a pausa antes |
-| Sair do jogo | action | `get_tree().quit()` |
+| Sair do jogo | action, **pede confirmação** | `get_tree().quit()` — mata a sessão, ver ["Ação destrutiva"](#ação-destrutiva) |
 
 "Avançar 1 frame" é a ferramenta certa para investigar um bug que dura um frame só: pause o jogo no instante
 certo e avance de um em um.
@@ -177,6 +217,140 @@ que continua cobrando pela medição envenena exatamente o profiling que ele dev
 
 ---
 
+## Achar uma ação
+
+Um campo `Filtrar ações…` mora no topo do menu, entre o cabeçalho e o corpo — fora da área que é
+remontada a cada seção trocada, então digitar nele nunca perde o foco nem o cursor entre caracteres.
+
+Com texto no filtro, a coluna da direita para de mostrar só a seção selecionada e passa a mostrar os
+resultados de **todas as seções**, cada um prefixado pela seção de origem (`Jogador · Dar ouro`); a coluna
+da esquerda fica visualmente apagada enquanto isso. É proposital: o problema real de achar uma ação não é
+"o que tem nesta seção", é "não lembro em que seção está 'Dar item'" — o modelo é o de uma command palette,
+não o de um filtro por categoria.
+
+- **Casa sem acento e sem diferenciar maiúsculas.** `camera` acha "Câmera lenta (0.25x)" — os rótulos deste
+  projeto são em português, e ninguém para pra compor o circunflexo no meio de uma investigação.
+- **Pontuação por qualidade do match**, não só por "contém": igual > começa com > início de palavra >
+  substring qualquer > subsequência espalhada. Empate desempata pela ordem de registro.
+- Limpar o campo devolve a seção que estava selecionada antes de filtrar.
+- Zero resultados mostra `Nenhuma ação corresponde a "..."`, nunca uma coluna vazia sem explicação.
+- O cabeçalho ganha a contagem enquanto filtra (`3 de 27 ações`).
+- **Esc** com texto no campo limpa o filtro; **Esc** com o campo vazio fecha o menu.
+- Por padrão o campo **não** rouba o teclado ao abrir o menu (metade do debug é olhar o jogo se mexendo);
+  quem quer digitar clica nele. Dá pra mudar isso via `@export var focus_search_on_open` no overlay.
+
+O casador (`DebugTextFilter`, em `scripts/debug/DebugTextFilter.gd`) é o mesmo usado pelo autocomplete do
+console — um casador só, dois front-ends.
+
+---
+
+## Ação destrutiva
+
+Botões que exigem confirmação nascem com um **`⚠ `** no próprio texto — esse marcador importa mais que o
+diálogo em si: o diálogo é a rede de segurança, o marcador é o aviso que aparece **antes** do clique, e quem
+já sabe o que vai fazer confirma no automático de qualquer forma.
+
+**O critério que decide se uma ação pede confirmação:**
+
+> Confirmação custa atrito em **todo** clique para proteger contra **um** clique errado. Vale quando desfazer
+> é caro ou impossível; não vale quando refazer é barato.
+
+Não é sobre o quão "grave" a ação parece — é sobre reversibilidade. "Pausar jogo" é trivial de reverter
+(clique de novo) mesmo sendo usado o tempo todo; "Sair do jogo" mata a sessão de investigação inteira e não
+tem desfazer. Use isto como regra de revisão de PR: **a ação destrutiva foi marcada por reversibilidade, não
+por importância?**
+
+```gdscript
+DebugMenu.register_action(&"Save", "Resetar save", _reset_save, true)
+```
+
+- `register_toggle()` **não** recebe este parâmetro de propósito: um interruptor é reversível por definição.
+  Se um toggle parece precisar de confirmação, ele não era um toggle.
+- O diálogo (`ConfirmationDialog`) é único por overlay e reusado por toda entrada — clicar em várias ações
+  destrutivas em sequência não acumula conexões nem abre um diálogo por clique.
+- **O console (F1) não pede confirmação nenhuma.** Digitar o comando inteiro já é o ato deliberado que a
+  confirmação existe para exigir; a confirmação protege contra o clique errado numa lista de botões
+  vizinhos, situação que o console não tem.
+
+---
+
+## Console (F1)
+
+Um campo de comando ancorado no rodapé da tela (o menu e o overlay de desempenho ocupam o topo), para quem
+já sabe o nome da ação e digitar é mais rápido que seção → item. **Não tem registro próprio**: os comandos
+do console **são** as entradas do `DebugMenu` — registrar uma ação passa a dar as duas coisas de uma vez.
+
+### O id do comando
+
+Cada entrada ganha um `command` derivado automaticamente no registro:
+
+```
+seção normalizada + "." + rótulo normalizado (sem acento, minúsculas, sufixo entre parênteses cortado)
+
+"Dar 100 de ouro" em &"Jogador"  →  jogador.dar_100_de_ouro
+"Overlay de desempenho (F2)"     →  desempenho.overlay_de_desempenho
+```
+
+> **O preço:** renomear o rótulo renomeia o comando, e quebra a memória muscular de quem digitava o antigo.
+> É o custo de não obrigar todo call site a inventar um id à mão.
+
+O console aceita o **sufixo mais curto que for único**: se só uma seção tem `dar_ouro`, digitar `dar_ouro`
+basta. Havendo ambiguidade entre seções, ele lista os candidatos e não executa nada.
+
+### Digitando um comando
+
+```
+> ajuda
+sistema.pausar_jogo
+sistema.sair_do_jogo
+jogador.dar_ouro
+...
+
+> jogador.dar_ouro 100
+"jogador.dar_ouro" executado.
+
+> jogador.dar_ouro muito
+Erro: "muito" não é um int válido para <quantidade>.
+Uso: jogador.dar_ouro <quantidade:int>
+```
+
+A linha de uso (`Uso: ...`) sai direto dos `DebugParam` declarados no registro — não tem como ficar
+desatualizada, porque é a mesma declaração que o menu usa para desenhar o widget.
+
+- **Aspas** agrupam um valor com espaço: `dar_item "semente de trigo" 5`.
+- **Tab** completa pelo prefixo comum e cicla entre os candidatos a cada Tab seguinte — na posição de
+  comando, contra a lista de comandos; na posição de argumento, contra as sugestões daquele `DebugParam`
+  (ex.: `dar_item <Tab>` lista os ids de item que existem *agora*, vindos do `Callable` de sugestões).
+- **↑ / ↓** navegam um histórico circular guardado no `DebugMenu` (sobrevive a fechar o console).
+- `ajuda` sozinho lista todos os comandos; `ajuda <texto>` filtra pelo mesmo casador do menu; `ajuda
+  <comando>` mostra a linha de uso de um comando específico.
+- `secoes` lista as seções; `limpar` limpa a saída do console.
+- Escape hatch: com o prefixo `>` e `@export var allow_expressions = true` no console, a linha vira uma
+  `Expression` do Godot avaliada livremente (`> get_tree().paused = true`). **Desligado por padrão** — ver
+  `SPEC.md` §2.4 para os riscos de segurança e arquitetura de deixar isso ser o caminho principal.
+
+---
+
+## Eventos
+
+A seção **"Eventos"** aparece sozinha, sem ninguém registrar nada: o `EventBusLogger` (que já varre
+`Script.get_script_signal_list()` para se instrumentar) pendura um `register_input()` por `signal` declarado
+no `EventBus`, com os parâmetros derivados dos tipos declarados no próprio sinal. Um evento novo aparece no
+menu **e** no console (`eventos.emitir_<evento> <args>`) no mesmo commit que declara o `signal` — sem código
+específico de console, porque passa pelo caminho genérico de registro.
+
+**Mapeamento de tipos:** `int` → `INT`, `float` → `FLOAT`, `String`/`StringName` → `STRING`, `bool` →
+`BOOL`. Qualquer outro tipo — em particular uma classe de payload, obrigatória a partir de quatro parâmetros
+por `docs/event_bus.md` — não tem como virar um `DebugParam`, então esse evento **não** ganha botão. Ele gera
+um `push_warning` no primeiro registro, e continua acessível do jeito de sempre: uma ação registrada à mão
+no sistema que sabe montar o payload.
+
+"Sistema" continua sendo sempre a primeira seção: o registro dos eventos é adiado (`call_deferred()`) porque
+o `EventBus` é o primeiro Autoload da lista e o `DebugMenu` ainda não existe quando o `_ready()` do bus roda —
+o adiamento cai no fim do frame, depois de `DebugMenu._ready()` já ter registrado "Sistema" e "Desempenho".
+
+---
+
 ## Erros comuns
 
 **Registrar fora do `_ready()`.** Registrar dentro de `_process()` não duplica o botão (o par seção/rótulo
@@ -195,12 +369,21 @@ sem aviso.
 
 ## Casos que aparecem na prática
 
-**Minha ação precisa de um argumento** (matar um inimigo específico, dar uma quantidade de item). O menu
-sempre chama `action.call()` sem argumento nenhum — quem entrega o valor é o `Callable.bind()` do próprio
-GDScript:
+**Minha ação precisa de um argumento de entrada** (dar uma quantidade de ouro, um id de item). Use
+`register_input()` com um `DebugParam` por argumento — o menu desenha um campo por parâmetro e só dispara a
+ação depois de preenchidos; o console ganha o mesmo comando de graça:
 
 ```gdscript
-DebugMenu.register_action(&"Jogador", "Dar 100 de ouro", _give_gold.bind(100))
+DebugMenu.register_input(&"Jogador", "Dar ouro", _give_gold, [
+	DebugParam.int_value("quantidade", 100, 1, 9999)
+])
+```
+
+`Callable.bind()` continua existindo e continua certo — mas para amarrar **contexto** (qual inimigo, qual
+instância), não um **valor de entrada** que o operador deveria poder escolher a cada clique:
+
+```gdscript
+DebugMenu.register_action(&"Inimigos", "Matar", _die.bind(self))
 ```
 
 Funciona igual num toggle: `on_changed.bind(contexto)` recebe `novo_valor` primeiro e o valor do `bind`
@@ -222,9 +405,10 @@ sincronizar quando o sistema registrar de novo (recarregar a cena, por exemplo).
 chave; nada impede um script de `Player.gd` e outro de `PlayerInventory.gd` registrarem os dois em
 `&"Jogador"`. As entradas se somam na ordem em que cada uma registrou primeiro.
 
-**Não existe `DebugMenu.open()` ou `.close()` público hoje** — a única entrada é a tecla F4. Se algum dia
-precisar abrir o menu por código (por exemplo, num teste automatizado), a lógica já está isolada em
-`_toggle_menu()`; expor uma função pública em cima dela é uma mudança pequena.
+**Não existe `DebugMenu.open()` público hoje**, só `close_menu()`/`close_console()` (usados pelo Esc do
+filtro e por fechar o console por código) — abrir continua sendo só pela tecla. Se algum dia precisar abrir
+por código (por exemplo, num teste automatizado), a lógica já está isolada em `_toggle_menu()`/
+`_toggle_console()`; expor uma função pública em cima delas é uma mudança pequena.
 
 ---
 
@@ -246,3 +430,7 @@ O que o revisor procura:
 - Se for um toggle, o `on_changed` só aplica o estado — quem lê o estado "de verdade" continua sendo o
   sistema, o menu só guarda a cópia exibida?
 - A ação de debug não é o único caminho para o comportamento (não é feature disfarçada de debug)?
+- **A ação com parâmetro declara tipos e faixas via `DebugParam`/`register_input`, em vez de um botão fixo
+  por valor (`.bind(100)`, `.bind(200)`, `.bind(300)`)?**
+- **A ação destrutiva foi marcada com `requires_confirmation = true` por reversibilidade, não por
+  importância?** (ver ["Ação destrutiva"](#ação-destrutiva))
