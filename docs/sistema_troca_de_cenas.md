@@ -11,7 +11,7 @@ terminar de instanciar a cena nova. Em cenas leves isso não se nota, mas assim 
 carregar assets pesados (mapas grandes, muitos recursos), o jogo trava por um tempo perceptível
 na hora da troca — sem barra de progresso, sem feedback nenhum pro jogador.
 
-Este sistema resolve isso com três peças que trabalham juntas:
+Este sistema resolve isso com quatro peças que trabalham juntas:
 
 1. **Fade preto** (já existia antes) — cobre a transição visualmente, evita o "corte seco" de uma
    cena pra outra.
@@ -20,6 +20,10 @@ Este sistema resolve isso com três peças que trabalham juntas:
 3. **Carregamento assíncrono** (`ResourceLoader.load_threaded_request`) — carrega a cena de
    destino em thread separada, sem travar o jogo, permitindo atualizar a barra de progresso
    quadro a quadro.
+4. **Período de tolerância** (`GameManager.LOADING_GRACE_PERIOD_SECONDS`) — antes de mostrar a
+   loading screen, o `GameManager` dá um tempo curto (padrão `0.15s`) pro carregamento terminar
+   sozinho. Se a cena for leve o suficiente pra carregar dentro desse tempo, a troca acontece
+   direto e a loading screen nunca chega a aparecer — evita o "flash" de loading em cenas rápidas.
 
 **Por que existe:** para o jogo dar feedback visual em qualquer troca de cena que demore, sem que
 cada sistema que troca de cena precise se preocupar com fade, thread de carregamento ou
@@ -70,26 +74,51 @@ GameManager.change_scene("res://.../Alvo.tscn")
 2. Fade-out (tela vai a preto)
 		│
 		▼
-3. GameManager troca para LoadingScreen.tscn (change_scene_to_file)
+3. GameManager já dispara ResourceLoader.load_threaded_request(caminho) — antes de decidir
+   se a loading screen é necessária
 		│
 		▼
-4. LoadingScreen._ready() lê o caminho de destino via GameManager.get_target_scene_path()
-5. LoadingScreen dispara ResourceLoader.load_threaded_request(caminho)
+4. _try_load_within_grace_period(): faz polling de load_threaded_get_status() por até
+   LOADING_GRACE_PERIOD_SECONDS (padrão 0.15s)
 		│
-		▼
-6. A cada _process(), LoadingScreen consulta load_threaded_get_status()
-   e atualiza a ProgressBar (0–100%)
+		├── "loaded" (carregou a tempo) ─────────────────────────────────┐
+		│                                                                 ▼
+		│                                            5a. change_scene_to_packed() direto.
+		│                                                A loading screen NUNCA é exibida.
 		│
-		▼
-7. Status THREAD_LOAD_LOADED:
-   - busca a cena com load_threaded_get()
-   - garante o tempo mínimo de exibição (minimum_display_time)
-   - troca para a cena de destino (change_scene_to_packed)
-   - emite GameManager.scene_loaded
+		├── "failed" (deu erro) ─────────────────────────────────────────┐
+		│                                                                 ▼
+		│                                            5b. push_error, mantém a cena atual
+		│                                                (nenhuma troca acontece)
 		│
-		▼
-8. GameManager estava esperando (await scene_loaded) e retoma:
-   - Fade-in (revela a cena de destino)
+		└── "pending" (ainda carregando) ────────────────────────────────┐
+		                                                                  ▼
+		                                             5c. GameManager troca para LoadingScreen.tscn
+		                                                 (change_scene_to_file)
+		                                                         │
+		                                                         ▼
+		                                             LoadingScreen._ready() lê o caminho via
+		                                             get_target_scene_path() e, como o carregamento
+		                                             já está em andamento (is_load_already_in_progress),
+		                                             só passa a acompanhar — não pede de novo
+		                                                         │
+		                                                         ▼
+		                                             A cada _process(), consulta
+		                                             load_threaded_get_status() e atualiza a
+		                                             ProgressBar (0–100%)
+		                                                         │
+		                                                         ▼
+		                                             Status THREAD_LOAD_LOADED:
+		                                             - busca a cena com load_threaded_get()
+		                                             - garante o tempo mínimo de exibição
+		                                               (minimum_display_time)
+		                                             - troca para a cena de destino
+		                                               (change_scene_to_packed)
+		                                             - emite GameManager.scene_loaded
+		│                                                        │
+		▼◄───────────────────────────────────────────────────────┘
+6. GameManager retoma (direto em 5a/5b, ou via await scene_loaded em 5c):
+   - Fade-in (revela a cena de destino, ou a cena atual em caso de falha)
    - in_transition = false
 ```
 
@@ -101,9 +130,34 @@ Não existe polling entre os dois nós — a comunicação é só por sinal:
   LoadingScreen lê via `GameManager.get_target_scene_path()` no próprio `_ready()`. Não dá pra
   passar o caminho por parâmetro porque a troca de cena (`change_scene_to_file`) não aceita
   argumentos extras.
+- **GameManager → LoadingScreen (carregamento em andamento):** o `GameManager` já chama
+  `load_threaded_request()` antes de decidir se a loading screen é necessária (ver período de
+  tolerância, abaixo). Se ela acabar aparecendo, a LoadingScreen consulta
+  `GameManager.is_load_already_in_progress()` e, se `true`, **não** chama `load_threaded_request`
+  de novo — só passa a fazer polling do carregamento que já está rolando. Pedir o carregamento do
+  mesmo caminho duas vezes dá erro no `ResourceLoader`.
 - **LoadingScreen → GameManager:** emite `GameManager.scene_loaded` assim que a troca final para
   a cena de destino já foi disparada. O GameManager fica em `await scene_loaded` esperando esse
   aviso antes de começar o fade-in.
+
+### Período de tolerância (pular a loading screen em cenas rápidas)
+
+Depois do fade-out, o `GameManager` não troca direto para `LoadingScreen.tscn`. Em vez disso:
+
+1. Chama `ResourceLoader.load_threaded_request(scene_path)` ele mesmo.
+2. Faz polling de `load_threaded_get_status()` por até `LOADING_GRACE_PERIOD_SECONDS` (constante
+   em `GameManager.gd`, padrão `0.15s`).
+3. Se carregar dentro desse tempo, troca direto (`change_scene_to_packed`) — a loading screen
+   nunca chega a ser instanciada. Como a tela já está preta (fade-out), o jogador só vê um fade
+   um pouco mais longo, não um "flash" de loading.
+4. Se não carregar a tempo, **só então** troca para `LoadingScreen.tscn`, que assume o
+   acompanhamento do carregamento já em andamento (ver comunicação acima).
+
+Isso resolve o problema de loading desnecessário sem precisar "adivinhar" o tamanho da cena de
+antemão — é uma medição real do tempo de carregamento, não uma estimativa.
+
+Se `0.15s` estiver muito curto ou muito longo pro seu caso (ex.: mostrar a loading screen com
+mais ou menos frequência), ajuste `GameManager.LOADING_GRACE_PERIOD_SECONDS`.
 
 ### Por que a LoadingScreen é um `CanvasLayer` e não um `Control` puro
 
@@ -143,9 +197,12 @@ LoadingScreen.
 - **Acoplamento de layers.** `LoadingScreen.layer` precisa continuar maior que
   `GameManager.FADE_LAYER`. Se um dos dois valores mudar isoladamente, a barra de progresso pode
   ficar escondida atrás do fade preto.
-- **Falha de carregamento não tem fallback visual.** `THREAD_LOAD_FAILED` e
-  `THREAD_LOAD_INVALID_RESOURCE` são logados com `push_error` (o jogo não trava), mas a
-  LoadingScreen fica parada na tela — não existe hoje uma cena de erro ou um retry automático.
+- **Falha de carregamento.** Se `THREAD_LOAD_FAILED`/`THREAD_LOAD_INVALID_RESOURCE` acontecer
+  ainda dentro do período de tolerância, o `GameManager` loga com `push_error` e simplesmente
+  mantém a cena atual (nenhuma troca ocorre, o fade-in revela a mesma cena de antes — o jogo não
+  fica travado atrás do preto). Se a falha só aparecer depois, já com a LoadingScreen na tela, ela
+  também loga com `push_error`, mas nesse caso não existe fallback visual: a LoadingScreen fica
+  parada, sem cena de erro nem retry automático.
 - **Uma troca de cena por vez.** Chamar `change_scene()` enquanto `in_transition` já é `true`
   não é tratado (a segunda chamada some dentro do `await` da primeira). Cheque
   `GameManager.in_transition` antes de disparar uma nova troca, se isso for uma possibilidade real

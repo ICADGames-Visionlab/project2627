@@ -45,10 +45,17 @@ func _process(_delta: float) -> void:
 
 ## Espaço para funções personalizadas
 
-# Dispara o carregamento assíncrono da cena de destino em uma thread separada.
+# Dispara o carregamento assíncrono da cena de destino em uma thread separada — ou, se o
+# GameManager já iniciou esse carregamento durante o período de tolerância (antes de decidir que
+# esta tela era necessária), só passa a acompanhar o que já está em andamento.
 func _request_loading() -> void:
 	if _scene_path.is_empty():
 		push_error("[LoadingScreen] - Nenhuma cena de destino definida pelo GameManager")
+		return
+
+	if GameManager.is_load_already_in_progress(_scene_path):
+		print("[LoadingScreen] - Carregamento de \"%s\" já estava em andamento, acompanhando" % _scene_path)
+		_loading_requested = true
 		return
 
 	var error: Error = ResourceLoader.load_threaded_request(_scene_path)
