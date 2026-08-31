@@ -8,9 +8,14 @@ extends Control
 #       config.fechado.connect(_on_config_fechada)
 #
 #   func _on_config_fechada():
-#       config.hide()          # no Menu Principal: só esconde e mostra o menu de novo
+#       config.hide()          # como overlay/popup: só esconde e mostra o menu de novo
 #       # ou
 #       config.hide(); resume_game()   # no Pause: esconde e despausa o jogo
+#
+# Se em vez de overlay a cena for aberta via change_scene_to_file() (ex: botão
+# "Opções" do Menu Principal), NINGUÉM conecta o sinal "fechado" — e nesse caso
+# o próprio _on_sair_pressed() detecta isso e volta sozinho pro Menu Principal
+# (ver MENU_PRINCIPAL mais abaixo). Não precisa fazer nada extra pra esse caso.
 #
 # O resto do script (áudio, tela cheia/janela, idioma, salvar/carregar) é interno
 # e não precisa ser mexido pra reusar a cena em lugares diferentes.
@@ -117,9 +122,13 @@ func _locale_para_indice(locale: String) -> int:
 # --- Sair ---
 # Veja o comentário no topo do arquivo pra saber como conectar isso a outras cenas.
 
-func _on_sair_pressed() -> void:
-	fechado.emit()
+const MENU_PRINCIPAL := "res://scenes/MainMenu.tscn"
 
+func _on_sair_pressed() -> void:
+	if fechado.get_connections().is_empty():
+		get_tree().change_scene_to_file(MENU_PRINCIPAL)
+	else:
+		fechado.emit()
 
 # --- Salvar / Carregar (arquivo local, independe de onde a cena é usada) ---
 
