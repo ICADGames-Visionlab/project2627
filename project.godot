@@ -35,6 +35,10 @@ debug_toggle_event_bus={
 ]
 }
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://translations/translations.en.translation", "res://translations/translations.pt_BR.translation")
+
 [physics]
 
 3d/physics_engine="Jolt Physics"
