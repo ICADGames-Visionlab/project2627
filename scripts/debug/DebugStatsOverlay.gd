@@ -1,8 +1,11 @@
 # DebugStatsOverlay.gd — OSD de desempenho no estilo MSI Afterburner / RivaTuner Statistics Server.
 #
 # Fica por cima do jogo mostrando o custo real de cada quadro: quanto tempo ele levou, quanto disso
-# foi trabalho de CPU, quanto foi de GPU, quanta memória o processo segura e qual a ocupação de
-# CPU/GPU dentro do orçamento do quadro. Cada linha tem um mini-gráfico do histórico recente,
+# foi trabalho de CPU, quanto foi de GPU, quantos draw calls e objetos foram desenhados, quanta
+# memória o processo segura e qual a ocupação de CPU/GPU dentro do orçamento do quadro. Num jogo 2D
+# a contagem de draw calls costuma valer mais que o milissegundo: é ela que denuncia batching
+# quebrado por troca de textura ou material, a causa nº 1 de queda de FPS em 2D.
+# Cada linha tem um mini-gráfico do histórico recente,
 # porque a média esconde justamente o que interessa numa investigação de performance: o pico de um
 # quadro só que causou o engasgo.
 #
@@ -23,6 +26,8 @@ enum Metric {
 	FRAME_MS,
 	CPU_MS,
 	GPU_MS,
+	DRAW_CALLS,
+	RENDER_OBJECTS,
 	RAM_MB,
 	CPU_PERCENT,
 	GPU_PERCENT,
@@ -43,12 +48,6 @@ const SAMPLE_CAPACITY: int = 180
 # intervalo padrão). Menos pontos porque cada ponto já representa um intervalo inteiro.
 const USAGE_SAMPLE_CAPACITY: int = 60
 const BYTES_PER_MEGABYTE: float = 1048576.0
-# Famílias monoespaçadas por ordem de preferência. SystemFont cai na fonte padrão da engine se
-# nenhuma delas existir na máquina, então a lista pode ser otimista.
-const MONO_FONT_NAMES: Array[String] = [
-	"Consolas", "Cascadia Mono", "JetBrains Mono", "DejaVu Sans Mono", "Menlo",
-	"Liberation Mono", "Courier New"
-]
 # Texto de uma métrica que ainda não recebeu nenhuma leitura válida (ver MetricRow.has_reading).
 const NO_READING_TEXT: String = "--"
 # Piso de escala dos gráficos de tempo de CPU e GPU. Baixo de propósito: com o piso do gráfico de
@@ -66,8 +65,9 @@ const PROCESS_PRIORITY_LAST: int = 1000000
 const NAME_COLUMN_CHARS: float = 10.0
 const VALUE_COLUMN_CHARS: float = 7.0
 const UNIT_COLUMN_CHARS: float = 3.0
-# Proporção largura/altura típica de uma fonte monoespaçada, usada só para dimensionar as colunas.
-const MONO_CHAR_RATIO: float = 0.62
+# Piso de escala dos gráficos de contagem por quadro (draw calls, objetos). Sem um piso, uma cena
+# quase vazia auto-escalaria o gráfico e transformaria a variação de dois draw calls em montanha.
+const COUNT_GRAPH_FLOOR: float = 50.0
 
 @export_group("Layout")
 # Largura fixa do painel. O default cabe em 720p sem cobrir HUD de jogo.
@@ -88,6 +88,16 @@ const MONO_CHAR_RATIO: float = 0.62
 @export var frame_critical_ms: float = 33.33
 @export var ram_budget_mb: float = 768.0
 @export var ram_critical_mb: float = 1536.0
+# Draw calls e objetos desenhados por quadro. Os limites são um ponto de partida para um jogo 2D:
+# em 2D o batching é quebrado por troca de textura ou de material, e é essa contagem — não o tempo
+# de CPU — que denuncia a quebra. Calibre com o jogo montado, é para isso que estão expostos.
+#
+# Medido numa cena vazia com este painel e o de log abertos: ~49 draw calls e ~1000 objetos. A
+# própria UI de debug entra na conta, então limites muito justos ficariam amarelos sozinhos.
+@export var draw_calls_budget: float = 200.0
+@export var draw_calls_critical: float = 500.0
+@export var render_objects_budget: float = 2000.0
+@export var render_objects_critical: float = 5000.0
 @export var usage_warning_percent: float = 70.0
 @export var usage_critical_percent: float = 90.0
 
@@ -210,6 +220,9 @@ func _ready() -> void:
 	# Sem isto, o OSD congela junto com o jogo quando o menu de debug pausa a árvore — e o custo de
 	# um quadro com o jogo pausado é exatamente o que se quer comparar contra o jogo rodando.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Entra no grupo dos overlays de debug para a captura de tela (F6) poder escondê-lo sem
+	# conhecer esta cena (ver DebugScreenCapture).
+	add_to_group(DebugMenu.OVERLAY_GROUP)
 	# O overlay fecha os dois passos do quadro; o FrameClock abre. Ver FrameClock.
 	process_priority = PROCESS_PRIORITY_LAST
 	process_physics_priority = PROCESS_PRIORITY_LAST
@@ -297,6 +310,10 @@ func _collect_samples(frame_ms: float, cpu_ms: float) -> void:
 	_push_sample(Metric.FRAME_MS, frame_ms)
 	_push_sample(Metric.CPU_MS, cpu_ms)
 	_push_sample(Metric.GPU_MS, RenderingServer.viewport_get_measured_render_time_gpu(_viewport_rid))
+	# Contagens do quadro que a RenderingServer publica direto, sem o atraso de um segundo dos
+	# monitores de tempo (ver "Detalhe: como o tempo de CPU é medido" em docs/debug_menu.md).
+	_push_sample(Metric.DRAW_CALLS, float(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)))
+	_push_sample(Metric.RENDER_OBJECTS, float(Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME)))
 	_push_sample(Metric.RAM_MB, float(OS.get_static_memory_usage()) / BYTES_PER_MEGABYTE)
 
 
@@ -394,6 +411,8 @@ func _build_rows() -> void:
 	_add_row(Metric.FRAME_MS, "Quadro", "ms", 2, frame_budget_ms, frame_critical_ms, frame_critical_ms)
 	_add_row(Metric.CPU_MS, "Quadro CPU", "ms", 2, frame_budget_ms, frame_critical_ms, TIME_GRAPH_FLOOR_MS)
 	_add_row(Metric.GPU_MS, "Quadro GPU", "ms", 2, frame_budget_ms, frame_critical_ms, TIME_GRAPH_FLOOR_MS)
+	_add_row(Metric.DRAW_CALLS, "Draw calls", "", 0, draw_calls_budget, draw_calls_critical, COUNT_GRAPH_FLOOR)
+	_add_row(Metric.RENDER_OBJECTS, "Objetos", "", 0, render_objects_budget, render_objects_critical, COUNT_GRAPH_FLOOR)
 	_add_row(Metric.RAM_MB, "RAM", "MB", 0, ram_budget_mb, ram_critical_mb, ram_budget_mb)
 	_add_row(Metric.CPU_PERCENT, "Uso CPU", "%", 0, usage_warning_percent, usage_critical_percent, 100.0)
 	_add_row(Metric.GPU_PERCENT, "Uso GPU", "%", 0, usage_warning_percent, usage_critical_percent, 100.0)
@@ -420,7 +439,7 @@ func _add_row(
 	critical_threshold: float,
 	graph_scale_floor: float
 ) -> void:
-	var char_width: float = float(font_size) * MONO_CHAR_RATIO
+	var char_width: float = float(font_size) * DebugFonts.MONO_CHAR_RATIO
 	var line: HBoxContainer = HBoxContainer.new()
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	line.add_theme_constant_override(&"separation", 4)
@@ -468,8 +487,7 @@ func _make_label(text: String, alignment: HorizontalAlignment, min_width: float,
 # mudam de tamanho a cada atualização e o número "pula" na tela — é o detalhe que separa um OSD
 # legível de um borrão piscando.
 func _build_font() -> void:
-	_mono_font = SystemFont.new()
-	_mono_font.font_names = PackedStringArray(MONO_FONT_NAMES)
+	_mono_font = DebugFonts.mono()
 	for label: Label in [_title_label, _fps_label]:
 		label.add_theme_font_override(&"font", _mono_font)
 		label.add_theme_font_size_override(&"font_size", font_size)

@@ -1,7 +1,8 @@
-# DebugMenu.gd — Autoload: registro de ações de debug, teclas de atalho (F1, F2 e F4) e instância
-# das cenas de debug sob demanda. É "o lugar onde as ações vão ser penduradas" quando os sistemas
-# de jogo existirem — hoje só as seções "Sistema" e "Desempenho" (registradas abaixo) usam o
-# registro.
+# DebugMenu.gd — Autoload: registro de ações de debug, teclas de atalho (F1, F2, F4, F5 e F6) e
+# instância das cenas de debug sob demanda. É "o lugar onde as ações vão ser penduradas" quando os
+# sistemas de jogo existirem — hoje quem usa o registro são as seções "Sistema" e "Desempenho"
+# (registradas abaixo) e as ferramentas de fábrica "Tela", "Captura" e "Log", que são nós filhos
+# deste autoload e registram as próprias seções.
 #
 # Registrar não exige desregistrar: o Callable de um sistema descarregado é limpo sozinho na
 # próxima abertura do menu (ver _purge_dead_entries()). O par (seção, rótulo) é a identidade de
@@ -39,6 +40,12 @@ const STATS_CORNER_NAMES: Array[String] = [
 	"superior esquerdo", "superior direito", "inferior direito", "inferior esquerdo"
 ]
 
+const LOG_TOGGLE_ACTION: StringName = &"debug_toggle_log"
+const SCREENSHOT_ACTION: StringName = &"debug_screenshot"
+# Grupo em que todo overlay de debug entra no próprio _ready(). Existe para a captura de tela (F6)
+# poder esconder todos eles sem conhecer nenhuma das cenas — ver DebugScreenCapture.
+const OVERLAY_GROUP: StringName = &"debug_overlay"
+
 var _sections: Dictionary = {}   # StringName(seção) -> Array[DebugEntry], na ordem de registro
 var _overlay: CanvasLayer
 var _previous_mouse_mode: Input.MouseMode = Input.MOUSE_MODE_VISIBLE
@@ -55,6 +62,13 @@ var _stats_graphs_visible: bool = true
 # Canto superior direito por padrão: o menu de debug ocupa o canto superior esquerdo, e os dois
 # abertos ao mesmo tempo é o caso normal, não a exceção.
 var _stats_corner: int = 1
+
+# Ferramentas de debug com estado próprio, penduradas como nós filhos em _ready(). Cada uma
+# registra a própria seção no menu e é a dona do que sabe fazer; o autoload só as segura vivas e
+# roteia a tecla de atalho até elas (ver docs/debug_menu.md).
+var _screen_tester: DebugScreenTester
+var _screen_capture: DebugScreenCapture
+var _log_viewer: DebugLogViewer
 
 
 # Uma entrada registrada: um botão (ACTION), um interruptor com estado (TOGGLE), um campo solto
@@ -92,6 +106,17 @@ func _ready() -> void:
 	register_toggle(STATS_SECTION, STATS_TOGGLE_LABEL, _on_stats_toggled, _stats_enabled)
 	register_toggle(STATS_SECTION, "Gráficos das métricas", _on_stats_graphs_toggled, _stats_graphs_visible)
 	register_action(STATS_SECTION, "Mover para o próximo canto", _cycle_stats_corner)
+	# [DEBUG] Ferramentas que registram as próprias seções ("Tela", "Captura" e "Log") ao entrar na
+	# árvore — a ordem em que aparecem no menu é a ordem em que são acrescentadas aqui.
+	_screen_tester = DebugScreenTester.new()
+	_screen_tester.name = &"DebugScreenTester"
+	add_child(_screen_tester)
+	_screen_capture = DebugScreenCapture.new()
+	_screen_capture.name = &"DebugScreenCapture"
+	add_child(_screen_capture)
+	_log_viewer = DebugLogViewer.new()
+	_log_viewer.name = &"DebugLogViewer"
+	add_child(_log_viewer)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
@@ -105,6 +130,14 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif _is_shortcut_pressed(event, CONSOLE_TOGGLE_ACTION, KEY_F1):
 		_toggle_console()
+		get_viewport().set_input_as_handled()
+	elif _is_shortcut_pressed(event, LOG_TOGGLE_ACTION, KEY_F5):
+		_log_viewer.set_enabled(not _log_viewer.is_enabled())
+		get_viewport().set_input_as_handled()
+	elif _is_shortcut_pressed(event, SCREENSHOT_ACTION, KEY_F6):
+		# Sem await: a captura espera o quadro terminar por conta própria, e segurar o
+		# processamento da tecla até lá só atrasaria o resto do input.
+		_screen_capture.capture()
 		get_viewport().set_input_as_handled()
 
 

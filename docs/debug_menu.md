@@ -19,10 +19,18 @@ O menu **se monta sozinho** a partir do que foi registrado — ninguém edita a 
 ou um comando de texto, nunca um sem o outro. Ninguém precisa desregistrar: um `Callable` cujo dono já saiu
 da árvore some sozinho na próxima abertura do menu.
 
-> **Estado atual:** o projeto ainda não tem gameplay, então só existem as seções **Sistema** e
-> **Desempenho** (ver abaixo), que não dependem de nenhum sistema de jogo. Elas também servem de exemplo
-> vivo de como registrar. A seção **Eventos** (ver [abaixo](#eventos)) some por junto: ela só aparece depois
-> que o primeiro `signal` for declarado em `EventBus.gd`.
+> **Estado atual:** o projeto ainda não tem gameplay, então as únicas seções são as de fábrica —
+> **Sistema**, **Desempenho**, **Tela**, **Captura** e **Log** (ver abaixo) —, que não dependem de nenhum
+> sistema de jogo. Elas também servem de exemplo vivo de como registrar. A seção **Eventos** (ver
+> [abaixo](#eventos)) some por junto: ela só aparece depois que o primeiro `signal` for declarado em
+> `EventBus.gd`.
+
+**Onde mora cada ferramenta de fábrica.** "Sistema" e "Desempenho" são registradas pelo próprio
+`DebugMenu`, porque são ações de engine e controles de um overlay que ele mesmo instancia. "Tela", "Captura"
+e "Log" têm estado próprio (a proporção escolhida, o filtro do log), então cada uma é um **nó filho do
+autoload** — `DebugScreenTester`, `DebugScreenCapture`, `DebugLogViewer` — que registra a própria seção no
+`_ready()`, exatamente como um sistema de jogo faria. O autoload só as segura vivas e roteia a tecla de
+atalho até elas. A regra para código novo é essa: **ferramenta com estado é dona da própria seção**.
 
 **Por que existe:** matar o jogador, pular o dia, travar o tempo — tudo isso é mais rápido de testar num
 botão do que reproduzindo a condição de jogo de verdade toda vez.
@@ -53,6 +61,8 @@ Em build de release o F4 não faz nada — a ferramenta não existe fora de edit
 | **F2** | Overlay de desempenho (ver [seção "Desempenho"](#overlay-de-desempenho-seção-desempenho)) |
 | **F3** | Overlay do EventBus (ver `docs/event_bus.md`) |
 | **F4** | Este menu |
+| **F5** | Visualizador de log (ver [seção "Log"](#visualizador-de-log-seção-log)) |
+| **F6** | Captura de tela (ver [seção "Captura"](#captura-de-tela-seção-captura)) |
 
 Todas caem para a tecla direta se a ação correspondente sumir do Input Map, então uma configuração quebrada
 não deixa nenhuma ferramenta inacessível.
@@ -167,6 +177,8 @@ divergem. O OSD é independente do menu — a ideia é justamente deixá-lo liga
 | **Quadro** | Relógio de parede entre dois quadros | Medido em `Time.get_ticks_usec()`, não em `delta` — a câmera lenta da seção Sistema **não** distorce este número |
 | **Quadro CPU** | Duração dos passos de física e de processamento da árvore + custo de CPU de submeter o desenho | Não inclui trabalho fora desses passos (threads de áudio, carregamento em background) |
 | **Quadro GPU** | Tempo de GPU do viewport, medido pelo driver | Pode ficar em `--` para sempre se o renderizador/driver não reportar. Verificado funcionando em GL Compatibility + AMD |
+| **Draw calls** | `Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME` | Conta o quadro inteiro, **incluindo os painéis de debug abertos** (o próprio OSD custa dezenas) |
+| **Objetos** | `Performance.RENDER_TOTAL_OBJECTS_IN_FRAME` | Idem: com os painéis de debug abertos numa cena vazia já dá ~1000 |
 | **RAM** | `OS.get_static_memory_usage()` | É a memória alocada **pela engine**, não o número do Gerenciador de Tarefas (que inclui binário, driver e afins e é sempre maior) |
 | **Uso CPU** | `Quadro CPU ÷ Quadro` | Ocupação do orçamento do quadro, **não** a utilização do sistema |
 | **Uso GPU** | `Quadro GPU ÷ Quadro` | Idem |
@@ -183,6 +195,21 @@ divergem. O OSD é independente do menu — a ideia é justamente deixá-lo liga
 
 Uma linha mostra `--` enquanto nunca recebeu leitura válida. Preferimos isso a escrever `0,00`: zero é um
 valor, e uma métrica que a plataforma não reporta não é zero.
+
+### Draw calls e objetos: a métrica que mais importa em 2D
+
+Num jogo 2D, o número que denuncia um problema de render quase nunca é o milissegundo — é a **contagem de
+draw calls**. A engine junta (batching) vários sprites num único desenho enquanto eles compartilham textura
+e material; qualquer troca no meio quebra o lote e vira um draw call novo. Cem sprites do mesmo atlas custam
+um punhado de draw calls; os mesmos cem sprites com texturas soltas custam cem. O tempo de CPU e de GPU só
+mostra o resultado disso depois que já está caro — a contagem mostra a causa.
+
+**Como usar na prática:** deixe o OSD ligado, ande pelo jogo e olhe quando a linha **Draw calls** dá um
+salto. O salto aponta o que entrou em cena — um efeito, uma UI, um tileset fora do atlas.
+
+Os dois limites de cor (`draw_calls_budget`, `render_objects_budget` e seus críticos) são **chute inicial**
+e existem para ser calibrados quando houver jogo de verdade. Os painéis de debug abertos entram na conta:
+numa cena vazia com o OSD e o visualizador de log ligados, a medição deu ~49 draw calls e ~1000 objetos.
 
 ### Detalhe: como o tempo de CPU é medido
 

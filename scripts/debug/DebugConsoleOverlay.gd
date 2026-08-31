@@ -29,6 +29,9 @@ var _output_buffer: PackedStringArray = []
 func _ready() -> void:
 	# Sem isto, o console congela junto com o jogo assim que "Pausar jogo" é ligado.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Entra no grupo dos overlays de debug para a captura de tela (F6) poder escondê-lo sem
+	# conhecer esta cena (ver DebugScreenCapture).
+	add_to_group(DebugMenu.OVERLAY_GROUP)
 	visible = false
 	_input_field.text_submitted.connect(_on_input_text_submitted)
 	_input_field.gui_input.connect(_on_input_gui_input)

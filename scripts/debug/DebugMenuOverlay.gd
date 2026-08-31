@@ -42,6 +42,9 @@ var _pending_confirm_callback: Callable
 func _ready() -> void:
 	# Sem isto, o painel congela junto com o jogo assim que "Pausar jogo" é ligado.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Entra no grupo dos overlays de debug para a captura de tela (F6) poder escondê-lo sem
+	# conhecer esta cena (ver DebugScreenCapture).
+	add_to_group(DebugMenu.OVERLAY_GROUP)
 	_panel.custom_minimum_size.x = panel_width
 	_actions_scroll.custom_minimum_size.y = max_panel_height
 	_sections_scroll.custom_minimum_size.y = max_panel_height
