@@ -408,8 +408,13 @@ func _on_confirmation_confirmed() -> void:
 		callback.call()
 
 
+# Descarta a ação pendente quando o diálogo é fechado sem confirmar (botão Cancelar, Esc ou o X
+# da janela). A checagem de null não é decoração: o `canceled` do ConfirmationDialog também chega
+# quando a janela é fechada por fora do fluxo normal, e aí o pendente já pode ter sido limpo —
+# desreferenciar `_pending_entry` ali derrubaria justamente a ferramenta que existe para investigar.
 func _on_confirmation_canceled() -> void:
-	print("[DebugMenu] - Ação \"%s\" cancelada" % _pending_entry.label)
+	if _pending_entry != null:
+		print("[DebugMenu] - Ação \"%s\" cancelada" % _pending_entry.label)
 	_pending_confirm_callback = Callable()
 	_pending_entry = null
 

@@ -18,6 +18,10 @@
 # Em build de release, register_*()/execute_command() não fazem nada e os atalhos de abrir
 # menu/console ficam desligados: o autoload continua existindo (é um Node vazio), mas custa zero.
 #
+# As mensagens devolvidas ao console são intencionalmente hardcoded: a exigência de tr() do
+# Guideline vale para texto exibido ao jogador, e nada disto existe em build de release. Ver
+# docs/debug_menu.md, "Os textos da ferramenta não passam por tr()".
+#
 # O guia completo está em docs/debug_menu.md.
 extends Node
 
@@ -443,7 +447,7 @@ func _run_sections() -> String:
 
 
 # Escape hatch de expressão livre (prefixo ">"), atrás de allow_expressions. Ver docs/debug_menu.md
-# e SPEC §2.4 para os motivos de isto não ser o modelo principal do console.
+# para os motivos de isto não ser o modelo principal do console.
 func _run_expression(code: String, allow_expressions: bool) -> String:
 	if not allow_expressions:
 		return "Expressões livres estão desligadas. Ative \"Allow Expressions\" no console (F1) para habilitar."

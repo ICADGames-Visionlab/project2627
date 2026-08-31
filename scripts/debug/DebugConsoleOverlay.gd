@@ -7,13 +7,18 @@
 #
 # Ao contrário do menu, o console pega o foco do teclado ao abrir e o solta ao fechar: digitar é a
 # única coisa que ele faz.
+#
+# Os textos deste painel (e as mensagens de erro que vêm do DebugMenu) são intencionalmente
+# hardcoded: a exigência de tr() do Guideline vale para texto exibido ao jogador, e este console
+# não existe em build de release. Ver docs/debug_menu.md, "Os textos da ferramenta não passam por
+# tr()".
 extends CanvasLayer
 
 @export var output_lines: int = 12
 @export var history_size: int = 64
 @export var suggestion_count: int = 6
-# Escape hatch de Expression livre (prefixo ">"), desligado por padrão — ver SPEC §2.4 e
-# docs/debug_menu.md para os motivos de isto não ser o modelo principal do console.
+# Escape hatch de Expression livre (prefixo ">"), desligado por padrão. Ver docs/debug_menu.md
+# para os motivos de isto não ser o modelo principal do console.
 @export var allow_expressions: bool = false
 
 var _history_index: int = -1
