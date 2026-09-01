@@ -1,0 +1,84 @@
+[gd_scene format=3 uid="uid://rmyf01pn70ie"]
+
+[ext_resource type="Script" uid="uid://h4m8wx6ocg2h" path="res://scripts/settings/Settings.gd" id="1_o2bc3"]
+
+[node name="SettingsManager" type="Control" unique_id=1754711566]
+custom_minimum_size = Vector2(1, 0)
+layout_mode = 3
+anchor_top = -0.003
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 3.24
+size_flags_horizontal = 4
+size_flags_vertical = 4
+script = ExtResource("1_o2bc3")
+metadata/_edit_vertical_guides_ = [960.0]
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=318487817]
+layout_mode = 0
+offset_right = 1920.0
+offset_bottom = 1080.0
+color = Color(0, 0, 0, 0.15686275)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1754275408]
+custom_minimum_size = Vector2(5, 5)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -247.33334
+offset_top = -179.0
+offset_right = 247.33334
+offset_bottom = 179.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 45
+accessibility_region = true
+alignment = 1
+
+[node name="Volume_Geral" type="HSlider" parent="VBoxContainer" unique_id=1214093879]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Volume_Geral" unique_id=505754576]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_top = -29.0
+offset_right = 20.0
+offset_bottom = -6.0
+grow_horizontal = 2
+text = "MENU_VOLUME"
+
+[node name="Fullscreen_Janela" type="OptionButton" parent="VBoxContainer" unique_id=122697615]
+layout_mode = 2
+
+[node name="Idioma" type="OptionButton" parent="VBoxContainer" unique_id=683947215]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Idioma" unique_id=401928374]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_top = -29.0
+offset_right = 20.0
+offset_bottom = -6.0
+grow_horizontal = 2
+text = "MENU_LANGUAGE"
+
+[node name="Sair" type="Button" parent="." unique_id=1739624486]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 22.257744
+offset_top = -100.0
+offset_right = 154.02362
+offset_bottom = -25.0
+grow_vertical = 0
+text = "MENU_EXIT"

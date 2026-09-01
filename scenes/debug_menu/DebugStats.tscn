@@ -1,0 +1,56 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://b7kq3xw8mnvp2" path="res://scripts/debug_menu/DebugStatsOverlay.gd" id="1_stats"]
+
+[node name="DebugStatsOverlay" type="CanvasLayer"]
+layer = 126
+process_mode = 3
+script = ExtResource("1_stats")
+
+[node name="Anchor" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="Anchor"]
+layout_mode = 0
+offset_right = 272.0
+mouse_filter = 2
+
+[node name="Margin" type="MarginContainer" parent="Anchor/Panel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="Layout" type="VBoxContainer" parent="Anchor/Panel/Margin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 3
+
+[node name="Header" type="HBoxContainer" parent="Anchor/Panel/Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Title" type="Label" parent="Anchor/Panel/Margin/Layout/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "DESEMPENHO"
+
+[node name="Fps" type="Label" parent="Anchor/Panel/Margin/Layout/Header"]
+layout_mode = 2
+text = "-- FPS"
+horizontal_alignment = 2
+
+[node name="HeaderSeparator" type="HSeparator" parent="Anchor/Panel/Margin/Layout"]
+layout_mode = 2
+
+[node name="Rows" type="VBoxContainer" parent="Anchor/Panel/Margin/Layout"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 1
