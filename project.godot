@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 EventBus="*res://scripts/singletons/EventBus.gd"
+AudioManager="*uid://ukx856cnpid2"
 
 [display]
 
