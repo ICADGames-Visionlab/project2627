@@ -93,8 +93,8 @@ A função `tr()` (herdada de `Object`) busca uma chave nas traduções carregad
 
 ```gdscript
 func _ready() -> void:
-    $Label.text = tr("MENU_START")
-    $StatusLabel.text = tr("GAME_STATUS_%d" % status_index)
+	$Label.text = tr("MENU_START")
+	$StatusLabel.text = tr("GAME_STATUS_%d" % status_index)
 ```
 
 ---
@@ -126,8 +126,8 @@ message.text = tr("PICKUP_MSG") % ["Ogro", "Espada"]
 
 # Placeholder nomeado — o tradutor pode reordenar livremente
 message.text = tr("PICKUP_MSG_NAMED").format({
-    "character": "Ogro",
-    "weapon": "Espada"
+	"character": "Ogro",
+	"weapon": "Espada"
 })
 # pt_BR: "Ogro pegou a Espada"
 ```
@@ -218,10 +218,10 @@ Assim que `set_locale()` é chamado, todos os Controls que usam tradução autom
 var language := "automatic"  # carregado de um arquivo de configurações do usuário
 
 if language == "automatic":
-    var preferred_language := OS.get_locale_language()
-    TranslationServer.set_locale(preferred_language)
+	var preferred_language := OS.get_locale_language()
+	TranslationServer.set_locale(preferred_language)
 else:
-    TranslationServer.set_locale(language)
+	TranslationServer.set_locale(language)
 ```
 
 Mesmo detectando automaticamente, é uma boa prática sempre deixar o jogador trocar o idioma manualmente nas configurações (qualidade da tradução ou preferência pessoal podem divergir do idioma do sistema).

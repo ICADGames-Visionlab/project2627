@@ -9,7 +9,7 @@ class_name DebugLogViewer
 extends Node
 
 const SECTION: StringName = &"Log"
-const SCENE_PATH: String = "res://scenes/debugs/DebugLog.tscn"
+const SCENE_PATH: String = "res://scenes/debug_menu/DebugLog.tscn"
 # O rótulo é a identidade da entrada no registro, então precisa ser constante: é por ele que
 # set_enabled() reescreve o toggle com o estado real depois de um F5.
 const TOGGLE_LABEL: String = "Overlay de log (F5)"

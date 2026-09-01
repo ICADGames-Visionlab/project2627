@@ -28,7 +28,7 @@ extends Control
 signal closed  # <- CONECTE este sinal na cena-pai (ver exemplo acima)
 
 const CONFIG_PATH := "user://settings.cfg"
-const MAIN_MENU_SCENE := "res://scenes/MainMenu.tscn"
+const MAIN_MENU_SCENE := "res://scenes/ui/MainMenu.tscn"
 
 # Idiomas disponíveis no seletor, na mesma ordem em que aparecem no OptionButton.
 # Pra adicionar um novo idioma: crie a coluna em translations.csv, adicione o

@@ -1,7 +1,7 @@
 extends Control
 
 #constastes/variáveis para caminhos de arquivos
-const SETTINGS_SCENE := "res://scenes/SettingsManager.tscn"
+const SETTINGS_SCENE := "res://scenes/ui/Settings.tscn"
 const CONFIG_PATH := "user://settings.cfg" 
 
 @onready var options_button: Button = $CenterContainer/VBoxContainer/Button3
@@ -25,7 +25,7 @@ func _apply_saved_locale() -> void:
 
 #troca cena para opções
 func _on_options_pressed() -> void:
-	get_tree().change_scene_to_file(SETTINGS_SCENE)
+	GameManager.change_scene(SETTINGS_SCENE)
 
 #Func de teste para a localização
 func _update_dynamic_labels() -> void:

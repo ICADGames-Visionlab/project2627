@@ -16,7 +16,7 @@ var in_transition: bool = false
 # Caminho da cena de loading exibida durante o carregamento assíncrono da cena de destino.
 # Atenção: o layer do CanvasLayer da LoadingScreen precisa ser MAIOR que FADE_LAYER (ver
 # abaixo), senão a barra de progresso fica escondida atrás do overlay preto.
-const LOADING_SCENE_PATH: String = "res://scenes/loading_screen/LoadingScreen.tscn"
+const LOADING_SCENE_PATH: String = "res://scenes/ui/LoadingScreen.tscn"
 
 # Layer do CanvasLayer usado no fade preto. Bem alto para ficar acima de qualquer cena comum.
 const FADE_LAYER: int = 1001

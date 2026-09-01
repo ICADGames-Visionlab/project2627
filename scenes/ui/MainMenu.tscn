@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://mla6pgt54olv"]
 
-[ext_resource type="Script" uid="uid://clu1cnp0eewpq" path="res://scripts/main_menu.gd" id="1_yqorp"]
+[ext_resource type="Script" uid="uid://clu1cnp0eewpq" path="res://scripts/ui/MainMenu.gd" id="1_yqorp"]
 
 [node name="MainMenu" type="Control" unique_id=1754711566]
 custom_minimum_size = Vector2(1, 0)
@@ -8,18 +8,17 @@ layout_mode = 3
 anchor_top = -0.003
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 0.944
+offset_top = 3.24
 offset_right = -126.36304
-scale = Vector2(1.1232045, 1)
+offset_bottom = 2.2960205
 size_flags_horizontal = 4
 size_flags_vertical = 4
 script = ExtResource("1_yqorp")
 
 [node name="BackGround_PlaceHolder" type="ColorRect" parent="." unique_id=318487817]
 layout_mode = 0
-offset_top = -2.0
-offset_right = 1025.637
-offset_bottom = 649.0
+offset_right = 1920.0
+offset_bottom = 1080.0
 color = Color(0, 0, 0, 0.15686275)
 
 [node name="CenterContainer" type="CenterContainer" parent="." unique_id=2071859380]
@@ -27,6 +26,8 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_right = 126.36304
+offset_bottom = -2.2960205
 grow_horizontal = 2
 grow_vertical = 2
 
