@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://dglfh7ljswxos"]
+
+[ext_resource type="Script" uid="uid://tmatg5abfutt" path="res://scripts/events/debug/EventBusOverlay.gd" id="1_overlay"]
+
+[node name="EventBusOverlay" type="CanvasLayer" unique_id=1968711956]
+layer = 128
+script = ExtResource("1_overlay")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=1629812020]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 500.0
+offset_bottom = 8.0
+
+[node name="Margin" type="MarginContainer" parent="Panel" unique_id=52362368]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Content" type="RichTextLabel" parent="Panel/Margin" unique_id=1736834521]
+layout_mode = 2
+bbcode_enabled = true
+text = "EventBus — debug"
+fit_content = true
+scroll_active = false
