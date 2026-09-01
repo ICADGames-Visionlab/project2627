@@ -21,6 +21,12 @@ var _elapsed: float = 0.0
 @onready var _content: RichTextLabel = $Panel/Margin/Content
 
 
+func _ready() -> void:
+	# Entra no grupo dos overlays de debug para a captura de tela do Debug Menu (F6) poder
+	# escondê-lo sem conhecer esta cena (ver DebugScreenCapture).
+	add_to_group(DebugMenu.OVERLAY_GROUP)
+
+
 func _process(delta: float) -> void:
 	if _logger == null or not visible:
 		return
