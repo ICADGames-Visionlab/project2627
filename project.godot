@@ -21,6 +21,7 @@ EventBus="*res://scripts/singletons/EventBus.gd"
 AudioManager="*uid://ukx856cnpid2"
 DebugMenu="*res://scripts/singletons/DebugMenu.gd"
 GameManager="*uid://buitflbj0i6hu"
+SaveManager="*uid://0r06sude61x8"
 
 [display]
 

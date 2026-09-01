@@ -1,0 +1,166 @@
+[gd_scene format=3 uid="uid://bepnudtsxu6wi"]
+
+[sub_resource type="GDScript" id="GDScript_88llg"]
+script/source = "extends Node2D
+
+@export var botaoSlot1: Button
+@export var botaoSlot2: Button
+@export var botaoSlot3: Button
+
+@export var btnDelete1: Button
+@export var btnDelete2: Button
+@export var btnDelete3: Button
+
+func _ready() -> void:
+	#Conecta cada um dos botões de slot com as suas funções
+	botaoSlot1.pressed.connect(func(): start_game(SaveManager.save_file_1))
+	botaoSlot2.pressed.connect(func(): start_game(SaveManager.save_file_2))
+	botaoSlot3.pressed.connect(func(): start_game(SaveManager.save_file_3))
+	
+	#Conecta cada um dos botões de apagar slot com as suas funções
+	btnDelete1.pressed.connect(func(): delete_save(SaveManager.save_file_1))
+	btnDelete2.pressed.connect(func(): delete_save(SaveManager.save_file_2))
+	btnDelete3.pressed.connect(func(): delete_save(SaveManager.save_file_3))
+	
+	#Atualiza a UI p/ pegar quais botões tem save ou não
+	update_ui()
+
+#Função auxiliar para atualizar os 3 botões
+func update_ui() -> void:
+	_update_slots(botaoSlot1, btnDelete1, SaveManager.save_file_1, \"Slot 1\")
+	_update_slots(botaoSlot2, btnDelete2, SaveManager.save_file_2, \"Slot 2\")
+	_update_slots(botaoSlot3, btnDelete3, SaveManager.save_file_3, \"Slot 3\")
+
+# Função para atualizar os dados de cada um dos slots de save dependendo se tem um save ou não nele
+func _update_slots(slotButton: Button, btn_del: Button, slotFile: String, slotName: String) -> void:
+	
+	#Verifica se o slot já tem um save nele
+	if SaveManager.has_save(slotFile):
+		slotButton.text = slotName + \" - Continuar\"
+		btn_del.visible = true
+	else:
+		slotButton.text = slotName + \" - Novo Jogo\"
+		btn_del.visible = false
+
+#Função teste para iniciar o jogo a partir de um botão
+func start_game(slotFile: String) -> void:
+	
+	#Verifica se o slot já tem um save nele
+	if not SaveManager.has_save(slotFile):
+		var dataDictionary = { #Variáveis entram aqui
+			\"Var1\": true,
+		} 
+		SaveManager.save_game(dataDictionary, slotFile)
+		print(\"Novo save criado no slot:  \", slotFile)
+	else:
+		print(\"Save carregado do slot: \", slotFile)
+		
+	update_ui()
+	
+	#Armazena o slot atual em um singleton
+	#GameController.currentSaveFile = slotFile
+	#GameController.saveDictionary = dataDictionary
+	
+	#Troca de cena
+	#get_tree().change_scene_to_file(\"\")
+
+#Função para apagar com um arquivo de save
+func delete_save(slotFile: String) -> void:
+	SaveManager.reset_save(slotFile)
+	update_ui()
+"
+
+[node name="SaveSystem" type="Node2D" unique_id=553367394 node_paths=PackedStringArray("botaoSlot1", "botaoSlot2", "botaoSlot3", "btnDelete1", "btnDelete2", "btnDelete3")]
+script = SubResource("GDScript_88llg")
+botaoSlot1 = NodePath("ColorRect/Button")
+botaoSlot2 = NodePath("ColorRect/Button2")
+botaoSlot3 = NodePath("ColorRect/Button3")
+btnDelete1 = NodePath("ColorRect/Button/Button")
+btnDelete2 = NodePath("ColorRect/Button2/Button")
+btnDelete3 = NodePath("ColorRect/Button3/Button")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=192503871]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_right = 1152.0
+offset_bottom = 648.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 1, 1, 0.19215687)
+
+[node name="Button" type="Button" parent="ColorRect" unique_id=794969582]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -47.0
+offset_top = -24.0
+offset_right = 47.0
+offset_bottom = 29.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 32
+text = "Slot 1"
+
+[node name="Button" type="Button" parent="ColorRect/Button" unique_id=560013643]
+layout_mode = 0
+offset_left = 284.0
+offset_top = 1.0
+offset_right = 312.0
+offset_bottom = 54.0
+theme_override_font_sizes/font_size = 32
+text = "X"
+
+[node name="Button2" type="Button" parent="ColorRect" unique_id=1594368895]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -47.0
+offset_top = 51.0
+offset_right = 47.0
+offset_bottom = 104.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 32
+text = "Slot 2"
+
+[node name="Button" type="Button" parent="ColorRect/Button2" unique_id=1910476402]
+layout_mode = 0
+offset_left = 287.0
+offset_top = 2.0
+offset_right = 315.0
+offset_bottom = 55.0
+theme_override_font_sizes/font_size = 32
+text = "X"
+
+[node name="Button3" type="Button" parent="ColorRect" unique_id=1073708271]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -33.5
+offset_top = 126.0
+offset_right = 33.5
+offset_bottom = 179.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 32
+text = "Slot 3"
+
+[node name="Button" type="Button" parent="ColorRect/Button3" unique_id=293252285]
+layout_mode = 0
+offset_left = 289.0
+offset_right = 317.0
+offset_bottom = 53.0
+theme_override_font_sizes/font_size = 32
+text = "X"
