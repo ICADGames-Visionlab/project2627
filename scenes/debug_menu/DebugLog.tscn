@@ -1,0 +1,46 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bev0a2gv85k6j" path="res://scripts/debug_menu/DebugLogOverlay.gd" id="1_log"]
+
+[node name="DebugLogOverlay" type="CanvasLayer"]
+layer = 125
+process_mode = 3
+script = ExtResource("1_log")
+
+[node name="Anchor" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="Anchor"]
+layout_mode = 0
+offset_right = 640.0
+offset_bottom = 300.0
+
+[node name="Margin" type="MarginContainer" parent="Anchor/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 6
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 6
+
+[node name="Layout" type="VBoxContainer" parent="Anchor/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 3
+
+[node name="Header" type="Label" parent="Anchor/Panel/Margin/Layout"]
+layout_mode = 2
+text = "LOG"
+
+[node name="HeaderSeparator" type="HSeparator" parent="Anchor/Panel/Margin/Layout"]
+layout_mode = 2
+
+[node name="Output" type="RichTextLabel" parent="Anchor/Panel/Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_active = true
+scroll_following = true
