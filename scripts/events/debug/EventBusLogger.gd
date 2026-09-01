@@ -62,6 +62,9 @@ class SignalInfo:
 	var is_request: bool = false
 	# Quantas conexões pertencem ao próprio logger e precisam ser descontadas da contagem.
 	var probe_count: int = 1
+	# Argumentos do sinal (name + type), na ordem declarada. Guardado aqui para
+	# _register_event_actions() não precisar varrer get_script_signal_list() de novo.
+	var args: Array[Dictionary] = []
 
 
 func _ready() -> void:
@@ -92,12 +95,19 @@ func attach_to_bus(bus: Node) -> void:
 	for signal_data: Dictionary in script.get_script_signal_list():
 		_attach_signal(signal_data)
 	print("[EventBus] - Instrumentação ativa em %d eventos" % _signals.size())
+	# Adiado de propósito: o EventBus é o primeiro Autoload da lista e o DebugMenu ainda não
+	# existe quando este _ready() roda. A chamada adiada cai no fim do frame, com todos os
+	# Autoloads prontos — e é isso que também mantém "Sistema" como a primeira seção da lista.
+	_register_event_actions.call_deferred()
 
 
 # Conecta o handler da aridade correspondente e guarda os metadados do sinal.
 func _attach_signal(signal_data: Dictionary) -> void:
 	var event_name: StringName = signal_data["name"]
-	var arity: int = (signal_data["args"] as Array).size()
+	var args: Array[Dictionary] = []
+	for arg: Dictionary in (signal_data["args"] as Array):
+		args.append(arg)
+	var arity: int = args.size()
 	if arity > MAX_TRACKED_ARITY:
 		push_warning("[EventBus] - %s tem %d parâmetros; acima do limite instrumentável de %d"
 			% [event_name, arity, MAX_TRACKED_ARITY])
@@ -106,9 +116,46 @@ func _attach_signal(signal_data: Dictionary) -> void:
 	var info: SignalInfo = SignalInfo.new()
 	info.event_name = event_name
 	info.is_request = String(event_name).ends_with(REQUEST_SUFFIX)
+	info.args = args
 	_signals[event_name] = info
 
 	_bus.connect(event_name, Callable(self, "_on_event_%d" % arity).bind(event_name))
+
+
+# Pendura uma ação de debug por evento declarado no bus. Os parâmetros saem dos tipos (e nomes)
+# declarados no próprio signal, então eventos novos aparecem no menu e no console
+# (eventos.emitir_<evento>) sem ninguém registrar nada — a mesma propriedade que esta
+# instrumentação já tem.
+func _register_event_actions() -> void:
+	for event_name: StringName in _signals:
+		var info: SignalInfo = _signals[event_name]
+		var params: Array[DebugParam] = _params_from_signal(info.args)
+		if params.size() != info.args.size():
+			push_warning("[EventBus] - AVISO: %s tem parâmetro de tipo não suportado pelo Debug Menu (ex.: classe de payload); sem botão na seção \"Eventos\" — registre a ação manualmente" % event_name)
+			continue
+		DebugMenu.register_input(&"Eventos", "Emitir %s" % event_name,
+			Callable(self, "_emit_event_%d" % params.size()).bind(event_name), params)
+
+
+# Mapeia os argumentos declarados no sinal (nome + tipo) para DebugParam. Devolve um array mais
+# curto que args assim que encontra um tipo não suportado — o chamador compara os tamanhos para
+# detectar isso.
+func _params_from_signal(args: Array[Dictionary]) -> Array[DebugParam]:
+	var params: Array[DebugParam] = []
+	for arg: Dictionary in args:
+		var arg_name: String = String(arg["name"])
+		match int(arg["type"]):
+			TYPE_INT:
+				params.append(DebugParam.int_value(arg_name, 0))
+			TYPE_FLOAT:
+				params.append(DebugParam.float_value(arg_name, 0.0))
+			TYPE_STRING, TYPE_STRING_NAME:
+				params.append(DebugParam.string_value(arg_name))
+			TYPE_BOOL:
+				params.append(DebugParam.bool_value(arg_name))
+			_:
+				return params
+	return params
 
 
 # Handlers de log, um por aridade: GDScript não tem callback variádica, então _attach_signal()
@@ -140,6 +187,31 @@ func _on_event_3(a0: Variant, a1: Variant, a2: Variant, event_name: StringName) 
 # (ver MAX_TRACKED_ARITY). Acima disso o evento deve usar uma classe de payload.
 func _on_event_4(a0: Variant, a1: Variant, a2: Variant, a3: Variant, event_name: StringName) -> void:
 	_record(event_name, "%s, %s, %s, %s" % [a0, a1, a2, a3])
+
+
+# Handlers de emissão manual, um por aridade — imagem espelhada de _on_event_0..4 pelo mesmo
+# motivo: GDScript não tem callable variádica. Ligados por _register_event_actions() via
+# Callable(self, "_emit_event_N").bind(event_name), então o nome do evento chega por bind() e é
+# sempre o ÚLTIMO parâmetro, como nos handlers de log.
+
+func _emit_event_0(event_name: StringName) -> void:
+	_bus.emit_signal(event_name)
+
+
+func _emit_event_1(a0: Variant, event_name: StringName) -> void:
+	_bus.emit_signal(event_name, a0)
+
+
+func _emit_event_2(a0: Variant, a1: Variant, event_name: StringName) -> void:
+	_bus.emit_signal(event_name, a0, a1)
+
+
+func _emit_event_3(a0: Variant, a1: Variant, a2: Variant, event_name: StringName) -> void:
+	_bus.emit_signal(event_name, a0, a1, a2)
+
+
+func _emit_event_4(a0: Variant, a1: Variant, a2: Variant, a3: Variant, event_name: StringName) -> void:
+	_bus.emit_signal(event_name, a0, a1, a2, a3)
 
 
 # Registra a emissão, atualiza contadores e dispara os alertas de fiação.
