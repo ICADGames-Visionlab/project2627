@@ -11,8 +11,13 @@ config_version=5
 [application]
 
 config/name="HopeFarm"
+run/main_scene="uid://hcbihtdmd4rt"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+SaveManager="*uid://0r06sude61x8"
 
 [display]
 
