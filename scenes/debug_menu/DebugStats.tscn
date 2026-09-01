@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/debug/DebugStatsOverlay.gd" id="1_stats"]
+[ext_resource type="Script" uid="uid://b7kq3xw8mnvp2" path="res://scripts/debug_menu/DebugStatsOverlay.gd" id="1_stats"]
 
 [node name="DebugStatsOverlay" type="CanvasLayer"]
 layer = 126

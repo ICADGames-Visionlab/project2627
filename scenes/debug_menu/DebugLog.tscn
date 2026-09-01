@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
-[ext_resource type="Script" path="res://scripts/debug/DebugLogOverlay.gd" id="1_log"]
+[ext_resource type="Script" uid="uid://bev0a2gv85k6j" path="res://scripts/debug_menu/DebugLogOverlay.gd" id="1_log"]
 
 [node name="DebugLogOverlay" type="CanvasLayer"]
 layer = 125

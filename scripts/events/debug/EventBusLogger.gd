@@ -14,7 +14,7 @@ const MAX_TRACKED_ARITY: int = 4
 const HISTORY_SIZE: int = 256
 const REQUEST_SUFFIX: String = "_requested"
 const TOGGLE_ACTION: StringName = &"debug_toggle_event_bus"
-const OVERLAY_SCENE_PATH: String = "res://scenes/debugs/EventBusOverlay.tscn"
+const OVERLAY_SCENE_PATH: String = "res://scenes/debug_menu/EventBusOverlay.tscn"
 const HANDLER_REFRESH_INTERVAL_FRAMES: int = 60
 
 # Limiares de alerta exportados para permitir calibragem pelo Inspetor sem tocar no código.

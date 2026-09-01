@@ -28,14 +28,14 @@ extends Node
 enum EntryKind { ACTION, TOGGLE, VALUE, INPUT }
 
 const TOGGLE_ACTION: StringName = &"debug_toggle_menu"
-const OVERLAY_SCENE_PATH: String = "res://scenes/debugs/DebugMenu.tscn"
+const OVERLAY_SCENE_PATH: String = "res://scenes/debug_menu/DebugMenu.tscn"
 
 const CONSOLE_TOGGLE_ACTION: StringName = &"debug_toggle_console"
-const CONSOLE_SCENE_PATH: String = "res://scenes/debugs/DebugConsole.tscn"
+const CONSOLE_SCENE_PATH: String = "res://scenes/debug_menu/DebugConsole.tscn"
 const COMMAND_HISTORY_SIZE: int = 256
 
 const STATS_TOGGLE_ACTION: StringName = &"debug_toggle_stats"
-const STATS_SCENE_PATH: String = "res://scenes/debugs/DebugStats.tscn"
+const STATS_SCENE_PATH: String = "res://scenes/debug_menu/DebugStats.tscn"
 const STATS_SECTION: StringName = &"Desempenho"
 # O rótulo é a identidade da entrada no registro, então precisa ser constante: é por ele que
 # _set_stats_enabled() reescreve o toggle com o estado real depois de um F2.
