@@ -16,7 +16,6 @@ func save_game (data: Dictionary, current_save: String) -> void:
 	var string_data: String = JSON.stringify(data)
 	save_file.store_line(string_data)
 	save_file.close()
-	return
 
 #Função para carregar um slot de save
 func load_game(current_save: String) -> Dictionary:
@@ -33,7 +32,7 @@ func load_game(current_save: String) -> Dictionary:
 			save_file.close()
 			return data
 		push_error("Dados corrompidos")
-	return default_disctionary
+	return default_disctionary.duplicate()
 
 #Função para resetar um slot de save
 func reset_save(current_save: String) -> void:

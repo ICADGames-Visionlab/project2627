@@ -58,8 +58,8 @@ func start_game(slotFile: String) -> void:
 	update_ui()
 	
 	#Armazena o slot atual em um singleton
-	#GameController.currentSaveFile = slotFile
-	#GameController.saveDictionary = dataDictionary
+	#GameManager.currentSaveFile = slotFile
+	#GameManager.saveDictionary = dataDictionary
 	
 	#Troca de cena
 	#get_tree().change_scene_to_file(\"\")

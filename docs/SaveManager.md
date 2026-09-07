@@ -23,24 +23,22 @@ A interface de seleção de slots utiliza um sistema reativo conectado via funç
 ### Gerenciamento de Estado
 * **Conexões Dinâmicas:** Os botões de slot e exclusão ("X") não possuem funções separadas para cada slot. Eles são conectados no `_ready()` usando lambdas: `botao.pressed.connect(func(): start_game(SaveManager.save_file_1))`.
 * **Atualização Visual (`update_ui`)**: Sempre que a tela carrega ou um arquivo é deletado, o sistema varre os arquivos. Se `has_save` for verdadeiro, o botão exibe "Continuar" e o botão de exclusão é ativado. Caso contrário, exibe "Novo Jogo" e esconde o "X".
-* **Inicialização (`start_game`)**: Ao selecionar um slot vazio, o script gera o dicionário base (com dados primários como `Var1`) antes de transicionar a cena e delegar o slot atual para o `GameController`.
+* **Inicialização (`start_game`)**: Ao selecionar um slot vazio, o script gera o dicionário base (com dados primários como `Var1`) antes de transicionar a cena e delegar o slot atual para o `GameManager`.
 
 ---
 
 ## 3. Como Interagir com o Sistema no Jogo
 
-Para os desenvolvedores que precisam salvar novos dados ou resgatar variáveis ao carregar uma fase, utilizem o fluxo abaixo interagindo com o `GameController` (que deve armazenar o slot ativo) e o `SaveManager`.
+Para os desenvolvedores que precisam salvar novos dados ou resgatar variáveis ao carregar uma fase, utilizem o fluxo abaixo interagindo com o `GameManager` (que deve armazenar o slot ativo) e o `SaveManager`.
 
 **Para Salvar o Jogo:**
 Construa o estado atual em um dicionário e chame o método de salvamento.
 ```gdscript
 func salvar_progresso():
 	var dados = {
-		"dinheiro": GameController.dinheiro_atual,
-		"rodada": GameController.rodada_atual,
-		"inventario": GameController.inventario
+		"nomeVar": GameManager.var,
 	}
-	SaveManager.save_game(dados, GameController.currentSaveFile)
+	SaveManager.save_game(dados, GameManager.currentSaveFile)
 ```
 
 **Para Carregar o Jogo:**
@@ -48,11 +46,10 @@ Chame o carregamento assim que a cena principal for instanciada e distribua os v
 GDScript
 ```gdscript
 func _ready():
-	var dados = SaveManager.load_game(GameController.currentSaveFile)
+	var dados = SaveManager.load_game(GameManager.currentSaveFile)
 	
 	if not dados.is_empty():
-		GameController.dinheiro_atual = dados.get("dinheiro", 1000)
-		GameController.rodada_atual = dados.get("rodada", 1)
+		GameManager.var = dados.get("nomeVar", true)
 ```
 
-Nota de Manutenção: Ao usar dados.get("chave", valor_padrao), você protege o código caso chaves novas sejam adicionadas no futuro, evitando erros ao carregar arquivos de save de versões antigas do jogo.
+**Nota de Manutenção:** Ao usar dados.get("chave", valor_padrao), você protege o código caso chaves novas sejam adicionadas no futuro, evitando erros ao carregar arquivos de save de versões antigas do jogo.
