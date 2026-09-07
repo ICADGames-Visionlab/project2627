@@ -1,17 +1,20 @@
 extends Control
 
 #constastes/variáveis para caminhos de arquivos
-const SETTINGS_SCENE := "res://scenes/ui/Settings.tscn"
-const CONFIG_PATH := "user://settings.cfg" 
+const CONFIG_PATH := "user://settings.cfg"
 
 @onready var options_button: Button = $CenterContainer/VBoxContainer/Button3
 @onready var welcome_label: Label = $CenterContainer/VBoxContainer/WelcomeLabel
 @onready var sair: Button = $Sair
+@onready var center_container: CenterContainer = $CenterContainer
+@onready var settings: Control = $Settings
 
 func _ready() -> void:
 	_apply_saved_locale()
 	options_button.pressed.connect(_on_options_pressed)
 	sair.pressed.connect(_on_sair_pressed)
+	settings.closed.connect(_on_settings_closed)
+	settings.hide()
 	_update_dynamic_labels()
 
 #aplica as configurações de menu já salvas
@@ -19,13 +22,21 @@ func _apply_saved_locale() -> void:
 	var config := ConfigFile.new()
 	if config.load(CONFIG_PATH) != OK:
 		return 
-	var saved_locale: String = config.get_value("idioma", "codigo", "")
+	var saved_locale: String = config.get_value("language", "code", "")
 	if saved_locale != "":
 		TranslationServer.set_locale(saved_locale)
 
-#troca cena para opções
+#abre a tela de opções como instância (overlay) desta cena
 func _on_options_pressed() -> void:
-	GameManager.change_scene(SETTINGS_SCENE)
+	center_container.hide()
+	sair.hide()
+	settings.show()
+
+#fecha o overlay de opções e volta a mostrar o menu principal
+func _on_settings_closed() -> void:
+	settings.hide()
+	center_container.show()
+	sair.show()
 
 #Func de teste para a localização
 func _update_dynamic_labels() -> void:
