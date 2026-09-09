@@ -74,6 +74,7 @@ radius = 22.0
 height = 64.0
 
 [node name="Player" type="CharacterBody2D"]
+motion_mode = 1
 script = ExtResource("1_player_script")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
