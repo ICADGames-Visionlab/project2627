@@ -2,8 +2,7 @@ extends Control
 
 #constastes/variáveis para caminhos de arquivos
 const CONFIG_PATH := "user://settings.cfg"
-const CITY_SCENE := "res://scenes/levels/City.tscn"
-
+const CITY_SCENE := "res://scenes/main.tscn"
 @onready var new_game_button: Button = $CenterContainer/VBoxContainer/Button
 @onready var options_button: Button = $CenterContainer/VBoxContainer/Button3
 @onready var welcome_label: Label = $CenterContainer/VBoxContainer/WelcomeLabel
