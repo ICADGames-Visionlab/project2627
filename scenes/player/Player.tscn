@@ -1,6 +1,6 @@
-[gd_scene load_steps=35 format=3 uid="uid://dcvj26wj3lmda"]
+[gd_scene format=3 uid="uid://dcvj26wj3lmda"]
 
-[ext_resource type="Script" uid="uid://t9j748uug1eo0" path="res://scripts/player/Player.gd" id="1_player_script"]
+[ext_resource type="Script" uid="uid://xiu6yalm00v6" path="res://scripts/player/Player.gd" id="1_player_script"]
 [ext_resource type="Texture2D" uid="uid://bvhsllp3t7086" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Run1_hollow.png" id="2_front_1"]
 [ext_resource type="Texture2D" uid="uid://bn3r2j5doed22" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Run2_hollow.png" id="3_front_2"]
 [ext_resource type="Texture2D" uid="uid://bexrn57ke7ab" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Run3_hollow.png" id="4_front_3"]
@@ -32,60 +32,10 @@
 [ext_resource type="Texture2D" uid="uid://d3gf1aknf42p2" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle4_hollow.png" id="30_side_idle_4"]
 [ext_resource type="Texture2D" uid="uid://coxcci1q721og" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle5_hollow.png" id="31_side_idle_5"]
 [ext_resource type="Texture2D" uid="uid://bstoaeafqeh06" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle6_hollow.png" id="32_side_idle_6"]
+[ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="33_jtlb7"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_player"]
 animations = [{
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("2_front_1")
-}, {
-"duration": 1.0,
-"texture": ExtResource("3_front_2")
-}, {
-"duration": 1.0,
-"texture": ExtResource("4_front_3")
-}, {
-"duration": 1.0,
-"texture": ExtResource("5_front_4")
-}],
-"loop": true,
-"name": &"run_down",
-"speed": 8.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("6_back_1")
-}, {
-"duration": 1.0,
-"texture": ExtResource("7_back_2")
-}, {
-"duration": 1.0,
-"texture": ExtResource("8_back_3")
-}, {
-"duration": 1.0,
-"texture": ExtResource("9_back_4")
-}],
-"loop": true,
-"name": &"run_up",
-"speed": 8.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("10_side_1")
-}, {
-"duration": 1.0,
-"texture": ExtResource("11_side_2")
-}, {
-"duration": 1.0,
-"texture": ExtResource("12_side_3")
-}, {
-"duration": 1.0,
-"texture": ExtResource("13_side_4")
-}],
-"loop": true,
-"name": &"run_side",
-"speed": 8.0
-}, {
 "frames": [{
 "duration": 1.0,
 "texture": ExtResource("15_front_idle_1")
@@ -105,31 +55,8 @@ animations = [{
 "duration": 1.0,
 "texture": ExtResource("20_front_idle_6")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle_down",
-"speed": 6.0
-}, {
-"frames": [{
-"duration": 1.0,
-"texture": ExtResource("21_back_idle_1")
-}, {
-"duration": 1.0,
-"texture": ExtResource("22_back_idle_2")
-}, {
-"duration": 1.0,
-"texture": ExtResource("23_back_idle_3")
-}, {
-"duration": 1.0,
-"texture": ExtResource("24_back_idle_4")
-}, {
-"duration": 1.0,
-"texture": ExtResource("25_back_idle_5")
-}, {
-"duration": 1.0,
-"texture": ExtResource("26_back_idle_6")
-}],
-"loop": true,
-"name": &"idle_up",
 "speed": 6.0
 }, {
 "frames": [{
@@ -151,32 +78,110 @@ animations = [{
 "duration": 1.0,
 "texture": ExtResource("32_side_idle_6")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle_side",
 "speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("21_back_idle_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_back_idle_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_back_idle_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_back_idle_4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_back_idle_5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_back_idle_6")
+}],
+"loop": 1,
+"name": &"idle_up",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_front_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_front_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_front_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_front_4")
+}],
+"loop": 1,
+"name": &"run_down",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("10_side_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("11_side_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("12_side_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("13_side_4")
+}],
+"loop": 1,
+"name": &"run_side",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_back_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("7_back_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("8_back_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("9_back_4")
+}],
+"loop": 1,
+"name": &"run_up",
+"speed": 8.0
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 22.0
 height = 64.0
 
-[node name="Player" type="CharacterBody2D"]
+[sub_resource type="Resource" id="Resource_ye1dr"]
+script = ExtResource("33_jtlb7")
+
+[node name="Player" type="CharacterBody2D" unique_id=88955700]
 motion_mode = 1
 script = ExtResource("1_player_script")
 
-[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1028819920]
 position = Vector2(0, -90)
 sprite_frames = SubResource("SpriteFrames_player")
 animation = &"idle_down"
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(0, -32)
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=2003357363]
+position = Vector2(1, -41)
 shape = SubResource("CapsuleShape2D_player")
 
-[node name="PlayerCamera" type="Node2D" parent="." node_paths=PackedStringArray("follow_target")]
+[node name="PlayerCamera" type="Node2D" parent="." unique_id=1055146439 node_paths=PackedStringArray("follow_target")]
 top_level = true
 script = ExtResource("14_pcam_script")
 priority = 10
 follow_mode = 2
 follow_target = NodePath("..")
+tween_resource = SubResource("Resource_ye1dr")
 follow_damping = true
