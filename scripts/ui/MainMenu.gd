@@ -8,7 +8,7 @@ const CITY_SCENE := "res://scenes/main.tscn"
 @onready var welcome_label: Label = $CenterContainer/VBoxContainer/WelcomeLabel
 @onready var sair: Button = $Sair
 @onready var center_container: CenterContainer = $CenterContainer
-@onready var settings: Control = $Settings
+@onready var settings = $Settings
 
 func _ready() -> void:
 	_apply_saved_locale()
