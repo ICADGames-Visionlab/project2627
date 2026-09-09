@@ -185,4 +185,5 @@ follow_mode = 2
 follow_target = NodePath("..")
 follow_offset = Vector2(0, -90)
 tween_resource = SubResource("Resource_ye1dr")
+tween_on_load = false
 follow_damping = true
