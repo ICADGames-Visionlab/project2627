@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+SaveManager="*uid://0r06sude61x8"
 EventBus="*res://scripts/singletons/EventBus.gd"
 AudioManager="*uid://ukx856cnpid2"
 DebugMenu="*res://scripts/singletons/DebugMenu.gd"
