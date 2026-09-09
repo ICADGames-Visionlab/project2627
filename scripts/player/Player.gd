@@ -37,38 +37,37 @@ func _get_input_direction() -> Vector2:
 	return Input.get_vector("move_left", "move_right", "move_up", "move_down")
 
 
-# Escolhe a animação de corrida correspondente à direção do input, ou volta pro primeiro quadro
-# (parado) quando não há input. Como o placeholder só tem 4 direções visuais, diagonais usam o
-# eixo com maior magnitude para decidir entre cima/baixo e lado.
+# Escolhe a animação de corrida ou de parado (idle) correspondente à direção do input. Sem
+# input, mantém a última direção encarada e troca pra idle. Como o placeholder só tem 4 direções
+# visuais, diagonais usam o eixo com maior magnitude para decidir entre cima/baixo e lado.
 func _update_animation(input_direction: Vector2) -> void:
-	if input_direction == Vector2.ZERO:
-		_animated_sprite.stop()
-		return
+	var is_moving: bool = input_direction != Vector2.ZERO
 
-	if absf(input_direction.x) > absf(input_direction.y):
-		_facing_direction = FacingDirection.SIDE
-		_facing_right = input_direction.x > 0.0
-	elif input_direction.y < 0.0:
-		_facing_direction = FacingDirection.UP
-	else:
-		_facing_direction = FacingDirection.DOWN
+	if is_moving:
+		if absf(input_direction.x) > absf(input_direction.y):
+			_facing_direction = FacingDirection.SIDE
+			_facing_right = input_direction.x > 0.0
+		elif input_direction.y < 0.0:
+			_facing_direction = FacingDirection.UP
+		else:
+			_facing_direction = FacingDirection.DOWN
 
 	# O sprite "Side" do placeholder olha pra esquerda por padrão; espelha só quando andando
-	# pra direita.
+	# pra direita. Mantido também parado, pra não "virar" o personagem ao soltar a tecla.
 	_animated_sprite.flip_h = _facing_direction == FacingDirection.SIDE and _facing_right
 
-	var animation_name: StringName = _get_animation_name()
+	var animation_name: StringName = _get_animation_name(is_moving)
 	if _animated_sprite.animation != animation_name or not _animated_sprite.is_playing():
 		_animated_sprite.play(animation_name)
 
 
 # Traduz o enum de direção atual pro nome da animação correspondente na SpriteFrames do
-# AnimatedSprite2D.
-func _get_animation_name() -> StringName:
+# AnimatedSprite2D — de corrida enquanto o jogador se move, de parado (idle) quando não.
+func _get_animation_name(is_moving: bool) -> StringName:
 	match _facing_direction:
 		FacingDirection.UP:
-			return &"run_up"
+			return &"run_up" if is_moving else &"idle_up"
 		FacingDirection.SIDE:
-			return &"run_side"
+			return &"run_side" if is_moving else &"idle_side"
 		_:
-			return &"run_down"
+			return &"run_down" if is_moving else &"idle_down"

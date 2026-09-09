@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://dcvj26wj3lmc9"]
+[gd_scene load_steps=35 format=3 uid="uid://dcvj26wj3lmda"]
 
 [ext_resource type="Script" uid="uid://t9j748uug1eo0" path="res://scripts/player/Player.gd" id="1_player_script"]
 [ext_resource type="Texture2D" uid="uid://bvhsllp3t7086" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Run1_hollow.png" id="2_front_1"]
@@ -14,6 +14,24 @@
 [ext_resource type="Texture2D" uid="uid://b2qbufahkva60" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Run3_hollow.png" id="12_side_3"]
 [ext_resource type="Texture2D" uid="uid://om1c4d2hm77i" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Run4_hollow.png" id="13_side_4"]
 [ext_resource type="Script" uid="uid://bhexx6mj1xv3q" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="14_pcam_script"]
+[ext_resource type="Texture2D" uid="uid://cud6m81da30go" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Idle1_hollow.png" id="15_front_idle_1"]
+[ext_resource type="Texture2D" uid="uid://1k1cqy3k5xew" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Idle2_hollow.png" id="16_front_idle_2"]
+[ext_resource type="Texture2D" uid="uid://bqex3ks8sacow" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Idle3_hollow.png" id="17_front_idle_3"]
+[ext_resource type="Texture2D" uid="uid://be72x5yxi8o6k" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Idle4_hollow.png" id="18_front_idle_4"]
+[ext_resource type="Texture2D" uid="uid://chxx0bhri1qk2" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Idle5_hollow.png" id="19_front_idle_5"]
+[ext_resource type="Texture2D" uid="uid://bo5dll3bv8eyw" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Front_Idle6.png" id="20_front_idle_6"]
+[ext_resource type="Texture2D" uid="uid://b6q0ia120xfhw" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Back_Idle1_hollow.png" id="21_back_idle_1"]
+[ext_resource type="Texture2D" uid="uid://dfbtfu6blbier" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Back_Idle2_hollow.png" id="22_back_idle_2"]
+[ext_resource type="Texture2D" uid="uid://cqayv7jindnr1" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Back_Idle3_hollow.png" id="23_back_idle_3"]
+[ext_resource type="Texture2D" uid="uid://hkrvelhavafj" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Back_Idle4_hollow.png" id="24_back_idle_4"]
+[ext_resource type="Texture2D" uid="uid://bl7ytdbfok50i" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Back_Idle5_hollow.png" id="25_back_idle_5"]
+[ext_resource type="Texture2D" uid="uid://lv8ntqicw0ky" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Back_Idle6_hollow.png" id="26_back_idle_6"]
+[ext_resource type="Texture2D" uid="uid://blolo37k3gxlw" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle1_hollow.png" id="27_side_idle_1"]
+[ext_resource type="Texture2D" uid="uid://bta0cbhha1hmx" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle2_hollow.png" id="28_side_idle_2"]
+[ext_resource type="Texture2D" uid="uid://dnhrhromedy42" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle3_hollow.png" id="29_side_idle_3"]
+[ext_resource type="Texture2D" uid="uid://d3gf1aknf42p2" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle4_hollow.png" id="30_side_idle_4"]
+[ext_resource type="Texture2D" uid="uid://coxcci1q721og" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle5_hollow.png" id="31_side_idle_5"]
+[ext_resource type="Texture2D" uid="uid://bstoaeafqeh06" path="res://images/placeholder/player/Fishing_concept_SpritePlayer_Side_Idle6_hollow.png" id="32_side_idle_6"]
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_player"]
 animations = [{
@@ -67,6 +85,75 @@ animations = [{
 "loop": true,
 "name": &"run_side",
 "speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("15_front_idle_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("16_front_idle_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("17_front_idle_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("18_front_idle_4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("19_front_idle_5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("20_front_idle_6")
+}],
+"loop": true,
+"name": &"idle_down",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("21_back_idle_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("22_back_idle_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("23_back_idle_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("24_back_idle_4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("25_back_idle_5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("26_back_idle_6")
+}],
+"loop": true,
+"name": &"idle_up",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("27_side_idle_1")
+}, {
+"duration": 1.0,
+"texture": ExtResource("28_side_idle_2")
+}, {
+"duration": 1.0,
+"texture": ExtResource("29_side_idle_3")
+}, {
+"duration": 1.0,
+"texture": ExtResource("30_side_idle_4")
+}, {
+"duration": 1.0,
+"texture": ExtResource("31_side_idle_5")
+}, {
+"duration": 1.0,
+"texture": ExtResource("32_side_idle_6")
+}],
+"loop": true,
+"name": &"idle_side",
+"speed": 6.0
 }]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
@@ -80,7 +167,7 @@ script = ExtResource("1_player_script")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(0, -90)
 sprite_frames = SubResource("SpriteFrames_player")
-animation = &"run_down"
+animation = &"idle_down"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, -32)
