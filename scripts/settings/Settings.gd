@@ -131,7 +131,7 @@ func _locale_to_index(locale: String) -> int:
 # e volta direto pro Menu Principal (ninguém conectado ao sinal).
 func _on_close_pressed() -> void:
 	if closed.get_connections().is_empty():
-		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+		GameManager.change_scene(MAIN_MENU_SCENE)
 		print("[Settings] - Sem listener no sinal \"closed\"; voltando ao Menu Principal")
 	else:
 		closed.emit()

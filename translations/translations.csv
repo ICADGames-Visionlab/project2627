@@ -11,3 +11,5 @@ MENU_CREDITS,Credits,Créditos
 MENU_NEWGAME,New Game,Novo Jogo
 MENU_CONTINUE,Continue,Continuar
 DYNAMIC_EXAMPLE,%s testes!,testes %s!
+PLACEHOLDER_CITY_GROUND,Placeholder - City ground (final art pending),Placeholder - Chão da cidade (arte final pendente)
+PLACEHOLDER_CITY_BUILDING,Placeholder - Building (final art pending),Placeholder - Prédio (arte final pendente)
