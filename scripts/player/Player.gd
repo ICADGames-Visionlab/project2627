@@ -8,7 +8,7 @@ extends CharacterBody2D
 # sem mexer aqui.
 signal movement_state_changed(is_moving: bool, facing_direction: FacingDirection, facing_right: bool)
 
-enum FacingDirection { DOWN, UP, SIDE } #maquina de estado para direção do plater
+enum FacingDirection { DOWN, UP, SIDE } #maquina de estado para direção do player
 
 @export var speed: float = 300.0
 
