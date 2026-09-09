@@ -1,0 +1,109 @@
+[gd_scene load_steps=6 format=3 uid="uid://mgpe256ee0wka"]
+
+[ext_resource type="PackedScene" uid="uid://dcvj26wj3lmc9" path="res://scenes/player/Player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="2_pcam_host"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_building_1"]
+size = Vector2(400, 300)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_building_2"]
+size = Vector2(350, 450)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_building_3"]
+size = Vector2(500, 350)
+
+[node name="City" type="Node2D"]
+
+[node name="Ground_PlaceHolder" type="ColorRect" parent="."]
+position = Vector2(-1200, -800)
+size = Vector2(2400, 1600)
+color = Color(0.552941, 0.552941, 0.580392, 1)
+
+[node name="Label" type="Label" parent="Ground_PlaceHolder"]
+size = Vector2(2400, 1600)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 28
+text = "PLACEHOLDER_CITY_GROUND"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Building1" type="StaticBody2D" parent="."]
+position = Vector2(-700, -550)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Building1"]
+shape = SubResource("RectangleShape2D_building_1")
+
+[node name="Visual_PlaceHolder" type="ColorRect" parent="Building1"]
+position = Vector2(-200, -150)
+size = Vector2(400, 300)
+color = Color(0.552941, 0.34902, 0.247059, 1)
+
+[node name="Label" type="Label" parent="Building1"]
+position = Vector2(-200, -150)
+size = Vector2(400, 300)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 24
+text = "PLACEHOLDER_CITY_BUILDING"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Building2" type="StaticBody2D" parent="."]
+position = Vector2(475, -525)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Building2"]
+shape = SubResource("RectangleShape2D_building_2")
+
+[node name="Visual_PlaceHolder" type="ColorRect" parent="Building2"]
+position = Vector2(-175, -225)
+size = Vector2(350, 450)
+color = Color(0.4, 0.45, 0.5, 1)
+
+[node name="Label" type="Label" parent="Building2"]
+position = Vector2(-175, -225)
+size = Vector2(350, 450)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 24
+text = "PLACEHOLDER_CITY_BUILDING"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Building3" type="StaticBody2D" parent="."]
+position = Vector2(50, 475)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Building3"]
+shape = SubResource("RectangleShape2D_building_3")
+
+[node name="Visual_PlaceHolder" type="ColorRect" parent="Building3"]
+position = Vector2(-250, -175)
+size = Vector2(500, 350)
+color = Color(0.5, 0.3, 0.3, 1)
+
+[node name="Label" type="Label" parent="Building3"]
+position = Vector2(-250, -175)
+size = Vector2(500, 350)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 24
+text = "PLACEHOLDER_CITY_BUILDING"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="MainCamera" type="Camera2D" parent="."]
+position = Vector2(0, -100)
+
+[node name="PhantomCameraHost" type="Node" parent="MainCamera"]
+script = ExtResource("2_pcam_host")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+position = Vector2(0, -100)
