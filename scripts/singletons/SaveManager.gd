@@ -23,7 +23,7 @@ func load_game(current_save: String) -> Dictionary:
 		var save_file: FileAccess = FileAccess.open(current_save, FileAccess.READ)
 		if save_file == null:
 			push_error("Erro ao abrir arquivo de save")
-			return default_disctionary
+			return default_disctionary.duplicate()
 			
 		var json = JSON.new()
 		var string_data: String = save_file.get_line()
