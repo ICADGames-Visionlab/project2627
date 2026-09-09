@@ -40,11 +40,11 @@ func _on_options_pressed() -> void:
 	sair.hide()
 	settings.show()
 
-#fecha o overlay de opções e volta a mostrar o menu principal
 func _on_settings_closed() -> void:
 	settings.hide()
 	center_container.show()
 	sair.show()
+	_update_dynamic_labels()
 
 #Func de teste para a localização
 func _update_dynamic_labels() -> void:
