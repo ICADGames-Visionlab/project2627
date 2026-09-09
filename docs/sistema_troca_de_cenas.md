@@ -92,29 +92,29 @@ GameManager.change_scene("res://.../Alvo.tscn")
 		│                                                (nenhuma troca acontece)
 		│
 		└── "pending" (ainda carregando) ────────────────────────────────┐
-		                                                                  ▼
-		                                             5c. GameManager troca para LoadingScreen.tscn
-		                                                 (change_scene_to_file)
-		                                                         │
-		                                                         ▼
-		                                             LoadingScreen._ready() lê o caminho via
-		                                             get_target_scene_path() e, como o carregamento
-		                                             já está em andamento (is_load_already_in_progress),
-		                                             só passa a acompanhar — não pede de novo
-		                                                         │
-		                                                         ▼
-		                                             A cada _process(), consulta
-		                                             load_threaded_get_status() e atualiza a
-		                                             ProgressBar (0–100%)
-		                                                         │
-		                                                         ▼
-		                                             Status THREAD_LOAD_LOADED:
-		                                             - busca a cena com load_threaded_get()
-		                                             - garante o tempo mínimo de exibição
-		                                               (minimum_display_time)
-		                                             - troca para a cena de destino
-		                                               (change_scene_to_packed)
-		                                             - emite GameManager.scene_loaded
+																		  ▼
+													 5c. GameManager troca para LoadingScreen.tscn
+														 (change_scene_to_file)
+																 │
+																 ▼
+													 LoadingScreen._ready() lê o caminho via
+													 get_target_scene_path() e, como o carregamento
+													 já está em andamento (is_load_already_in_progress),
+													 só passa a acompanhar — não pede de novo
+																 │
+																 ▼
+													 A cada _process(), consulta
+													 load_threaded_get_status() e atualiza a
+													 ProgressBar (0–100%)
+																 │
+																 ▼
+													 Status THREAD_LOAD_LOADED:
+													 - busca a cena com load_threaded_get()
+													 - garante o tempo mínimo de exibição
+													   (minimum_display_time)
+													 - troca para a cena de destino
+													   (change_scene_to_packed)
+													 - emite GameManager.scene_loaded
 		│                                                        │
 		▼◄───────────────────────────────────────────────────────┘
 6. GameManager retoma (direto em 5a/5b, ou via await scene_loaded em 5c):
