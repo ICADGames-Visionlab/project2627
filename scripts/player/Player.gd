@@ -1,18 +1,6 @@
 class_name Player
 extends CharacterBody2D
 
-## Controlador do jogador: movimento em 8 direções (teclado AWSD/setinhas e analógico do
-## joystick) e troca de animação entre as 4 direções visuais disponíveis no placeholder atual
-## (cima, baixo e lado — o lado é espelhado horizontalmente para representar direita/esquerda).
-## A câmera do jogador (PhantomCamera2D, filha desta cena) é quem decide o enquadramento; este
-## script não sabe nada sobre câmera, apenas sobre movimento e animação.
-##
-## A troca de animação é orientada a evento: _physics_process só atualiza o estado de
-## movimento/direção (isso precisa rodar todo frame, é o input físico) e emite
-## movement_state_changed só quando esse estado muda de fato. Quem decide o que fazer com a
-## animação é _on_movement_state_changed, conectado ao próprio sinal — nada de comparar
-## animação atual contra o frame a cada tick.
-
 # Emitido só quando o estado de movimento (parado/andando, direção encarada) muda — não a cada
 # frame. Emissor e ouvinte são o próprio Player (relação direta e permanente com o seu
 # AnimatedSprite2D), por isso é um Signal direto e não um evento no EventBus; se no futuro outro
