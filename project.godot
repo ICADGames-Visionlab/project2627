@@ -23,6 +23,9 @@ AudioManager="*uid://ukx856cnpid2"
 DebugMenu="*res://scripts/singletons/DebugMenu.gd"
 GameManager="*uid://buitflbj0i6hu"
 PhantomCameraManager="*uid://duq6jhf6unyis"
+InsightDirector="*res://scripts/singletons/InsightDirector.gd"
+HeadRegistry="*res://scripts/singletons/HeadRegistry.gd"
+InsightJournal="*res://scripts/singletons/InsightJournal.gd"
 
 [display]
 
