@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="InsightData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/insights/InsightData.gd" id="1_insight"]
+
+[resource]
+script = ExtResource("1_insight")
+id = &"city_building3_warm_wall"
+channel = 1
+text_key = "INSIGHT_CITY_BUILDING3_WARM_WALL"
+head_id = &"player"
+required_flags = Array[StringName]([])
+blocked_by_flags = Array[StringName]([])
+priority = 0
+one_shot = true
+grants_flag = &""

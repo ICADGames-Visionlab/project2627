@@ -2,6 +2,14 @@
 
 [ext_resource type="PackedScene" uid="uid://dcvj26wj3lmda" path="res://scenes/player/Player.tscn" id="1_player"]
 [ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="2_pcam_host"]
+[ext_resource type="PackedScene" path="res://scenes/insights/InsightSource.tscn" id="3_insight_source"]
+[ext_resource type="PackedScene" path="res://scenes/insights/PlaceholderDialogueScreen.tscn" id="4_dialogue"]
+[ext_resource type="Resource" path="res://resources/insights/city_ground_puddle.tres" id="5_puddle"]
+[ext_resource type="Resource" path="res://resources/insights/city_building1_bricks.tres" id="6_bricks"]
+[ext_resource type="Resource" path="res://resources/insights/city_building1_mortar.tres" id="7_mortar"]
+[ext_resource type="Resource" path="res://resources/insights/city_building2_windows.tres" id="8_windows"]
+[ext_resource type="Resource" path="res://resources/insights/city_building3_warm_wall.tres" id="9_warm_wall"]
+[ext_resource type="Resource" path="res://resources/insights/city_building3_gutter.tres" id="10_gutter"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_building_1"]
 size = Vector2(400, 300)
@@ -72,3 +80,26 @@ script = ExtResource("2_pcam_host")
 
 [node name="Player" parent="." unique_id=785984809 instance=ExtResource("1_player")]
 position = Vector2(0, -18)
+
+[node name="PuddleInsight" parent="." instance=ExtResource("3_insight_source")]
+position = Vector2(-260, 210)
+insights = Array[InsightData]([ExtResource("5_puddle")])
+interaction_radius = 220.0
+marker_offset = Vector2(0, -40)
+
+[node name="Insight" parent="Building1" instance=ExtResource("3_insight_source")]
+insights = Array[InsightData]([ExtResource("6_bricks"), ExtResource("7_mortar")])
+interaction_radius = 330.0
+marker_offset = Vector2(0, -180)
+
+[node name="Insight" parent="Building2" instance=ExtResource("3_insight_source")]
+insights = Array[InsightData]([ExtResource("8_windows")])
+interaction_radius = 330.0
+marker_offset = Vector2(0, -255)
+
+[node name="Insight" parent="Building3" instance=ExtResource("3_insight_source")]
+insights = Array[InsightData]([ExtResource("9_warm_wall"), ExtResource("10_gutter")])
+interaction_radius = 330.0
+marker_offset = Vector2(0, -205)
+
+[node name="PlaceholderDialogueScreen" parent="." instance=ExtResource("4_dialogue")]

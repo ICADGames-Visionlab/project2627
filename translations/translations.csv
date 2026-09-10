@@ -13,3 +13,14 @@ MENU_CONTINUE,Continue,Continuar
 DYNAMIC_EXAMPLE,%s testes!,testes %s!
 PLACEHOLDER_CITY_GROUND,Placeholder - City ground (final art pending),Placeholder - Chão da cidade (arte final pendente)
 PLACEHOLDER_CITY_BUILDING,Placeholder - Building (final art pending),Placeholder - Prédio (arte final pendente)
+INSIGHT_CITY_GROUND_PUDDLE,"The puddle never dries here. Whatever runs under this street runs all year.","A poça nunca seca aqui. O que corre por baixo desta rua corre o ano inteiro."
+INSIGHT_CITY_BUILDING1_BRICKS,"The bricks were laid by someone in a hurry. Two rows out of line, and nobody ever came back to fix them.","Os tijolos foram assentados por alguém com pressa. Duas fiadas fora de prumo, e ninguém nunca voltou para consertar."
+INSIGHT_CITY_BUILDING1_MORTAR,"Fresh mortar on the same wall. Someone patched this after the puddle showed up, and used sea water to do it.","Argamassa nova na mesma parede. Alguém remendou isto depois que a poça apareceu, e usou água do mar para fazer isso."
+INSIGHT_CITY_BUILDING2_WINDOWS,"Every window on this side is shuttered at noon. People here sleep while the boats are out.","Todas as janelas deste lado ficam fechadas ao meio-dia. A gente daqui dorme enquanto os barcos estão no mar."
+INSIGHT_CITY_BUILDING3_WARM_WALL,"The wall is warm. Something behind it has been burning since long before anyone opened for business.","A parede está morna. Algo atrás dela queima desde muito antes de qualquer um abrir as portas."
+INSIGHT_CITY_BUILDING3_GUTTER,"That gutter drains into the street, not into the sea. Whoever built it had never seen a real tide.","Aquela calha despeja na rua, não no mar. Quem a construiu nunca tinha visto uma maré de verdade."
+HEAD_PLAYER_NAME,"Me","Eu"
+HEAD_OLD_FISHERMAN_NAME,"The Old Fisherman","O Velho Pescador"
+INSIGHT_DIALOGUE_CLOSE,"Close","Fechar"
+PLACEHOLDER_DIALOGUE_SCREEN,"Placeholder - Dialogue screen (final screen pending)","Placeholder - Tela de diálogo (tela final pendente)"
+PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pending)","Placeholder - Orbe de insight desenhado em código (arte final pendente)"
