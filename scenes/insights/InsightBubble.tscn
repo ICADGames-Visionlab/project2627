@@ -22,11 +22,13 @@ corner_radius_bottom_left = 10
 script = ExtResource("1_bubble")
 
 [node name="Panel" type="PanelContainer" parent="."]
+mouse_filter = 2
 offset_right = 420.0
 offset_bottom = 96.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_bubble")
 
 [node name="Margin" type="MarginContainer" parent="Panel"]
+mouse_filter = 2
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 16

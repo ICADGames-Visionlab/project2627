@@ -266,6 +266,13 @@ Os dois precisam de Issue com a tag "Substituição de Placeholder" antes do PR,
 
 ## Erros comuns
 
+**Control no mundo comendo o clique.** O orbe é uma `Area2D`, e o clique só chega nela pelo
+_physics picking_ do viewport — que a engine só executa se nenhum `Control` tiver consumido o evento
+antes. Qualquer `Control` desenhado no mundo (um `ColorRect` de placeholder, um painel de balão)
+nasce com `mouse_filter = Stop` e engole o clique da tela inteira em silêncio: o orbe continua
+desenhado, continua opaco, continua pulsando, e simplesmente não abre. Todo `Control` que existe no
+mundo para ser visto, e não para ser clicado, precisa de `mouse_filter = Ignore`.
+
 **Sopa de orbes.** Risco número um, porque não há tecla para revelar. Mais de seis ou sete orbes
 visíveis numa tela é problema de curadoria de conteúdo, não de código: corte insight, não esconda
 marcador.
