@@ -29,7 +29,7 @@ sources/1 = SubResource("TileSetAtlasSource_tbgi4")
 [node name="MainCamera" type="Camera2D" parent="." unique_id=1585763440]
 physics_interpolation_mode = 1
 top_level = true
-position = Vector2(1181, -390)
+position = Vector2(-81, 52)
 
 [node name="PhantomCameraHost" type="Node" parent="MainCamera" unique_id=1610871571]
 process_priority = 300
@@ -61,4 +61,4 @@ position = Vector2(1.9249878, 10.64502)
 polygon = PackedVector2Array(-363.25, -28.75, 86.75, 191.25, 387.075, 39.35498, -69, -183.89502)
 
 [node name="Player" parent="YSort" unique_id=785984809 instance=ExtResource("1_player")]
-position = Vector2(1181, -326)
+position = Vector2(-81, 116)

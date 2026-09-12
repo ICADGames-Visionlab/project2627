@@ -21,17 +21,29 @@ const DIRECTION_SUFFIXES: Array[StringName] = [&"e", &"se", &"s", &"sw", &"w", &
 
 @export var speed: float = 300.0
 
-# Quanto o eixo Y da velocidade é achatado pra que o personagem ande sobre o plano isométrico do
-# chão. O teclado não sabe que o mundo é isométrico e entrega um input cartesiano; sem achatar
-# nada, andar pra cima/baixo cobriria o dobro de tiles que andar pros lados.
+# Achatamento do eixo Y que alinha a DIREÇÃO do movimento aos eixos do losango isométrico. Não
+# mexe na velocidade (quem cuida disso é vertical_speed_factor, logo abaixo): o que ele decide é
+# o ângulo das diagonais.
 #
-# 0.5 é o valor geometricamente correto: é a razão do losango do tile (64 / 128, ver o TileSet em
-# main.tscn) e faz as 8 direções percorrerem a mesma distância em tiles por segundo. O problema é
-# que o sprite do personagem é desenhado de cima, sem achatamento nenhum, e o olho usa ele de
-# régua — então a 0.5 subir e descer *parece* metade da velocidade mesmo estando certo. Valores
-# mais altos trocam exatidão geométrica por sensação: a 1.0 não há achatamento (movimento puro de
-# tela, como era no top-down). Campo de balanceamento — ajuste no Inspector até ficar bom.
+# 0.5 é a razão do losango do tile (64 / 128, ver o TileSet em main.tscn) e faz W+D andar em cima
+# da diagonal do grid — a direção em que as ruas correm. A 1.0 as diagonais saem a 45° na tela,
+# ignorando o grid (movimento puro top-down). Campo de balanceamento: ajuste no Inspector.
 @export_range(0.5, 1.0, 0.01) var isometric_y_ratio: float = 0.5
+
+# Velocidade na tela do movimento puramente vertical, como fração da velocidade do movimento
+# puramente horizontal.
+#
+# Este é o botão de sensação, e não tem valor "certo": as duas pontas estão erradas de jeitos
+# opostos, porque chão achatado 2:1 e personagem desenhado sem achatamento são incompatíveis.
+#
+#   0.5  geometricamente correto — subir e descer percorre a mesma distância em TILES que andar
+#        pros lados. Parece lento: o sprite do personagem não é achatado e o olho usa ele de régua.
+#   1.0  uniforme em PIXELS DE TELA. Parece rápido, por dois motivos que se somam: o chão passa ao
+#        dobro de tiles por segundo, e a tela 16:9 é atravessada na vertical em 2.4s contra 4.27s
+#        na horizontal.
+#
+# O padrão fica no meio dos dois. Ajuste no Inspector com o jogo rodando até parar de incomodar.
+@export_range(0.5, 1.0, 0.01) var vertical_speed_factor: float = 0.75
 
 # Distância da tela até o ponto clicado abaixo da qual o destino é considerado alcançado. Não é
 # variável de balanceamento: é a folga técnica que impede o personagem de ficar oscilando em
@@ -60,7 +72,7 @@ func _ready() -> void:
 
 func _physics_process(_delta: float) -> void:
 	var input_direction: Vector2 = _get_movement_direction()
-	velocity = _to_isometric(input_direction) * speed
+	velocity = _to_screen_velocity(input_direction)
 	move_and_slide()
 	_cancel_click_target_if_blocked()
 	_update_movement_state(input_direction)
@@ -114,11 +126,10 @@ func _get_click_direction() -> Vector2:
 		_has_click_target = false
 		return Vector2.ZERO
 
-	# to_target é uma distância medida na tela, onde o chão já está achatado; _to_isometric() logo
-	# em seguida espera receber uma direção cartesiana, como a que vem do teclado. Desfazer o
-	# achatamento aqui faz as duas contas se cancelarem no eixo Y: o personagem anda em linha reta
-	# até o ponto clicado e, ao mesmo tempo, na mesma velocidade em tiles/s que teria no teclado
-	# indo pro mesmo lado.
+	# to_target é uma distância medida na tela, onde o chão já está achatado; _to_screen_velocity()
+	# logo em seguida espera receber uma direção cartesiana, como a que vem do teclado. Desfazer o
+	# achatamento aqui faz as duas contas se cancelarem no eixo Y, e o personagem anda em linha
+	# reta até o ponto clicado (vertical_speed_factor muda só a rapidez do trajeto, não o rumo).
 	return Vector2(to_target.x, to_target.y / isometric_y_ratio).normalized()
 
 
@@ -134,12 +145,22 @@ func _cancel_click_target_if_blocked() -> void:
 		print("[Player] - Destino do clique descartado: caminho bloqueado")
 
 
-# Projeta uma direção cartesiana do input no plano isométrico do chão, achatando o eixo Y.
-# De propósito não normaliza de novo depois de achatar: renormalizar devolveria a velocidade
-# vertical que o achatamento tirou e o personagem voltaria a cruzar tiles mais rápido indo pra
-# cima/baixo do que indo pros lados, que é justo o que essa conta existe pra corrigir.
-func _to_isometric(direction: Vector2) -> Vector2:
-	return Vector2(direction.x, direction.y * isometric_y_ratio)
+# Converte a direção cartesiana do input na velocidade final, em pixels de tela por segundo.
+#
+# Três etapas com responsabilidades separadas, e vale manter assim porque cada uma resolve um
+# problema diferente:
+#
+#   1. O achatamento em Y decide a DIREÇÃO — é ele que faz W+D andar em cima da diagonal do grid
+#      isométrico (onde correm as ruas) em vez de a 45° na tela.
+#   2. A normalização tira o corte de velocidade que o achatamento causaria de tabela, deixando o
+#      módulo sob controle de um parâmetro só, em vez de ser efeito colateral da geometria.
+#   3. vertical_speed_factor decide o MÓDULO, interpolando conforme o quanto a direção é vertical
+#      na tela: horizontal puro anda a speed, vertical puro a speed * vertical_speed_factor, e as
+#      diagonais no meio.
+func _to_screen_velocity(direction: Vector2) -> Vector2:
+	var screen_direction: Vector2 = Vector2(direction.x, direction.y * isometric_y_ratio).normalized()
+	var verticality: float = absf(screen_direction.y)
+	return screen_direction * speed * lerpf(1.0, vertical_speed_factor, verticality)
 
 
 # Calcula o estado de movimento (parado/andando + direção encarada) a partir do input deste
