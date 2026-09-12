@@ -73,6 +73,7 @@ var _stats_corner: int = 1
 var _screen_tester: DebugScreenTester
 var _screen_capture: DebugScreenCapture
 var _log_viewer: DebugLogViewer
+var _camera_zoom: DebugCameraZoom
 
 
 # Uma entrada registrada: um botão (ACTION), um interruptor com estado (TOGGLE), um campo solto
@@ -110,8 +111,11 @@ func _ready() -> void:
 	register_toggle(STATS_SECTION, STATS_TOGGLE_LABEL, _on_stats_toggled, _stats_enabled)
 	register_toggle(STATS_SECTION, "Gráficos das métricas", _on_stats_graphs_toggled, _stats_graphs_visible)
 	register_action(STATS_SECTION, "Mover para o próximo canto", _cycle_stats_corner)
-	# [DEBUG] Ferramentas que registram as próprias seções ("Tela", "Captura" e "Log") ao entrar na
-	# árvore — a ordem em que aparecem no menu é a ordem em que são acrescentadas aqui.
+	# [DEBUG] Ferramentas que registram as próprias seções ("Câmera", "Tela", "Captura" e "Log") ao
+	# entrar na árvore — a ordem em que aparecem no menu é a ordem em que são acrescentadas aqui.
+	_camera_zoom = DebugCameraZoom.new()
+	_camera_zoom.name = &"DebugCameraZoom"
+	add_child(_camera_zoom)
 	_screen_tester = DebugScreenTester.new()
 	_screen_tester.name = &"DebugScreenTester"
 	add_child(_screen_tester)
