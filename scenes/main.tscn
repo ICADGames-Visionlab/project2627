@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://blnddfwknn2bv" path="res://images/placeholder/Isometric City/Buildings/bld_firestation_a.png" id="5_tbgi4"]
 [ext_resource type="Script" uid="uid://cn0k1p0w7prup" path="res://scripts/world/Structure.gd" id="6_struct"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PauseMenu.tscn" id="7_pause"]
+[ext_resource type="Script" uid="uid://dh46jdfcwp3b7" path="res://scripts/world/Pathfinder.gd" id="8_path"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("3_sugp2")
@@ -65,3 +66,6 @@ polygon = PackedVector2Array(-363.25, -28.75, 86.75, 191.25, 387.075, 39.35498, 
 position = Vector2(-81, 116)
 
 [node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_pause")]
+
+[node name="Pathfinder" type="Node2D" parent="."]
+script = ExtResource("8_path")

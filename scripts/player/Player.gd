@@ -54,13 +54,22 @@ const CLICK_ARRIVAL_DISTANCE: float = 8.0
 # Ver _cancel_click_target_if_blocked().
 const BLOCKED_SPEED_FRACTION: float = 0.1
 
+# Quanto tempo ele precisa ficar travado antes de o caminho ser descartado. Existe porque roçar
+# numa quina derruba a velocidade por um ou dois frames, e antes disso bastava um único frame
+# lento pra jogar fora um trajeto inteiro que estava indo bem.
+const BLOCKED_GRACE_SECONDS: float = 0.25
+
 var _is_moving: bool = false
 var _facing_direction: FacingDirection = FacingDirection.S
 
-# Ponto do mundo pra onde o personagem está indo no esquema de clique, e se existe um destino
-# ativo. O par (bool + Vector2) evita ter que reservar alguma coordenada como "sem destino".
-var _click_target: Vector2 = Vector2.ZERO
-var _has_click_target: bool = false
+# Caminho que o personagem está percorrendo no esquema de clique, e em qual ponto dele está. Vem
+# pronto do Pathfinder (ou é um ponto só, quando não há Pathfinder na cena). Caminho vazio
+# significa "sem destino", então não precisa de bandeira separada.
+var _path: PackedVector2Array = PackedVector2Array()
+var _path_index: int = 0
+
+# Há quanto tempo ele está travado indo até o ponto atual. Ver _cancel_click_target_if_blocked().
+var _blocked_time: float = 0.0
 
 @onready var _animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -70,11 +79,11 @@ func _ready() -> void:
 	print("[Player] - Controlador inicializado na posição %s" % [global_position])
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	var input_direction: Vector2 = _get_movement_direction()
 	velocity = _to_screen_velocity(input_direction)
 	move_and_slide()
-	_cancel_click_target_if_blocked()
+	_cancel_click_target_if_blocked(delta)
 	_update_movement_state(input_direction)
 
 
@@ -86,8 +95,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed(&"move_click"):
-		_click_target = get_global_mouse_position()
-		_has_click_target = true
+		_set_click_destination(get_global_mouse_position())
 
 
 # Devolve a direção cartesiana do movimento deste frame, vinda da fonte que o jogador escolheu
@@ -98,9 +106,9 @@ func _get_movement_direction() -> Vector2:
 	if GameManager.movement_scheme == GameManager.MovementScheme.CLICK:
 		return _get_click_direction()
 
-	# Voltou pro teclado com um destino pendente: descarta, senão ele seria retomado do nada se o
+	# Voltou pro teclado com um caminho pendente: descarta, senão ele seria retomado do nada se o
 	# jogador trocasse de esquema outra vez.
-	_has_click_target = false
+	_clear_path()
 	return _get_input_direction()
 
 
@@ -111,38 +119,76 @@ func _get_input_direction() -> Vector2:
 	return Input.get_vector("move_left", "move_right", "move_up", "move_down")
 
 
-# Converte o destino clicado na mesma direção cartesiana que o teclado produziria pra ir até lá.
-# Devolve ZERO quando não há destino ativo ou quando ele já foi alcançado.
+# Traça o caminho até o ponto clicado e começa a percorrê-lo.
+#
+# O Pathfinder é procurado por grupo, e não guardado numa referência exportada, pra que o Player
+# funcione igual numa cena que não tenha nenhum: sem Pathfinder o caminho vira o ponto clicado
+# sozinho, que é exatamente o comportamento em linha reta de antes.
+func _set_click_destination(destination: Vector2) -> void:
+	var pathfinder: Pathfinder = get_tree().get_first_node_in_group(Pathfinder.GROUP) as Pathfinder
+
+	if pathfinder == null:
+		_path = PackedVector2Array([destination])
+	else:
+		# O proprio RID vai junto: a linha de visao do Pathfinder e raycast, e sem se excluir o
+		# personagem bate no proprio colisor e nunca enxerga destino nenhum.
+		_path = pathfinder.find_path(global_position, destination, [get_rid()])
+
+	_path_index = 0
+	if _path.is_empty():
+		print("[Player] - Sem caminho até %s" % destination)
+
+
+# Converte o ponto atual do caminho na mesma direção cartesiana que o teclado produziria pra ir
+# até lá, avançando pro ponto seguinte conforme chega. Devolve ZERO quando o caminho acabou.
 func _get_click_direction() -> Vector2:
-	if not _has_click_target:
-		return Vector2.ZERO
-
-	var to_target: Vector2 = _click_target - global_position
-
 	# Raio de chegada: o maior entre a folga fixa e o quanto o personagem anda num frame, pra ele
-	# não passar do alvo e voltar em looping quando speed for alto.
+	# não passar do ponto e ficar voltando em looping quando speed for alto.
 	var arrival_distance: float = maxf(CLICK_ARRIVAL_DISTANCE, speed * get_physics_process_delta_time())
-	if to_target.length() <= arrival_distance:
-		_has_click_target = false
+
+	# Laço, e não if: com os pontos do caminho próximos entre si, um único frame pode vencer mais
+	# de um de uma vez.
+	while _path_index < _path.size() and global_position.distance_to(_path[_path_index]) <= arrival_distance:
+		_path_index += 1
+
+	if _path_index >= _path.size():
+		_clear_path()
 		return Vector2.ZERO
 
-	# to_target é uma distância medida na tela, onde o chão já está achatado; _to_screen_velocity()
+	var to_waypoint: Vector2 = _path[_path_index] - global_position
+
+	# to_waypoint é uma distância medida na tela, onde o chão já está achatado; _to_screen_velocity()
 	# logo em seguida espera receber uma direção cartesiana, como a que vem do teclado. Desfazer o
 	# achatamento aqui faz as duas contas se cancelarem no eixo Y, e o personagem anda em linha
-	# reta até o ponto clicado (vertical_speed_factor muda só a rapidez do trajeto, não o rumo).
-	return Vector2(to_target.x, to_target.y / isometric_y_ratio).normalized()
+	# reta até o ponto (vertical_speed_factor muda só a rapidez do trajeto, não o rumo).
+	return Vector2(to_waypoint.x, to_waypoint.y / isometric_y_ratio).normalized()
 
 
-# Desiste do destino clicado quando o personagem trava no caminho. O movimento por clique é em
-# linha reta, sem pathfinding: sem isso, um prédio entre o jogador e o ponto clicado deixaria o
-# personagem empurrando a parede pra sempre.
-func _cancel_click_target_if_blocked() -> void:
-	if not _has_click_target:
+# Desiste do caminho quando o personagem trava. Com o Pathfinder o traçado já desvia da geometria
+# estática, então travar aqui quer dizer que apareceu algo que o grafo não conhece — outro corpo no
+# caminho, ou cenário que mudou desde o último rebuild(). Sem isso o personagem empurraria o
+# obstáculo pra sempre.
+func _cancel_click_target_if_blocked(delta: float) -> void:
+	if _path.is_empty():
+		_blocked_time = 0.0
 		return
 
-	if get_real_velocity().length() < speed * BLOCKED_SPEED_FRACTION:
-		_has_click_target = false
-		print("[Player] - Destino do clique descartado: caminho bloqueado")
+	# Andando: zera o cronômetro. Só conta como travado o tempo CONTÍNUO parado — roçar numa quina
+	# custa um ou dois frames lentos e não pode custar o trajeto inteiro.
+	if get_real_velocity().length() >= speed * BLOCKED_SPEED_FRACTION:
+		_blocked_time = 0.0
+		return
+
+	_blocked_time += delta
+	if _blocked_time >= BLOCKED_GRACE_SECONDS:
+		_clear_path()
+		print("[Player] - Caminho descartado: passagem bloqueada")
+
+
+func _clear_path() -> void:
+	_path = PackedVector2Array()
+	_path_index = 0
+	_blocked_time = 0.0
 
 
 # Converte a direção cartesiana do input na velocidade final, em pixels de tela por segundo.
