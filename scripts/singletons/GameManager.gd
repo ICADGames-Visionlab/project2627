@@ -10,8 +10,26 @@ signal scene_loaded
 
 ## Espaço para variáveis
 
+# Esquemas de movimentação que o jogador pode escolher nas configurações. A ordem importa: é a
+# mesma em que as opções aparecem no OptionButton da tela de Settings.
+enum MovementScheme { KEYBOARD, CLICK }
+
 # Variável a ser utilizada na transição de cenas, fica true no inicio da troca e passa para false após a troca
 var in_transition: bool = false
+
+# Esquema de movimentação ativo, lido pelo Player a cada frame. O padrão é o teclado
+# (WASD/setas/analógico); clique é opt-in pelo jogador.
+#
+# Quem altera isso a partir de uma escolha do jogador deve chamar set_movement_scheme(), nunca
+# mexer na variável direto — é o setter que persiste em disco. Mesma divisão de responsabilidade
+# que o AudioManager usa com o volume geral: o dono do estado é quem salva, e a tela de
+# configurações só reflete e repassa.
+var movement_scheme: MovementScheme = MovementScheme.KEYBOARD
+
+# Arquivo próprio pras configurações de jogabilidade. Separado do user://settings.cfg de propósito:
+# aquele arquivo é reescrito inteiro pela tela de Settings a cada _save_settings(), então uma
+# seção extra ali seria apagada na primeira mudança de idioma ou de modo de tela.
+const GAMEPLAY_CONFIG_PATH: String = "user://gameplay_settings.cfg"
 
 # Caminho da cena de loading exibida durante o carregamento assíncrono da cena de destino.
 # Atenção: o layer do CanvasLayer da LoadingScreen precisa ser MAIOR que FADE_LAYER (ver
@@ -39,7 +57,18 @@ var _load_in_progress_path: String = ""
 
 ## Espaço para funções nativas
 
+func _ready() -> void:
+	_load_gameplay_settings()
+
+
 ## Espaço para funções personalizadas
+
+# Troca o esquema de movimentação e persiste a escolha. Usar sempre este método (nunca a
+# variável movement_scheme direto) quando a troca vier do jogador.
+func set_movement_scheme(scheme: MovementScheme) -> void:
+	movement_scheme = scheme
+	_save_gameplay_settings()
+	print("[GameManager] - Esquema de movimentação definido para %s" % MovementScheme.keys()[scheme])
 
 # Ponto de entrada público para qualquer troca de cena do projeto. Nenhum outro script deve
 # chamar get_tree().change_scene_to_file()/change_scene_to_packed() diretamente.
@@ -147,3 +176,30 @@ func _try_load_within_grace_period(scene_path: String) -> Dictionary:
 			return { "status": "failed" }
 
 	return { "status": "pending" }
+
+
+# Salva as configurações de jogabilidade atuais em disco.
+func _save_gameplay_settings() -> void:
+	var config: ConfigFile = ConfigFile.new()
+	config.set_value("gameplay", "movement_scheme", int(movement_scheme))
+	config.save(GAMEPLAY_CONFIG_PATH)
+	print("[GameManager] - Configurações de jogabilidade salvas")
+
+
+# Carrega as configurações de jogabilidade do disco, caindo no padrão se não houver arquivo (1ª
+# vez rodando o jogo) ou se o valor salvo não for um esquema válido — o arquivo fica em user:// e
+# pode ter sido editado à mão ou vir de uma versão antiga com outros esquemas.
+func _load_gameplay_settings() -> void:
+	var config: ConfigFile = ConfigFile.new()
+	if config.load(GAMEPLAY_CONFIG_PATH) != OK:
+		movement_scheme = MovementScheme.KEYBOARD
+		print("[GameManager] - Nenhuma configuração de jogabilidade salva, usando movimentação por teclado")
+		return
+
+	var saved_scheme: int = config.get_value("gameplay", "movement_scheme", int(MovementScheme.KEYBOARD))
+	if not MovementScheme.values().has(saved_scheme):
+		push_warning("[GameManager] - Esquema de movimentação salvo inválido (%d), usando o padrão" % saved_scheme)
+		saved_scheme = int(MovementScheme.KEYBOARD)
+
+	movement_scheme = saved_scheme as MovementScheme
+	print("[GameManager] - Configurações de jogabilidade carregadas (movimentação: %s)" % MovementScheme.keys()[movement_scheme])

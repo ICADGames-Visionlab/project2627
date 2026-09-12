@@ -33,8 +33,22 @@ const DIRECTION_SUFFIXES: Array[StringName] = [&"e", &"se", &"s", &"sw", &"w", &
 # tela, como era no top-down). Campo de balanceamento — ajuste no Inspector até ficar bom.
 @export_range(0.5, 1.0, 0.01) var isometric_y_ratio: float = 0.5
 
+# Distância da tela até o ponto clicado abaixo da qual o destino é considerado alcançado. Não é
+# variável de balanceamento: é a folga técnica que impede o personagem de ficar oscilando em
+# volta do alvo por nunca cair exatamente em cima dele.
+const CLICK_ARRIVAL_DISTANCE: float = 8.0
+
+# Fração de speed abaixo da qual o personagem indo até um ponto clicado é considerado travado.
+# Ver _cancel_click_target_if_blocked().
+const BLOCKED_SPEED_FRACTION: float = 0.1
+
 var _is_moving: bool = false
 var _facing_direction: FacingDirection = FacingDirection.S
+
+# Ponto do mundo pra onde o personagem está indo no esquema de clique, e se existe um destino
+# ativo. O par (bool + Vector2) evita ter que reservar alguma coordenada como "sem destino".
+var _click_target: Vector2 = Vector2.ZERO
+var _has_click_target: bool = false
 
 @onready var _animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
@@ -45,10 +59,37 @@ func _ready() -> void:
 
 
 func _physics_process(_delta: float) -> void:
-	var input_direction: Vector2 = _get_input_direction()
+	var input_direction: Vector2 = _get_movement_direction()
 	velocity = _to_isometric(input_direction) * speed
 	move_and_slide()
+	_cancel_click_target_if_blocked()
 	_update_movement_state(input_direction)
+
+
+# Marca o destino do esquema de clique. Roda em _unhandled_input (e não em _input) de propósito:
+# assim um clique consumido pela interface — um botão, um menu aberto por cima do jogo — não faz
+# o personagem sair andando pra trás da UI.
+func _unhandled_input(event: InputEvent) -> void:
+	if GameManager.movement_scheme != GameManager.MovementScheme.CLICK:
+		return
+
+	if event.is_action_pressed(&"move_click"):
+		_click_target = get_global_mouse_position()
+		_has_click_target = true
+
+
+# Devolve a direção cartesiana do movimento deste frame, vinda da fonte que o jogador escolheu
+# nas configurações. Os dois esquemas são exclusivos: no modo clique o teclado não anda, e
+# vice-versa. Daqui pra frente o resto do script não sabe (nem precisa saber) de onde veio a
+# direção — achatamento isométrico e escolha de animação são iguais nos dois casos.
+func _get_movement_direction() -> Vector2:
+	if GameManager.movement_scheme == GameManager.MovementScheme.CLICK:
+		return _get_click_direction()
+
+	# Voltou pro teclado com um destino pendente: descarta, senão ele seria retomado do nada se o
+	# jogador trocasse de esquema outra vez.
+	_has_click_target = false
+	return _get_input_direction()
 
 
 # Lê o input de movimento (AWSD, setinhas e analógico esquerdo do joystick, configurados juntos
@@ -56,6 +97,41 @@ func _physics_process(_delta: float) -> void:
 # mais rápido que os eixos retos.
 func _get_input_direction() -> Vector2:
 	return Input.get_vector("move_left", "move_right", "move_up", "move_down")
+
+
+# Converte o destino clicado na mesma direção cartesiana que o teclado produziria pra ir até lá.
+# Devolve ZERO quando não há destino ativo ou quando ele já foi alcançado.
+func _get_click_direction() -> Vector2:
+	if not _has_click_target:
+		return Vector2.ZERO
+
+	var to_target: Vector2 = _click_target - global_position
+
+	# Raio de chegada: o maior entre a folga fixa e o quanto o personagem anda num frame, pra ele
+	# não passar do alvo e voltar em looping quando speed for alto.
+	var arrival_distance: float = maxf(CLICK_ARRIVAL_DISTANCE, speed * get_physics_process_delta_time())
+	if to_target.length() <= arrival_distance:
+		_has_click_target = false
+		return Vector2.ZERO
+
+	# to_target é uma distância medida na tela, onde o chão já está achatado; _to_isometric() logo
+	# em seguida espera receber uma direção cartesiana, como a que vem do teclado. Desfazer o
+	# achatamento aqui faz as duas contas se cancelarem no eixo Y: o personagem anda em linha reta
+	# até o ponto clicado e, ao mesmo tempo, na mesma velocidade em tiles/s que teria no teclado
+	# indo pro mesmo lado.
+	return Vector2(to_target.x, to_target.y / isometric_y_ratio).normalized()
+
+
+# Desiste do destino clicado quando o personagem trava no caminho. O movimento por clique é em
+# linha reta, sem pathfinding: sem isso, um prédio entre o jogador e o ponto clicado deixaria o
+# personagem empurrando a parede pra sempre.
+func _cancel_click_target_if_blocked() -> void:
+	if not _has_click_target:
+		return
+
+	if get_real_velocity().length() < speed * BLOCKED_SPEED_FRACTION:
+		_has_click_target = false
+		print("[Player] - Destino do clique descartado: caminho bloqueado")
 
 
 # Projeta uma direção cartesiana do input no plano isométrico do chão, achatando o eixo Y.

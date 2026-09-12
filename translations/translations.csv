@@ -6,6 +6,9 @@ MENU_FULLSCREEN,Fullscreen,Tela Cheia
 MENU_WINDOWED,Windowed,Janela
 MENU_LANG_EN,English,English
 MENU_LANG_PT_BR,Português (Brasil),Português (Brasil)
+MENU_MOVEMENT,Movement,Movimentação
+MENU_MOVEMENT_KEYBOARD,Keyboard (WASD),Teclado (WASD)
+MENU_MOVEMENT_CLICK,Mouse click,Clique do mouse
 MENU_OPTIONS,Options,Opções
 MENU_CREDITS,Credits,Créditos
 MENU_NEWGAME,New Game,Novo Jogo
