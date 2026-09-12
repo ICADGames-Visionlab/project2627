@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://h4m8wx6ocg2h" path="res://scripts/settings/Settings.gd" id="1_o2bc3"]
 
-[node name="SettingsManager" type="Control" unique_id=1754711566]
+[node name="Settings" type="Control" unique_id=1754711566]
 custom_minimum_size = Vector2(1, 0)
 layout_mode = 3
 anchor_top = -0.003
@@ -70,6 +70,21 @@ offset_right = 20.0
 offset_bottom = -6.0
 grow_horizontal = 2
 text = "MENU_LANGUAGE"
+
+[node name="Movimentacao" type="OptionButton" parent="VBoxContainer" unique_id=913476201]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/Movimentacao" unique_id=913476202]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_top = -29.0
+offset_right = 20.0
+offset_bottom = -6.0
+grow_horizontal = 2
+text = "MENU_MOVEMENT"
 
 [node name="Sair" type="Button" parent="." unique_id=1739624486]
 layout_mode = 1

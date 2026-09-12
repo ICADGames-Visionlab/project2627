@@ -19,7 +19,8 @@ extends Control
 #
 # Depende do Autoload AudioManager: esta tela lê AudioManager.general_volume e
 # chama AudioManager.set_general_volume() pra mostrar/alterar o volume — garanta
-# que o Autoload esteja registrado no projeto antes de abrir esta cena.
+# que o Autoload esteja registrado no projeto antes de abrir esta cena. Mesma
+# coisa com o Autoload GameManager e o esquema de movimentação (teclado/clique).
 #
 # O resto do script (tela cheia/janela, idioma, salvar/carregar) é interno
 # e não precisa ser mexido pra reusar a cena em lugares diferentes.
@@ -41,6 +42,7 @@ const AVAILABLE_LANGUAGES := ["en", "pt_BR"]
 @onready var general_volume_slider: HSlider = $VBoxContainer/Volume_Geral
 @onready var screen_mode_option: OptionButton = $VBoxContainer/Fullscreen_Janela
 @onready var language_option: OptionButton = $VBoxContainer/Idioma
+@onready var movement_option: OptionButton = $VBoxContainer/Movimentacao
 @onready var close_button: Button = $Sair
 
 
@@ -51,6 +53,7 @@ func _ready() -> void:
 
 	_populate_screen_mode_options()
 	_populate_language_options()
+	_populate_movement_options()
 
 	_load_settings() # aplica valores salvos (ou padrão, se for a 1ª vez)
 
@@ -58,6 +61,7 @@ func _ready() -> void:
 	general_volume_slider.value_changed.connect(_on_general_volume_changed)
 	screen_mode_option.item_selected.connect(_on_screen_mode_selected)
 	language_option.item_selected.connect(_on_language_selected)
+	movement_option.item_selected.connect(_on_movement_selected)
 	close_button.pressed.connect(_on_close_pressed)
 
 
@@ -65,6 +69,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
 		_populate_screen_mode_options()
 		_populate_language_options()
+		_populate_movement_options()
 
 
 # --- Áudio ---
@@ -123,6 +128,27 @@ func _locale_to_index(locale: String) -> int:
 	return 0 # idioma do sistema sem tradução: cai no primeiro da lista (en)
 
 
+# --- Movimentação ---
+# O esquema de movimentação não é controlado nem salvo aqui: esta tela só reflete
+# o valor atual e repassa a escolha pro GameManager (Autoload), dono desse estado
+# — mesma divisão usada com o volume geral e o AudioManager.
+
+# (Re)popula o dropdown de movimentação traduzido, preservando o índice selecionado.
+# A ordem dos itens tem que bater com a do enum GameManager.MovementScheme, porque
+# é o índice do item que é repassado como esquema.
+func _populate_movement_options() -> void:
+	var selected := movement_option.selected
+	movement_option.clear()
+	movement_option.add_item(tr("MENU_MOVEMENT_KEYBOARD"), 0) # índice 0 = MovementScheme.KEYBOARD
+	movement_option.add_item(tr("MENU_MOVEMENT_CLICK"), 1)    # índice 1 = MovementScheme.CLICK
+	movement_option.selected = selected if selected != -1 else int(GameManager.movement_scheme)
+
+# Repassa o esquema escolhido pro GameManager, que aplica e persiste a escolha
+# (ver set_movement_scheme() no GameManager).
+func _on_movement_selected(index: int) -> void:
+	GameManager.set_movement_scheme(index as GameManager.MovementScheme)
+
+
 # --- Sair ---
 # Veja o comentário no topo do arquivo pra saber como conectar isso a outras cenas.
 
@@ -131,7 +157,7 @@ func _locale_to_index(locale: String) -> int:
 # e volta direto pro Menu Principal (ninguém conectado ao sinal).
 func _on_close_pressed() -> void:
 	if closed.get_connections().is_empty():
-		get_tree().change_scene_to_file(MAIN_MENU_SCENE)
+		GameManager.change_scene(MAIN_MENU_SCENE)
 		print("[Settings] - Sem listener no sinal \"closed\"; voltando ao Menu Principal")
 	else:
 		closed.emit()
@@ -141,6 +167,9 @@ func _on_close_pressed() -> void:
 # --- Salvar / Carregar (arquivo local, independe de onde a cena é usada) ---
 # O volume geral NÃO é salvo aqui: quem é dono e persiste esse valor é o
 # AudioManager — evita duas fontes de verdade diferentes pro mesmo volume.
+# O esquema de movimentação também não, pelo mesmo motivo: o dono é o GameManager.
+# Atenção ao mexer em _save_settings(): ele grava um ConfigFile novo em cima do
+# arquivo, então qualquer seção que não seja reescrita aqui some.
 
 func _save_settings() -> void:
 	var config := ConfigFile.new()
@@ -171,3 +200,6 @@ func _load_settings() -> void:
 	general_volume_slider.value = AudioManager.general_volume
 	_on_screen_mode_selected(screen_mode_option.selected)
 	language_option.selected = _locale_to_index(TranslationServer.get_locale())
+	# O esquema de movimentação já veio carregado do disco pelo GameManager (Autoload),
+	# antes mesmo desta cena existir: aqui o dropdown só reflete o valor ativo.
+	movement_option.selected = int(GameManager.movement_scheme)

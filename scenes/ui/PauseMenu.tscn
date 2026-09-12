@@ -1,0 +1,64 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" uid="uid://b5svb3vc68ooy" path="res://scripts/ui/PauseMenu.gd" id="1_pause"]
+[ext_resource type="PackedScene" uid="uid://rmyf01pn70ie" path="res://scenes/ui/Settings.tscn" id="2_settings"]
+
+[node name="PauseMenu" type="CanvasLayer"]
+layer = 50
+script = ExtResource("1_pause")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="CenterContainer" type="CenterContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/CenterContainer"]
+custom_minimum_size = Vector2(5, 5)
+layout_mode = 2
+theme_override_constants/separation = 45
+accessibility_region = true
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "MENU_PAUSED"
+horizontal_alignment = 1
+
+[node name="Resume" type="Button" parent="Root/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+text = "MENU_RESUME"
+
+[node name="Options" type="Button" parent="Root/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+text = "MENU_OPTIONS"
+
+[node name="BackToMenu" type="Button" parent="Root/CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+text = "MENU_MAIN_MENU"
+
+[node name="Settings" parent="Root" instance=ExtResource("2_settings")]
+visible = false
+layout_mode = 1
