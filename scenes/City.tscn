@@ -8,6 +8,8 @@
 [ext_resource type="PackedScene" uid="uid://dcvj26wj3lmda" path="res://scenes/player/Player.tscn" id="6_1u3pc"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PauseMenu.tscn" id="7_oxvur"]
 [ext_resource type="Script" uid="uid://dh46jdfcwp3b7" path="res://scripts/world/Pathfinder.gd" id="8_rmeea"]
+[ext_resource type="Script" uid="uid://b2nn3d1caqwax" path="res://scripts/world/GameSession.gd" id="9_gsess"]
+[ext_resource type="PackedScene" uid="uid://d3qucjg50f2e6" path="res://scenes/ui/ClockHud.tscn" id="10_clock"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -69,3 +71,8 @@ position = Vector2(-81, 116)
 
 [node name="Pathfinder" type="Node2D" parent="." unique_id=1145640535]
 script = ExtResource("8_rmeea")
+
+[node name="GameSession" type="Node" parent="." unique_id=1049903525]
+script = ExtResource("9_gsess")
+
+[node name="ClockHud" parent="." unique_id=1987952723 instance=ExtResource("10_clock")]

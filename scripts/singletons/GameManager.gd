@@ -94,6 +94,12 @@ func is_load_already_in_progress(scene_path: String) -> bool:
 func _fade_change_scene(scene_path: String, time: float = 0.5) -> void:
 	in_transition = true
 	_target_scene_path = scene_path
+
+	# Segura o relógio durante a troca. Sem isso, o tempo de carregamento — que varia por máquina
+	# e por cena — viraria tempo de jogo, e o mesmo trajeto custaria horários diferentes em PCs
+	# diferentes.
+	GameClock.freeze(&"transicao")
+
 	print("[GameManager] - Iniciando troca de cena para \"%s\"" % scene_path)
 
 	var canvas: CanvasLayer = CanvasLayer.new()
@@ -146,6 +152,7 @@ func _fade_change_scene(scene_path: String, time: float = 0.5) -> void:
 
 	canvas.queue_free()
 	in_transition = false
+	GameClock.unfreeze(&"transicao")
 	print("[GameManager] - Troca de cena para \"%s\" concluída" % scene_path)
 
 

@@ -19,3 +19,12 @@ MENU_CONTINUE,Continue,Continuar
 DYNAMIC_EXAMPLE,%s testes!,testes %s!
 PLACEHOLDER_CITY_GROUND,Placeholder - City ground (final art pending),Placeholder - Chão da cidade (arte final pendente)
 PLACEHOLDER_CITY_BUILDING,Placeholder - Building (final art pending),Placeholder - Prédio (arte final pendente)
+TIME_FORMAT,%02d:%02d,%02d:%02d
+DAY_LABEL,Day %d,Dia %d
+WEEKDAY_MON,Monday,Segunda
+WEEKDAY_TUE,Tuesday,Terça
+WEEKDAY_WED,Wednesday,Quarta
+WEEKDAY_THU,Thursday,Quinta
+WEEKDAY_FRI,Friday,Sexta
+WEEKDAY_SAT,Saturday,Sábado
+WEEKDAY_SUN,Sunday,Domingo
