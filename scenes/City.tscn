@@ -1,21 +1,21 @@
 [gd_scene format=4 uid="uid://uhsb0fmpfbay"]
 
-[ext_resource type="PackedScene" uid="uid://dcvj26wj3lmda" path="res://scenes/player/Player.tscn" id="1_player"]
-[ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="2_pcam_host"]
-[ext_resource type="Texture2D" uid="uid://cgjh0sb558nbp" path="res://images/placeholder/Isometric City/Roads and Grounds/tile_road_straight_SE_normal.png" id="3_jyhfs"]
-[ext_resource type="Texture2D" uid="uid://c62wluifq4f8n" path="res://images/placeholder/Isometric City/Roads and Grounds/tile_ground_grass.png" id="3_sugp2"]
-[ext_resource type="Texture2D" uid="uid://blnddfwknn2bv" path="res://images/placeholder/Isometric City/Buildings/bld_firestation_a.png" id="5_tbgi4"]
-[ext_resource type="Script" uid="uid://cn0k1p0w7prup" path="res://scripts/world/Structure.gd" id="6_struct"]
-[ext_resource type="PackedScene" path="res://scenes/ui/PauseMenu.tscn" id="7_pause"]
-[ext_resource type="Script" uid="uid://dh46jdfcwp3b7" path="res://scripts/world/Pathfinder.gd" id="8_path"]
+[ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="1_fk4sr"]
+[ext_resource type="Texture2D" uid="uid://c62wluifq4f8n" path="res://images/placeholder/Isometric City/Roads and Grounds/tile_ground_grass.png" id="2_nldhm"]
+[ext_resource type="Texture2D" uid="uid://cgjh0sb558nbp" path="res://images/placeholder/Isometric City/Roads and Grounds/tile_road_straight_SE_normal.png" id="3_8s07e"]
+[ext_resource type="Script" uid="uid://cn0k1p0w7prup" path="res://scripts/world/Structure.gd" id="4_1kssf"]
+[ext_resource type="Texture2D" uid="uid://blnddfwknn2bv" path="res://images/placeholder/Isometric City/Buildings/bld_firestation_a.png" id="5_fj3te"]
+[ext_resource type="PackedScene" uid="uid://dcvj26wj3lmda" path="res://scenes/player/Player.tscn" id="6_1u3pc"]
+[ext_resource type="PackedScene" path="res://scenes/ui/PauseMenu.tscn" id="7_oxvur"]
+[ext_resource type="Script" uid="uid://dh46jdfcwp3b7" path="res://scripts/world/Pathfinder.gd" id="8_rmeea"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
-texture = ExtResource("3_sugp2")
+texture = ExtResource("2_nldhm")
 texture_region_size = Vector2i(128, 64)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_tbgi4"]
-texture = ExtResource("3_jyhfs")
+texture = ExtResource("3_8s07e")
 texture_region_size = Vector2i(128, 64)
 0:0/0 = 0
 
@@ -36,7 +36,7 @@ position = Vector2(-81, 52)
 [node name="PhantomCameraHost" type="Node" parent="MainCamera" unique_id=1610871571]
 process_priority = 300
 process_physics_priority = 300
-script = ExtResource("2_pcam_host")
+script = ExtResource("1_fk4sr")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=1642287931]
 texture_filter = 1
@@ -49,23 +49,23 @@ y_sort_enabled = true
 
 [node name="BldFirestationA" type="StaticBody2D" parent="YSort" unique_id=23217638]
 position = Vector2(779, -460)
-script = ExtResource("6_struct")
+script = ExtResource("4_1kssf")
 
 [node name="BldFirestationA" type="Sprite2D" parent="YSort/BldFirestationA" unique_id=265882652]
 texture_filter = 1
 position = Vector2(-15.325031, 60.89501)
 scale = Vector2(4.49, 4.49)
-texture = ExtResource("5_tbgi4")
+texture = ExtResource("5_fj3te")
 offset = Vector2(7.3496704, -28.28508)
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="YSort/BldFirestationA" unique_id=1278253865]
 position = Vector2(1.9249878, 10.64502)
 polygon = PackedVector2Array(-363.25, -28.75, 86.75, 191.25, 387.075, 39.35498, -69, -183.89502)
 
-[node name="Player" parent="YSort" unique_id=785984809 instance=ExtResource("1_player")]
+[node name="Player" parent="YSort" unique_id=785984809 instance=ExtResource("6_1u3pc")]
 position = Vector2(-81, 116)
 
-[node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_pause")]
+[node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_oxvur")]
 
-[node name="Pathfinder" type="Node2D" parent="."]
-script = ExtResource("8_path")
+[node name="Pathfinder" type="Node2D" parent="." unique_id=1145640535]
+script = ExtResource("8_rmeea")

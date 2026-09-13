@@ -2,7 +2,7 @@
 ## transparente sozinha quando o jogador passa atrás dela.
 ##
 ## COMO USAR:
-##   1. StaticBody2D com este script, dentro de um nó com y_sort_enabled (o YSort de main.tscn).
+##   1. StaticBody2D com este script, dentro de um nó com y_sort_enabled (o YSort de city.tscn).
 ##   2. Um Sprite2D filho, com a arte.
 ##   3. Um CollisionPolygon2D filho, com o losango da base.
 ##   4. A ORIGEM DO NÓ tem que ficar no centro da base (não em 0,0 com o sprite deslocado).
