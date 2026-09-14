@@ -17,7 +17,8 @@ canais:
 | Quem fala | Ninguém: é o mundo | Uma cabeça (`head_id`) |
 | Saída | Caixa in loco, o jogo continua | Tela de diálogo, o jogo para |
 | Porta típica | Flags do mundo | A cabeça precisa estar desbloqueada |
-| Alcance do clique | Só dentro do raio da fonte | Sempre perto, por definição |
+| Alcance do clique | Qualquer distância | Sempre perto, por definição |
+| Raio da fonte (`interaction_radius`) | Não se aplica | O orbe só aparece com o jogador dentro dele |
 | Tamanho do texto | Até 4 linhas | Livre |
 
 Os dois canais compartilham o recurso, a fonte, o marcador e o clique. Eles divergem só no fim —
@@ -51,9 +52,10 @@ de rodar o jogo. Ela acusa fonte sem insight, `id` vazio ou repetido no projeto,
 inexistente no CSV, canal de personagem sem `head_id` e `head_id` que não corresponde a nenhuma
 cabeça.
 
-O mesmo script desenha, no editor, o raio da fonte e o orbe de ambiente na posição em que ele vai
-nascer. Para o canal de personagem ele desenha um gizmo diferente, com uma seta saindo: aquele orbe
-**não** vai aparecer ali, vai aparecer orbitando o jogador.
+O mesmo script desenha, no editor, o orbe de ambiente na posição em que ele vai nascer. Para o canal
+de personagem ele desenha um gizmo diferente, com uma seta saindo: aquele orbe **não** vai aparecer
+ali, vai aparecer orbitando o jogador. O raio da fonte só é desenhado quando ela tem insight de
+personagem, o único canal que ele limita.
 
 ---
 
@@ -129,6 +131,12 @@ principal. É o limite natural do elenco.
   pinheiro de natal e para de distinguir as cores — que é justamente o que a cor por cabeça veio
   criar. O teto é ajustável em jogo pelo menu de debug.
 
+O custo do orbe flutuante é que ele nasce longe da coisa de que fala. Com o orbe de cabeça em
+destaque (mouse em cima ou foco do controle), a órbita desenha uma **linha tracejada até a fonte**, na
+cor da cabeça, com um anel no ponto de que ela vai falar. Com duas fontes no alcance, é o que diz se
+a cabeça vai falar da parede ou da calha. A linha e o anel são `@export` do `HeadOrbitLayer`
+(grupo *Ligação com a fonte*).
+
 ---
 
 ## Os marcadores
@@ -140,15 +148,63 @@ conteúdo, e o orbe compensa comunicando o próprio estado à distância:
 | --- | --- |
 | Cheio, pulsando | Tem novidade |
 | Vazado | Já lido |
-| Apagado | Fora do alcance de clique — ande até lá |
+| Flash com anel que se expande | Estava vazado e voltou a ter novidade (uma flag abriu insight novo ali) |
 
-O alcance é o raio da própria fonte (`interaction_radius`). Um orbe clicável do outro lado da tela
-deixaria o personagem irrelevante: o jogador varreria a cena com o mouse sem andar.
+E de perto, quando o mouse passa por cima:
 
-O clique é o botão esquerdo, direto no orbe (`Area2D.input_event`). O movimento do jogador é por
-teclado/analógico, então o clique não disputa com nada. O marcador consome o evento
+| Reação | Significa |
+| --- | --- |
+| Cresce e o cursor vira a mãozinha | O clique vai abrir |
+| Mostra o nome da cabeça | Orbe de personagem: quem vai falar |
+
+**O orbe de ambiente abre de qualquer distância.** Não há alcance de clique: todo orbe de ambiente
+que o jogador vê, ele pode abrir. O raio da fonte (`interaction_radius`) só vale para o canal de
+personagem, onde decide quando a cabeça aparece na órbita. A caixa aberta também não fecha quando o
+jogador se afasta — fechar por distância faria o mesmo orbe se comportar diferente conforme o
+jogador estava perto ou longe ao abrir.
+
+O clique é o botão esquerdo, direto no orbe (`Area2D.input_event`). O marcador consome o evento
 (`set_input_as_handled()`): sem isso, o mesmo clique continua viajando para quem estiver atrás do
 orbe, e isso reaparece semanas depois como bug intermitente.
+
+**O orbe funciona como liga/desliga.** Com a caixa aberta, clicar no próprio orbe fecha a caixa;
+clicar em outro orbe troca a caixa num clique só; clicar no vazio só fecha.
+
+**A área de clique é maior que o desenho** (`hit_radius`, 26 px, contra `radius`, 16 px). O orbe é
+pequeno, pulsa, e o de cabeça anda junto com o jogador; a folga ninguém percebe, só percebe que o
+clique "pega". Pelo mesmo motivo toda a animação do orbe (pulsação, destaque, flash) é
+desenhada em `_draw()`, e não aplicada ao `scale` do nó: a forma de colisão é filha do nó, e encolher
+o nó na pulsação encolheria a área de clique junto — com o mouse parado na borda, o hover piscaria a
+cada batida.
+
+**O orbe tem camada de física própria**, `insight_orbs` (camada 16, nomeada no `project.godot`). Na
+camada do mundo, qualquer `Area2D` futura que escute `area_entered` passaria a detectar orbes.
+
+Toda a aparência é `@export` do `InsightMarker` (grupos *Aparência*, *Destaque* e *Animação*).
+
+### Teclado e controle
+
+O `InsightInteractor` (filho do `Player`) abre insights sem mouse. A regra "não há tecla para revelar
+nada" continua valendo: ela fala de **esconder** orbes atrás de uma tecla. Aqui todo orbe continua na
+tela, e a tecla só **aciona** o que o jogador já está vendo.
+
+| Ação | Teclado | Controle | O que faz |
+| --- | --- | --- | --- |
+| `insight_interact` | E | A | Aciona o orbe em foco. De novo num orbe de ambiente com a caixa aberta, fecha a caixa |
+| `insight_cycle` | Tab | RB | Passa o foco para o próximo orbe na tela e fixa a escolha |
+
+- **O foco é um anel branco** em volta do orbe. Sem escolha do jogador, ele segue o orbe de ambiente
+  mais perto (ou a primeira cabeça, se não houver orbe de ambiente na tela). O ciclo percorre os
+  orbes de ambiente do mais perto para o mais longe, depois as cabeças da esquerda para a direita.
+- **Só entram no foco orbes na tela.** O orbe de ambiente não tem alcance, mas o mouse também só
+  alcança o que o jogador vê, e o ciclo não pode parar num orbe fora da câmera.
+- **O anel só aparece no modo teclado/controle.** Ele liga com as duas ações ou com qualquer botão ou
+  analógico do controle, e desliga quando o mouse se move. Quem joga de mouse não vê um anel pulando
+  de orbe em orbe a cada passo.
+- **O acionamento passa por `InsightMarker.activate()`**, o mesmo caminho do clique. A fonte e a
+  órbita não sabem se o orbe foi clicado ou acionado por tecla.
+- A tela de diálogo dá foco ao botão de fechar ao abrir, então o botão de confirmar do controle fecha
+  a fala (além do de cancelar).
 
 ---
 
@@ -204,8 +260,9 @@ aceita o sufixo mais curto que for único, então `diagnostico_da_cena` basta.
 | --- | --- |
 | Diagnóstico da cena | Lista cada fonte e cada insight dela com ✓/✗ por porta e o vencedor marcado |
 | Validar todos os insights | Varre o projeto: id repetido, `text_key` inexistente, `head_id` inexistente e porta morta |
+| Autoteste da escolha | Confere a lógica da escolha (novidade, prioridade, portas, desempate) com insights de teste em memória |
 | Ignorar portas | Mostra tudo que existe na cena, independente de flags e cabeças |
-| Desenhar raio de clique | Desenha em jogo o raio de cada fonte |
+| Desenhar raio das cabeças | Desenha em jogo o raio das fontes que têm insight de personagem |
 | Disparar insight `<id>` | Dispara um insight direto, sem chegar perto de nada |
 | Desbloquear cabeça `<head_id>` | Substituto da derrota de NPC |
 | Desbloquear todas as cabeças | Destrava o elenco inteiro de uma vez |
@@ -216,8 +273,30 @@ aceita o sufixo mais curto que for único, então `diagnostico_da_cena` basta.
 | Salvar / Carregar diário | Round-trip manual pelo slot atual |
 | Salvar automático | Liga/desliga a gravação a cada mudança |
 
-Os dois relatórios saem por `print()`, então aparecem no visualizador de log (F5) sem precisar do
-editor aberto.
+Os relatórios saem por `print()`, então aparecem no visualizador de log (F5) sem precisar do editor
+aberto.
+
+### O autoteste
+
+A validação em lote confere o **conteúdo**; o autoteste (`InsightSelfTest`) confere a **lógica**:
+novidade ganha de relido, prioridade desempata, porta fechada não desenha orbe, `one_shot` tira da
+novidade, desempate entre ofertas de cabeça é estável. É a parte mais sujeita a regressão silenciosa —
+uma mudança errada no `InsightDirector` não quebra nada visível, só faz um orbe sumir numa cena que
+ninguém está olhando.
+
+Ele roda contra o `InsightDirector` de verdade, não contra uma cópia da regra. Os insights de teste
+são criados em memória (ids com prefixo `__selftest_`), e o diário do jogador é guardado antes e
+devolvido no fim, com o salvamento automático desligado durante a execução — rodar o autoteste no
+meio de uma sessão de jogo não altera nada.
+
+Também roda pela linha de comando, sem abrir o jogo, e sai com código 1 quando algum caso falha:
+
+```
+godot --headless --path . --script res://tests/run_insight_self_test.gd
+```
+
+Mexeu na regra de escolha? Acrescente o caso em `InsightSelfTest` **antes** de mudar o Director, e
+confira que ele falha.
 
 **As cinco linhas que o diagnóstico responde**, e que são a totalidade dos "sumiu e não sei por quê":
 
@@ -256,11 +335,22 @@ continua existindo depois disso, como ferramenta de teste.
 
 ### Placeholders
 
-Os dois precisam de Issue com a tag "Substituição de Placeholder" antes do PR, conforme o Guideline:
+Os três precisam de Issue com a tag "Substituição de Placeholder" antes do PR, conforme o Guideline:
 
 - **Orbe de insight** — desenhado em código (`InsightMarker._draw()`), sem arte final.
 - **Tela de diálogo** — `PlaceholderDialogueScreen`, com o tema padrão da engine e uma etiqueta
   dizendo o que é.
+- **Som da primeira leitura** — sininho de duas notas sintetizado em código pelo `InsightAudio`
+  (cena na `main.tscn`) enquanto o campo `first_read_sfx` estiver vazio. O log do boot avisa quando
+  o placeholder está em uso. O som final entra pelo Inspector, sem mexer no script.
+
+### Som
+
+O `InsightAudio` escuta `insight_revealed` e pede o som ao `AudioManager` só quando `first_time` é
+verdadeiro. Releitura não toca nada: o som é a recompensa da descoberta, e repeti-lo a cada clique
+ensina o jogador a ignorá-lo. É uma cena, e não código no `AudioManager`, porque o `AudioManager` é um
+Autoload de script — sem Inspector onde escolher o som — e cuida de tocar áudio, não de saber que
+existem insights.
 
 ---
 
@@ -272,6 +362,14 @@ antes. Qualquer `Control` desenhado no mundo (um `ColorRect` de placeholder, um 
 nasce com `mouse_filter = Stop` e engole o clique da tela inteira em silêncio: o orbe continua
 desenhado, continua opaco, continua pulsando, e simplesmente não abre. Todo `Control` que existe no
 mundo para ser visto, e não para ser clicado, precisa de `mouse_filter = Ignore`.
+
+**Fechar-ao-clicar consumindo o clique.** A ordem da engine é `_input` → GUI → `_unhandled_input` →
+_physics picking_. Qualquer coisa que feche ao clicar em `_unhandled_input` (como a caixa de texto)
+recebe o clique **antes** do orbe. Se ela chamar `set_input_as_handled()` em todo clique, o clique num
+outro orbe só fecha a caixa, e o jogador precisa clicar duas vezes. Se não chamar nunca, o clique no
+próprio orbe fecha a caixa e o orbe reabre no mesmo clique. A caixa resolve os dois casos
+perguntando ao orbe dela (`InsightMarker.is_mouse_event_inside()`): consome só o clique que caiu no
+próprio orbe. Repita isso em qualquer coisa nova que feche ao clicar.
 
 **Sopa de orbes.** Risco número um, porque não há tecla para revelar. Mais de seis ou sete orbes
 visíveis numa tela é problema de curadoria de conteúdo, não de código: corte insight, não esconda
@@ -300,6 +398,7 @@ O que o revisor procura:
 
 - Todo texto novo tem chave no CSV, e a chave existe (a validação em lote confere isso de graça)?
 - A validação em lote passa sem nenhum ✗?
+- Mexeu no `InsightDirector`? O autoteste da escolha passa sem nenhum ✗?
 - Os `.tres` novos estão em `res://resources/insights/` (ou `heads/`), com `id` único?
 - Insight de personagem tem `head_id`, e a cabeça existe?
 - Nenhuma fonte na cena está com triângulo amarelo?
