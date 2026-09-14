@@ -34,8 +34,8 @@ extends Node
 
 # Emitido quando o jogador lê um insight, seja a descoberta ou uma releitura (first_time no payload
 # separa as duas).
-# Emissor: InsightDirector. Ouvintes: InsightJournal (marca o lido e concede a flag) e
-# InsightSource (reage à mudança de estado do próprio marcador).
+# Emissor: InsightDirector. Ouvintes: InsightJournal (marca o lido), InsightSource (reage à
+# mudança de estado do próprio marcador) e InsightAudio (som da primeira leitura).
 signal insight_revealed(event: InsightRevealedEvent)
 
 # Pede a exibição de uma fala na tela de diálogo. Pedido: espera exatamente 1 ouvinte, e o logger

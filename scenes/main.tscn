@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://bd046eokvcnu2" path="res://addons/phantom_camera/scripts/phantom_camera_host/phantom_camera_host.gd" id="2_pcam_host"]
 [ext_resource type="PackedScene" path="res://scenes/insights/InsightSource.tscn" id="3_insight_source"]
 [ext_resource type="PackedScene" path="res://scenes/insights/PlaceholderDialogueScreen.tscn" id="4_dialogue"]
+[ext_resource type="PackedScene" path="res://scenes/insights/InsightAudio.tscn" id="11_insight_audio"]
 [ext_resource type="Resource" path="res://resources/insights/city_ground_puddle.tres" id="5_puddle"]
 [ext_resource type="Resource" path="res://resources/insights/city_building1_bricks.tres" id="6_bricks"]
 [ext_resource type="Resource" path="res://resources/insights/city_building1_mortar.tres" id="7_mortar"]
@@ -107,3 +108,5 @@ interaction_radius = 330.0
 marker_offset = Vector2(0, -205)
 
 [node name="PlaceholderDialogueScreen" parent="." instance=ExtResource("4_dialogue")]
+
+[node name="InsightAudio" parent="." instance=ExtResource("11_insight_audio")]
