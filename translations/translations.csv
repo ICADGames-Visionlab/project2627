@@ -19,3 +19,10 @@ MENU_CONTINUE,Continue,Continuar
 DYNAMIC_EXAMPLE,%s testes!,testes %s!
 PLACEHOLDER_CITY_GROUND,Placeholder - City ground (final art pending),Placeholder - Chão da cidade (arte final pendente)
 PLACEHOLDER_CITY_BUILDING,Placeholder - Building (final art pending),Placeholder - Prédio (arte final pendente)
+INVENTORY_TITLE,Evidence,Evidências
+INVENTORY_EMPTY,No evidence collected yet.,Nenhuma evidência coletada ainda.
+INVENTORY_DROP,Drop,Largar
+INVENTORY_DESTROY,Destroy,Destruir
+INVENTORY_CLOSE,Close,Fechar
+EVIDENCE_EXAMPLE_NAME,Mysterious Note,Bilhete Misterioso
+EVIDENCE_EXAMPLE_DESC,A crumpled note found at the scene. Its content is still unclear.,Um bilhete amassado encontrado na cena. Seu conteúdo ainda não está claro.
