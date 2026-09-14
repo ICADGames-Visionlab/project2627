@@ -312,8 +312,10 @@ Coisas conhecidas, pra ninguém "descobrir" de novo:
   existir, o que importa copiar de lá é o jeito de ler o tempo (escutar evento, usar `tr()`), não
   o visual.
 - **`hour_changed` ainda não tem ouvinte**, então o EventBus avisa uma vez no console que ele foi
-  emitido sem ninguém escutando. Isso é a instrumentação funcionando, não um bug — o primeiro
-  ouvinte é a rotina de NPC.
+  emitido sem ninguém escutando. Isso é a instrumentação funcionando, não um bug. O candidato
+  natural era a rotina de NPC, mas ela precisa de granularidade mais fina que a hora e escuta
+  `time_changed` (ver `docs/sistema_de_npc.md`); o primeiro ouvinte será quem reagir à hora cheia —
+  som ambiente, loja abrindo e fechando.
 - **O save não está plugado no fluxo.** As funções existem e estão testadas; falta chamá-las de
   dentro do fluxo de save/carga quando ele deixar de ser teste.
 - **A sequência de fim de dia é um print.** Ver [Fim do dia](#fim-do-dia).

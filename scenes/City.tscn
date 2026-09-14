@@ -10,6 +10,10 @@
 [ext_resource type="Script" uid="uid://dh46jdfcwp3b7" path="res://scripts/world/Pathfinder.gd" id="8_rmeea"]
 [ext_resource type="Script" uid="uid://b2nn3d1caqwax" path="res://scripts/world/GameSession.gd" id="9_gsess"]
 [ext_resource type="PackedScene" uid="uid://d3qucjg50f2e6" path="res://scenes/ui/ClockHud.tscn" id="10_clock"]
+[ext_resource type="Script" path="res://scripts/world/Waypoint.gd" id="11_waypt"]
+[ext_resource type="Script" path="res://scripts/npc/NPCDirector.gd" id="12_ndir"]
+[ext_resource type="PackedScene" path="res://scenes/npc/NPC.tscn" id="13_npcsc"]
+[ext_resource type="Resource" path="res://resources/npcs/npc_roster.tres" id="14_roster"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -76,3 +80,46 @@ script = ExtResource("8_rmeea")
 script = ExtResource("9_gsess")
 
 [node name="ClockHud" parent="." unique_id=1987952723 instance=ExtResource("10_clock")]
+
+[node name="Waypoints" type="Node2D" parent="."]
+
+[node name="Praca" type="Marker2D" parent="Waypoints"]
+position = Vector2(0, 250)
+script = ExtResource("11_waypt")
+waypoint_id = &"praca"
+
+[node name="BancoDaPraca" type="Marker2D" parent="Waypoints"]
+position = Vector2(250, 60)
+script = ExtResource("11_waypt")
+waypoint_id = &"banco_da_praca"
+
+[node name="Feira" type="Marker2D" parent="Waypoints"]
+position = Vector2(400, 480)
+script = ExtResource("11_waypt")
+waypoint_id = &"feira"
+
+[node name="CasaDoZe" type="Marker2D" parent="Waypoints"]
+position = Vector2(-700, 450)
+script = ExtResource("11_waypt")
+waypoint_id = &"casa_do_ze"
+
+[node name="CasaDaAna" type="Marker2D" parent="Waypoints"]
+position = Vector2(-1100, 150)
+script = ExtResource("11_waypt")
+waypoint_id = &"casa_da_ana"
+
+[node name="Beco" type="Marker2D" parent="Waypoints"]
+position = Vector2(-450, -250)
+script = ExtResource("11_waypt")
+waypoint_id = &"beco"
+
+[node name="QuartelPorta" type="Marker2D" parent="Waypoints"]
+position = Vector2(780, -120)
+script = ExtResource("11_waypt")
+waypoint_id = &"quartel_porta"
+
+[node name="NPCDirector" type="Node2D" parent="." node_paths=PackedStringArray("agents_parent")]
+script = ExtResource("12_ndir")
+roster = ExtResource("14_roster")
+npc_scene = ExtResource("13_npcsc")
+agents_parent = NodePath("../YSort")

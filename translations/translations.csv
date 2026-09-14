@@ -28,3 +28,11 @@ WEEKDAY_THU,Thursday,Quinta
 WEEKDAY_FRI,Friday,Sexta
 WEEKDAY_SAT,Saturday,Sábado
 WEEKDAY_SUN,Sunday,Domingo
+NPC_NAME_ZE,Joe,Zé
+NPC_NAME_ANA,Ana,Ana
+EMOTION_ANGER,Anger,Raiva
+EMOTION_SADNESS,Sadness,Tristeza
+EMOTION_FEAR,Fear,Medo
+EMOTION_EUPHORIA,Euphoria,Euforia
+PLACEHOLDER_NPC_BODY,Placeholder - NPC body reuses the player sprite (final art pending),Placeholder - Corpo de NPC reaproveita o sprite do player (arte final pendente)
+PLACEHOLDER_BAKERY_INTERIOR,Placeholder - Bakery interior (scene pending),Placeholder - Interior da padaria (cena pendente)

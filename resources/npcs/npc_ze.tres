@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="NPCDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_raiva.tres" id="1_dd48x"]
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_tristeza.tres" id="2_5bjh8"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_raiva_folga.tres" id="3_kvoqe"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_raiva_trabalho.tres" id="4_n0dhc"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_folga.tres" id="5_u603k"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_trabalho.tres" id="6_xrhdl"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_tristeza_folga.tres" id="7_bk0is"]
+[ext_resource type="Script" path="res://scripts/npc/NPCDefinition.gd" id="8_48vj3"]
+
+[resource]
+script = ExtResource("8_48vj3")
+id = &"ze"
+name_key = &"NPC_NAME_ZE"
+tint = Color(0.53, 0.74, 1, 1)
+walk_speed = 200.0
+emotion_first = ExtResource("1_dd48x")
+emotion_second = ExtResource("2_5bjh8")
+work_weekdays = 63
+routine_neutral_workday = ExtResource("6_xrhdl")
+routine_neutral_day_off = ExtResource("5_u603k")
+routine_first_workday = ExtResource("4_n0dhc")
+routine_first_day_off = ExtResource("3_kvoqe")
+routine_second_workday = ExtResource("6_xrhdl")
+routine_second_day_off = ExtResource("7_bk0is")
+resumo = "NPC \"ze\" · emoção inicial: neutro
+Trabalha: seg, ter, qua, qui, sex, sáb
+
+neutro / trabalho      6 entradas
+neutro / folga         5 entradas
+emoção 1 / trabalho    4 entradas
+emoção 1 / folga       3 entradas
+emoção 2 / trabalho    6 entradas
+emoção 2 / folga       3 entradas"

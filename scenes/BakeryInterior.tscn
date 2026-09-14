@@ -1,0 +1,25 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/Waypoint.gd" id="1_waypoint"]
+
+[node name="BakeryInterior" type="Node2D"]
+
+[node name="PlaceholderLabel" type="Label" parent="."]
+offset_left = -200.0
+offset_top = -40.0
+offset_right = 200.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 28
+text = "PLACEHOLDER_BAKERY_INTERIOR"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Forno" type="Marker2D" parent="."]
+script = ExtResource("1_waypoint")
+waypoint_id = &"forno"
+
+[node name="Balcao" type="Marker2D" parent="."]
+position = Vector2(240, 80)
+script = ExtResource("1_waypoint")
+waypoint_id = &"balcao"
