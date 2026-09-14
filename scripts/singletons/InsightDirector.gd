@@ -38,6 +38,7 @@ func _ready() -> void:
 		# [DEBUG] Seção "Insights": responde "por que este insight não aparece?" (ver docs/insights.md).
 		DebugMenu.register_action(DEBUG_SECTION, "Diagnóstico da cena", _debug_print_scene_report)
 		DebugMenu.register_action(DEBUG_SECTION, "Validar todos os insights", _debug_print_project_report)
+		DebugMenu.register_action(DEBUG_SECTION, "Autoteste da escolha", _debug_run_self_test)
 		DebugMenu.register_toggle(DEBUG_SECTION, "Ignorar portas", _debug_set_ignore_gates, _ignore_gates)
 		DebugMenu.register_toggle(DEBUG_SECTION, "Desenhar raio de clique", _debug_set_draw_click_radius, _draw_click_radius)
 		DebugMenu.register_input(DEBUG_SECTION, "Disparar insight", _debug_trigger_insight, [
@@ -94,7 +95,7 @@ func request_refresh() -> void:
 # Melhor insight de ambiente desta fonte, ou null quando nenhum passa nas portas — e aí a fonte não
 # desenha marcador nenhum, que é o que mantém o mundo limpo conforme o jogador lê.
 func pick_environment(source: InsightSource) -> InsightData:
-	return _pick_best(source.insights, InsightData.Channel.ENVIRONMENT, &"")
+	return pick_best(source.insights, InsightData.Channel.ENVIRONMENT, &"")
 
 
 # Uma oferta por cabeça, entre tudo que está ao alcance do jogador agora, na ordem em que a órbita
@@ -111,7 +112,7 @@ func collect_character_offers() -> Array[InsightOffer]:
 				continue
 			var candidate: InsightOffer = InsightOffer.new(insight.head_id, insight, source, is_new(insight))
 			var current: InsightOffer = best_by_head.get(insight.head_id, null) as InsightOffer
-			if current == null or _candidate_beats(candidate, current):
+			if current == null or candidate_beats(candidate, current):
 				best_by_head[insight.head_id] = candidate
 	var offers: Array[InsightOffer] = []
 	for head_id: StringName in best_by_head:
@@ -174,6 +175,15 @@ func is_ignoring_gates() -> bool:
 	return _ignore_gates
 
 
+# Liga ou desliga o bypass das portas e reavalia os orbes. Chamado pelo interruptor do menu de debug
+# e pelo autoteste, que precisa das portas valendo e devolve o estado anterior ao terminar.
+func set_ignoring_gates(enabled: bool) -> void:
+	if _ignore_gates == enabled:
+		return
+	_ignore_gates = enabled
+	request_refresh()
+
+
 # Diz se o debug mandou desenhar o raio de clique das fontes. Lido pela própria InsightSource.
 func is_drawing_click_radius() -> bool:
 	return _draw_click_radius
@@ -213,8 +223,9 @@ func _purge_dead_sources() -> void:
 
 
 # Melhor insight da lista para um canal (e, no canal de personagem, para uma cabeça específica).
-# Novidade ganha de relido; entre iguais, ganha a prioridade mais alta.
-func _pick_best(insights: Array[InsightData], channel: InsightData.Channel, head_id: StringName) -> InsightData:
+# Novidade ganha de relido; entre iguais, ganha a prioridade mais alta. Público para o autoteste
+# (InsightSelfTest) exercitar a regra de verdade, e não uma cópia dela.
+func pick_best(insights: Array[InsightData], channel: InsightData.Channel, head_id: StringName) -> InsightData:
 	var best_new: InsightData = null
 	var best_read: InsightData = null
 	for insight: InsightData in insights:
@@ -234,7 +245,8 @@ func _pick_best(insights: Array[InsightData], channel: InsightData.Channel, head
 
 # Desempate entre duas ofertas da mesma cabeça: novidade primeiro, depois prioridade, depois id —
 # o id no fim garante resultado igual entre execuções, sem depender da ordem de registro das fontes.
-func _candidate_beats(candidate: InsightOffer, current: InsightOffer) -> bool:
+# Público pelo mesmo motivo de pick_best().
+func candidate_beats(candidate: InsightOffer, current: InsightOffer) -> bool:
 	if candidate.is_new != current.is_new:
 		return candidate.is_new
 	if candidate.insight.priority != current.insight.priority:
@@ -265,9 +277,15 @@ func _debug_print_project_report() -> void:
 
 # [DEBUG] Liga/desliga o bypass das portas.
 func _debug_set_ignore_gates(enabled: bool) -> void:
-	_ignore_gates = enabled
+	set_ignoring_gates(enabled)
 	print("[Insights] - Ignorar portas %s" % ("ligado" if enabled else "desligado"))
-	request_refresh()
+
+
+# [DEBUG] Roda o autoteste da regra de escolha e imprime o resultado no log.
+func _debug_run_self_test() -> void:
+	var self_test: InsightSelfTest = InsightSelfTest.new()
+	self_test.run()
+	print(self_test.report())
 
 
 # [DEBUG] Liga/desliga o desenho do raio de clique das fontes em jogo.
