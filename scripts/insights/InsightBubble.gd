@@ -6,8 +6,8 @@
 # apertar de novo a tecla de interagir no mesmo orbe. Não fecha por distância: o insight de ambiente
 # abre de qualquer lugar, e fechar ao se afastar contradiria isso.
 #
-# PLACEHOLDER: o painel usa o tema padrão da engine. A arte final troca o StyleBox da cena sem mexer
-# neste script — ver a issue de substituição de placeholder.
+# PLACEHOLDER: o painel usa um StyleBox provisório (escuro, borda verde). A arte final troca o
+# StyleBox da cena sem mexer neste script — ver a issue de substituição de placeholder.
 class_name InsightBubble
 extends Node2D
 

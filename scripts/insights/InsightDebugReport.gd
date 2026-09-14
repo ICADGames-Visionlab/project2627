@@ -125,7 +125,7 @@ static func _insight_line(insight: InsightData, winners: Dictionary) -> String:
 		return "%s %s — %s — já lido (one_shot)" % [CROSS, insight.id, channel_text]
 	return "%s %s — %s — perdeu para %s (%s)" % [
 		CROSS, insight.id, channel_text,
-		winner.id if winner != null else "?",
+		String(winner.id) if winner != null else "?",
 		_priority_text(winner.priority) if winner != null else "?"
 	]
 

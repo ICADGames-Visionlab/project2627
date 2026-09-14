@@ -28,6 +28,10 @@
 # O guia completo está em docs/event_bus.md.
 extends Node
 
+# Os sinais deste arquivo são emitidos e escutados por outros scripts, nunca aqui dentro — é a
+# definição de um bus. Sem isto, cada evento declarado gera um warning UNUSED_SIGNAL no editor.
+@warning_ignore_start("unused_signal")
+
 # ----------------------------------------------------------------------------------------
 # Insights
 # ----------------------------------------------------------------------------------------

@@ -33,5 +33,5 @@ func _init(p_insight_id: StringName, p_channel: InsightData.Channel, p_head_id: 
 func _to_string() -> String:
 	return "InsightRevealedEvent(id=%s, canal=%s, cabeça=%s, primeira_vez=%s)" % [
 		insight_id, "personagem" if channel == InsightData.Channel.CHARACTER else "ambiente",
-		head_id if head_id != &"" else "-", first_time
+		String(head_id) if head_id != &"" else "-", first_time
 	]

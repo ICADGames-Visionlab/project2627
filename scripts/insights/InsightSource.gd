@@ -311,11 +311,14 @@ func _project_insight_id_counts() -> Dictionary:
 	return counts
 
 
+# Setter da lista de insights. Atualiza gizmo e avisos no editor assim que o designer mexe na lista.
 func _set_insights(value: Array[InsightData]) -> void:
 	insights = value
 	_refresh_editor_state()
 
 
+# Setter do raio. Nunca negativo, e redimensiona a forma da Area2D junto — o raio exposto e a forma
+# de colisão não podem divergir.
 func _set_interaction_radius(value: float) -> void:
 	interaction_radius = maxf(value, 0.0)
 	if is_node_ready():
@@ -323,6 +326,8 @@ func _set_interaction_radius(value: float) -> void:
 	_refresh_editor_state()
 
 
+# Setter da posição do orbe. Move o orbe e a caixa já existentes, para o ajuste no Inspector com o
+# jogo rodando aparecer sem recarregar a cena.
 func _set_marker_offset(value: Vector2) -> void:
 	marker_offset = value
 	if _marker != null:

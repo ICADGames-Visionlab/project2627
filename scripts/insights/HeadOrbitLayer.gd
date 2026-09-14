@@ -210,6 +210,8 @@ func _compare_marker_positions(left: InsightMarker, right: InsightMarker) -> boo
 	return left.position.x < right.position.x
 
 
+# Setter do teto de orbes. Nunca abaixo de 1 (zero esconderia todas as cabeças sem aviso), e pede a
+# reavaliação para a mudança feita no Inspector ou no menu de debug aparecer na hora.
 func _set_max_visible_orbs(value: int) -> void:
 	max_visible_orbs = maxi(value, 1)
 	if is_node_ready():
