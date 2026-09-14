@@ -39,6 +39,9 @@ primeiras horas de jogo de ninguém), todo orbe de cabeça carrega também um gl
    Preencha `id`, `channel`, `text_key` e, se for de personagem, `head_id`.
 3. **Ponha uma fonte no objeto.** Arraste `res://scenes/insights/InsightSource.tscn` para dentro do
    objeto (ou do NPC), posicione, e arraste o `.tres` para a lista `Insights` no Inspector.
+   **Exceção:** prédio com `Structure.gd` fica transparente quando o jogador passa atrás dele, e o
+   `modulate` passa para os filhos. Nesse caso ponha a fonte fora do prédio, como filha da cena e
+   depois do `YSort` (é assim na `main.tscn`), senão o orbe some junto com a parede.
 4. **Rode o jogo.** Se o orbe não aparecer, **não abra código**: abra o menu de debug (F4), seção
    *Insights*, e clique em **Diagnóstico da cena** (ver [Ferramentas](#ferramentas-de-debug)).
 
@@ -206,6 +209,17 @@ tela, e a tecla só **aciona** o que o jogador já está vendo.
 - A tela de diálogo dá foco ao botão de fechar ao abrir, então o botão de confirmar do controle fecha
   a fala (além do de cancelar).
 
+### Clique para andar
+
+Com a movimentação por clique ligada nas configurações, o `Player` anda até o ponto clicado em
+`_unhandled_input` — que roda **antes** do _physics picking_ que entregaria o clique ao orbe. Sem
+cuidado, clicar num orbe abriria o insight **e** mandaria o personagem andar até ele.
+
+O `InsightInteractor` resolve o clique esquerdo antes do `Player`: se o clique caiu num orbe na tela,
+ele consome o evento e aciona o orbe. Isso funciona porque ele é **filho do `Player`** — a engine
+chama `_unhandled_input` primeiro nos nós que vêm depois na árvore, e filho vem depois do pai.
+Clique fora de qualquer orbe segue normalmente e move o personagem (e fecha a caixa aberta).
+
 ---
 
 ## Os eventos
@@ -335,9 +349,10 @@ continua existindo depois disso, como ferramenta de teste.
 
 ### Placeholders
 
-Os três precisam de Issue com a tag "Substituição de Placeholder" antes do PR, conforme o Guideline:
+Os quatro precisam de Issue com a tag "Substituição de Placeholder" antes do PR, conforme o Guideline:
 
 - **Orbe de insight** — desenhado em código (`InsightMarker._draw()`), sem arte final.
+- **Caixa de texto** — `InsightBubble`, com um StyleBox provisório (escuro, borda verde).
 - **Tela de diálogo** — `PlaceholderDialogueScreen`, com o tema padrão da engine e uma etiqueta
   dizendo o que é.
 - **Som da primeira leitura** — sininho de duas notas sintetizado em código pelo `InsightAudio`
@@ -370,6 +385,10 @@ outro orbe só fecha a caixa, e o jogador precisa clicar duas vezes. Se não cha
 próprio orbe fecha a caixa e o orbe reabre no mesmo clique. A caixa resolve os dois casos
 perguntando ao orbe dela (`InsightMarker.is_mouse_event_inside()`): consome só o clique que caiu no
 próprio orbe. Repita isso em qualquer coisa nova que feche ao clicar.
+
+**Tirar o `InsightInteractor` de dentro do `Player`.** Ele precisa ser filho do `Player` para receber
+o clique antes dele (ver [Clique para andar](#clique-para-andar)). Movido para outro lugar da árvore,
+o clique num orbe volta a mover o personagem no esquema de clique — e nada acusa erro.
 
 **Sopa de orbes.** Risco número um, porque não há tecla para revelar. Mais de seis ou sete orbes
 visíveis numa tela é problema de curadoria de conteúdo, não de código: corte insight, não esconda
