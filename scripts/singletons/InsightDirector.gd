@@ -20,8 +20,8 @@ var _sources: Array[InsightSource] = []
 var _orbit_layer: HeadOrbitLayer = null
 # [DEBUG] Mostra tudo que existe na cena, independente de flags e de cabeças desbloqueadas.
 var _ignore_gates: bool = false
-# [DEBUG] Desenha em jogo o raio de clique de cada fonte.
-var _draw_click_radius: bool = false
+# [DEBUG] Desenha em jogo o raio de cada fonte que tem insight de personagem.
+var _draw_source_radius: bool = false
 var _refresh_queued: bool = false
 
 
@@ -40,7 +40,7 @@ func _ready() -> void:
 		DebugMenu.register_action(DEBUG_SECTION, "Validar todos os insights", _debug_print_project_report)
 		DebugMenu.register_action(DEBUG_SECTION, "Autoteste da escolha", _debug_run_self_test)
 		DebugMenu.register_toggle(DEBUG_SECTION, "Ignorar portas", _debug_set_ignore_gates, _ignore_gates)
-		DebugMenu.register_toggle(DEBUG_SECTION, "Desenhar raio de clique", _debug_set_draw_click_radius, _draw_click_radius)
+		DebugMenu.register_toggle(DEBUG_SECTION, "Desenhar raio das cabeças", _debug_set_draw_source_radius, _draw_source_radius)
 		DebugMenu.register_input(DEBUG_SECTION, "Disparar insight", _debug_trigger_insight, [
 			DebugParam.string_value("id", "", _debug_insight_suggestions)
 		])
@@ -184,9 +184,9 @@ func set_ignoring_gates(enabled: bool) -> void:
 	request_refresh()
 
 
-# Diz se o debug mandou desenhar o raio de clique das fontes. Lido pela própria InsightSource.
-func is_drawing_click_radius() -> bool:
-	return _draw_click_radius
+# Diz se o debug mandou desenhar o raio das fontes. Lido pela própria InsightSource.
+func is_drawing_source_radius() -> bool:
+	return _draw_source_radius
 
 
 # Conecta o Director às duas fontes de estado que mudam o que está disponível. Signals diretos (e
@@ -288,10 +288,10 @@ func _debug_run_self_test() -> void:
 	print(self_test.report())
 
 
-# [DEBUG] Liga/desliga o desenho do raio de clique das fontes em jogo.
-func _debug_set_draw_click_radius(enabled: bool) -> void:
-	_draw_click_radius = enabled
-	print("[Insights] - Desenho do raio de clique %s" % ("ligado" if enabled else "desligado"))
+# [DEBUG] Liga/desliga o desenho do raio das fontes em jogo.
+func _debug_set_draw_source_radius(enabled: bool) -> void:
+	_draw_source_radius = enabled
+	print("[Insights] - Desenho do raio das cabeças %s" % ("ligado" if enabled else "desligado"))
 	request_refresh()
 
 

@@ -104,6 +104,11 @@ move_up={
 
 locale/translations=PackedStringArray("res://translations/translations.en.translation", "res://translations/translations.pt_BR.translation")
 
+[layer_names]
+
+2d_physics/layer_1="world"
+2d_physics/layer_16="insight_orbs"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

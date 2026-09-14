@@ -9,8 +9,8 @@
 # personagem nasce na órbita do jogador. Gatilho e âncora deixam de ser o mesmo lugar, e é por isso
 # que o gizmo do editor desenha os dois casos de forma diferente.
 #
-# O raio da Area2D é uma coisa só com o alcance de clique do orbe de ambiente: dentro dele o orbe
-# aceita clique, fora dele fica visível e apagado, servindo de convite para ir até lá.
+# O raio da Area2D só vale para o canal de personagem: é a distância em que as cabeças passam a ter
+# algo a dizer sobre este ponto. O orbe de ambiente não tem alcance — abre de qualquer distância.
 #
 # O guia completo está em docs/insights.md.
 @tool
@@ -30,8 +30,8 @@ const EDITOR_RADIUS_COLOR: Color = Color(1.0, 1.0, 1.0, 0.25)
 	set = _set_insights
 
 @export_group("Alcance")
-# Distância em que o jogador pode clicar o orbe de ambiente e em que as cabeças passam a ter algo a
-# dizer sobre este ponto.
+# Distância em que as cabeças passam a ter algo a dizer sobre este ponto. Não limita o orbe de
+# ambiente, que abre de qualquer distância.
 @export var interaction_radius: float = 260.0:
 	set = _set_interaction_radius
 
@@ -69,9 +69,12 @@ func _exit_tree() -> void:
 
 
 func _draw() -> void:
-	# Em jogo, o raio só aparece com o interruptor do menu de debug ligado. A ordem da comparação
-	# importa: dentro do editor o Autoload não existe, e o curto-circuito é o que evita o erro.
-	if Engine.is_editor_hint() or InsightDirector.is_drawing_click_radius():
+	# O raio só é desenhado em fonte com insight de personagem, o único canal que ele limita: numa
+	# fonte só de ambiente, um círculo no editor faria o designer achar que precisa andar até lá.
+	# Em jogo, só com o interruptor do menu de debug ligado. A ordem da comparação importa: dentro do
+	# editor o Autoload não existe, e o curto-circuito é o que evita o erro.
+	var should_draw_radius: bool = Engine.is_editor_hint() or InsightDirector.is_drawing_source_radius()
+	if should_draw_radius and _has_channel(InsightData.Channel.CHARACTER):
 		draw_arc(Vector2.ZERO, interaction_radius, 0.0, TAU, 64, EDITOR_RADIUS_COLOR, 2.0, true)
 	if not Engine.is_editor_hint():
 		return
@@ -119,14 +122,14 @@ func _get_configuration_warnings() -> PackedStringArray:
 	return warnings
 
 
-# Diz se o jogador está dentro do raio desta fonte. É a mesma condição para o clique do orbe de
-# ambiente e para as cabeças terem algo a dizer sobre este ponto.
+# Diz se o jogador está dentro do raio desta fonte: a condição para as cabeças terem algo a dizer
+# sobre este ponto.
 func is_player_in_range() -> bool:
 	return _player_in_range
 
 
-# Reavalia o marcador de ambiente desta fonte: qual insight vale agora, se ele já foi lido e se dá
-# para clicar daqui. Chamado pelo InsightDirector — a fonte nunca decide sozinha o que está aberto.
+# Reavalia o marcador de ambiente desta fonte: qual insight vale agora e se ele já foi lido. Chamado
+# pelo InsightDirector — a fonte nunca decide sozinha o que está aberto.
 func refresh_marker() -> void:
 	if Engine.is_editor_hint():
 		return
@@ -141,7 +144,6 @@ func refresh_marker() -> void:
 		_create_marker()
 	_marker.configure(InsightDirector.ENVIRONMENT_COLOR, "")
 	_marker.set_read(not InsightDirector.is_new(_current_insight))
-	_marker.set_clickable(_player_in_range)
 	queue_redraw()
 
 
@@ -156,9 +158,34 @@ func open_bubble(insight: InsightData) -> void:
 		return
 	_bubble = scene.instantiate() as InsightBubble
 	_bubble.position = marker_offset
+	_bubble.set_anchor_marker(_marker)
 	add_child(_bubble)
 	_bubble.closed.connect(_on_bubble_closed)
 	_bubble.show_text(insight.text_key)
+
+
+# Diz se esta fonte está com a caixa de texto aberta. Usado pelo InsightInteractor para a tecla de
+# interagir fechar a caixa quando apertada de novo no mesmo orbe.
+func is_bubble_open() -> bool:
+	return _bubble != null
+
+
+# Fecha a caixa de texto desta fonte, se houver uma aberta.
+func close_bubble() -> void:
+	if _bubble != null:
+		_bubble.close()
+
+
+# O orbe de ambiente desta fonte, ou null quando nenhum insight de ambiente passa nas portas. Exposto
+# para o InsightInteractor oferecer foco a ele sem duplicar a regra de escolha.
+func get_marker() -> InsightMarker:
+	return _marker
+
+
+# Ponto do mundo de que esta fonte fala: onde o orbe de ambiente nasce. A órbita liga o orbe de
+# cabeça a este ponto, para o jogador saber do que a cabeça vai falar.
+func get_anchor_global_position() -> Vector2:
+	return to_global(marker_offset)
 
 
 # Instancia o orbe de ambiente desta fonte. Um orbe por fonte, não um por insight: quatro insights
@@ -172,11 +199,28 @@ func _create_marker() -> void:
 	_marker.position = marker_offset
 	add_child(_marker)
 	_marker.clicked.connect(_on_marker_clicked)
+	_marker.rekindled.connect(_on_marker_rekindled)
 
 
 # Leva o clique do orbe ao Director, que é quem decide o que é lido e anuncia o fato.
 func _on_marker_clicked() -> void:
 	InsightDirector.reveal(_current_insight, self)
+
+
+# Registra no log o orbe que voltou a ter novidade. É o momento em que um encadeamento de flags dá
+# certo, e o primeiro lugar a olhar quando alguém diz que o orbe "não reacendeu".
+func _on_marker_rekindled() -> void:
+	var insight_id: String = String(_current_insight.id) if _current_insight != null else "?"
+	print("[Insights] - Orbe da fonte \"%s\" voltou a ter novidade (%s)" % [_debug_name(), insight_id])
+
+
+# Nome legível da fonte para o log. As fontes costumam se chamar só "Insight" dentro do objeto, então
+# o nome do pai é o que diz de qual prédio se trata.
+func _debug_name() -> String:
+	var parent: Node = get_parent()
+	if parent != null and parent != get_tree().current_scene:
+		return "%s/%s" % [parent.name, name]
+	return String(name)
 
 
 # Esquece a caixa fechada. Sem isto, a próxima abertura tentaria fechar um nó já liberado.
@@ -204,15 +248,13 @@ func _on_body_exited(body: Node2D) -> void:
 		_set_player_in_range(false)
 
 
-# Registra a mudança de proximidade e pede a reavaliação. Sair do raio fecha a caixa aberta: ler de
-# longe o texto de algo que ficou para trás é o tipo de coisa que faz o jogador achar que o sistema
-# está quebrado.
+# Registra a mudança de proximidade e pede a reavaliação, que é o que faz as cabeças aparecerem e
+# sumirem da órbita. Não fecha a caixa de ambiente: ela abre de qualquer distância, e fechar ao sair
+# do raio faria o mesmo orbe se comportar diferente conforme o jogador estava perto ou longe ao abrir.
 func _set_player_in_range(in_range: bool) -> void:
 	if _player_in_range == in_range:
 		return
 	_player_in_range = in_range
-	if not in_range and _bubble != null:
-		_bubble.close()
 	InsightDirector.request_refresh()
 
 

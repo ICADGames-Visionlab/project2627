@@ -10,6 +10,10 @@
 #   - Teto de orbes simultâneos. Acima dele o jogador vira pinheiro de natal e para de distinguir as
 #     cores — que é justamente o que a cor por cabeça veio criar.
 #
+# E um custo da mesma decisão: o orbe nasce longe da coisa de que fala. Com o orbe em destaque
+# (mouse em cima ou foco do controle), a órbita desenha uma linha tracejada até a fonte — com duas
+# fontes no alcance, é o que diz se a cabeça vai falar da parede ou da calha.
+#
 # O guia completo está em docs/insights.md.
 class_name HeadOrbitLayer
 extends Node2D
@@ -27,12 +31,23 @@ const MARKER_SCENE_PATH: String = "res://scenes/insights/InsightMarker.tscn"
 # Abertura do arco em que os slots são distribuídos.
 @export var orbit_arc_degrees: float = 120.0
 
+@export_group("Ligação com a fonte")
+@export var link_width: float = 2.0
+@export var link_dash: float = 10.0
+@export var link_alpha: float = 0.7
+# Raio do anel desenhado no ponto de que a cabeça fala.
+@export var link_target_radius: float = 14.0
+
 var _markers: Dictionary = {}    # StringName(head_id) -> InsightMarker
 var _offers: Dictionary = {}     # StringName(head_id) -> InsightOffer
+# Cabeça cujo orbe está em destaque agora, ou vazio. Só uma por vez: é para onde o mouse (ou o foco)
+# está apontando.
+var _highlighted_head: StringName = &""
 
 
 func _ready() -> void:
 	InsightDirector.set_orbit_layer(self)
+	set_process(false)
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Insights": o teto de orbes é o número que mais vale experimentar em jogo.
 		DebugMenu.register_value(DEBUG_SECTION, "Teto de orbes de cabeça", _debug_set_max_orbs,
@@ -41,6 +56,27 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	InsightDirector.clear_orbit_layer(self)
+
+
+func _process(_delta: float) -> void:
+	# O jogador anda e a fonte fica: a linha precisa ser redesenhada a cada quadro enquanto existir.
+	queue_redraw()
+
+
+func _draw() -> void:
+	var offer: InsightOffer = _offers.get(_highlighted_head, null) as InsightOffer
+	var marker: InsightMarker = _markers.get(_highlighted_head, null) as InsightMarker
+	if offer == null or marker == null or not is_instance_valid(offer.source):
+		return
+	var source: InsightSource = offer.source as InsightSource
+	if source == null:
+		return
+	var color: Color = Color(HeadRegistry.get_color(_highlighted_head), link_alpha)
+	var target: Vector2 = to_local(source.get_anchor_global_position())
+	# Desenhado pela órbita, e não pelo orbe, para ficar por baixo de todos os orbes: o pai desenha
+	# antes dos filhos.
+	draw_dashed_line(marker.position, target, color, link_width, link_dash, true, true)
+	draw_arc(target, link_target_radius, 0.0, TAU, 24, color, link_width, true)
 
 
 # Recebe as ofertas já escolhidas e ordenadas pelo InsightDirector e arruma os orbes em volta do
@@ -63,10 +99,19 @@ func show_offers(offers: Array[InsightOffer]) -> void:
 			marker = _create_marker(offer.head_id)
 		marker.position = _slot_position(int(slots[offer.head_id]))
 		marker.configure(HeadRegistry.get_color(offer.head_id), HeadRegistry.get_glyph(offer.head_id))
+		marker.set_hover_text_key(HeadRegistry.get_display_name_key(offer.head_id))
 		marker.set_read(not offer.is_new)
-		# Orbe de cabeça orbita o jogador, então está sempre ao alcance — o alcance já foi decidido
-		# lá atrás, quando a fonte disse que o jogador estava perto o bastante para ela falar.
-		marker.set_clickable(true)
+	queue_redraw()
+
+
+# Orbes de cabeça visíveis agora, da esquerda para a direita na tela. É a ordem em que o foco do
+# controle percorre a órbita: seguir a posição na tela é o que a mão espera ao apertar "próximo".
+func get_markers() -> Array[InsightMarker]:
+	var result: Array[InsightMarker] = []
+	for head_id: StringName in _markers:
+		result.append(_markers[head_id])
+	result.sort_custom(_compare_marker_positions)
+	return result
 
 
 # Decide em que slot cada cabeça fica. O slot preferido vem da posição canônica da cabeça no elenco
@@ -101,8 +146,8 @@ func _slot_position(slot: int) -> Vector2:
 	return Vector2.RIGHT.rotated(deg_to_rad(angle_degrees)) * orbit_radius
 
 
-# Instancia o orbe de uma cabeça. O clique carrega o head_id por bind() porque a oferta muda a cada
-# reavaliação, e reconectar o signal a cada troca seria uma fonte de conexão duplicada.
+# Instancia o orbe de uma cabeça. Os signals carregam o head_id por bind() porque a oferta muda a
+# cada reavaliação, e reconectar a cada troca seria uma fonte de conexão duplicada.
 func _create_marker(head_id: StringName) -> InsightMarker:
 	var scene: PackedScene = load(MARKER_SCENE_PATH) as PackedScene
 	if scene == null:
@@ -111,16 +156,28 @@ func _create_marker(head_id: StringName) -> InsightMarker:
 	var marker: InsightMarker = scene.instantiate() as InsightMarker
 	add_child(marker)
 	marker.clicked.connect(_on_marker_clicked.bind(head_id))
+	marker.highlight_changed.connect(_on_marker_highlight_changed.bind(head_id))
+	marker.rekindled.connect(_on_marker_rekindled.bind(head_id))
 	_markers[head_id] = marker
 	return marker
 
 
-# Tira da órbita o orbe de uma cabeça que não tem mais nada a dizer aqui.
+# Tira da órbita o orbe de uma cabeça que não tem mais nada a dizer aqui. Orbe liberado não emite
+# highlight_changed, então a linha até a fonte é desligada aqui mesmo.
 func _remove_marker(head_id: StringName) -> void:
 	var marker: InsightMarker = _markers.get(head_id, null) as InsightMarker
 	if marker != null:
 		marker.queue_free()
 	_markers.erase(head_id)
+	if _highlighted_head == head_id:
+		_set_highlighted_head(&"")
+
+
+# Troca a cabeça em destaque e liga o redesenho por quadro só enquanto houver linha para desenhar.
+func _set_highlighted_head(head_id: StringName) -> void:
+	_highlighted_head = head_id
+	set_process(head_id != &"")
+	queue_redraw()
 
 
 # Leva o clique ao Director com a oferta que este orbe representa agora.
@@ -129,6 +186,28 @@ func _on_marker_clicked(head_id: StringName) -> void:
 	if offer == null:
 		return
 	InsightDirector.reveal(offer.insight, offer.source as InsightSource)
+
+
+# Liga ou desliga a linha até a fonte conforme o orbe entra ou sai de destaque. Só apaga a linha se
+# quem saiu de destaque é a cabeça que estava ligada: com dois orbes, entrar no segundo antes de sair
+# do primeiro não pode apagar a linha nova.
+func _on_marker_highlight_changed(is_highlighted: bool, head_id: StringName) -> void:
+	if is_highlighted:
+		_set_highlighted_head(head_id)
+	elif _highlighted_head == head_id:
+		_set_highlighted_head(&"")
+
+
+# Registra no log a cabeça que voltou a ter novidade.
+func _on_marker_rekindled(head_id: StringName) -> void:
+	var offer: InsightOffer = _offers.get(head_id, null) as InsightOffer
+	var insight_id: String = String(offer.insight.id) if offer != null else "?"
+	print("[Insights] - Orbe da cabeça \"%s\" voltou a ter novidade (%s)" % [head_id, insight_id])
+
+
+# Ordena dois orbes da esquerda para a direita.
+func _compare_marker_positions(left: InsightMarker, right: InsightMarker) -> bool:
+	return left.position.x < right.position.x
 
 
 func _set_max_visible_orbs(value: int) -> void:

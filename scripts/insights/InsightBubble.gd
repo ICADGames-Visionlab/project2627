@@ -1,9 +1,10 @@
 # InsightBubble.gd — A caixa de texto do canal de ambiente: o que o mundo tem a dizer, dito no lugar
 # onde está a coisa, sem parar o jogo.
 #
-# Nasce como filha da fonte, então acompanha o objeto se ele se mexer e some junto com ele. Fecha ao
-# clicar fora, ao apertar Esc ou quando o jogador se afasta — quem manda fechar por distância é a
-# própria fonte, que é quem sabe o raio.
+# Nasce como filha da fonte, então acompanha o objeto se ele se mexer e some junto com ele. Fecha a
+# qualquer clique (inclusive no próprio orbe, que funciona como liga/desliga), ao apertar Esc ou ao
+# apertar de novo a tecla de interagir no mesmo orbe. Não fecha por distância: o insight de ambiente
+# abre de qualquer lugar, e fechar ao se afastar contradiria isso.
 #
 # PLACEHOLDER: o painel usa o tema padrão da engine. A arte final troca o StyleBox da cena sem mexer
 # neste script — ver a issue de substituição de placeholder.
@@ -24,6 +25,9 @@ signal closed
 
 @export_group("Animação")
 @export var fade_time: float = 0.12
+
+# O orbe que abriu esta caixa, ou null quando ela foi aberta sem orbe (pela ação de debug).
+var _anchor_marker: InsightMarker = null
 
 @onready var _panel: PanelContainer = $Panel
 @onready var _label: Label = $Panel/Margin/Label
@@ -46,15 +50,23 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	var mouse_event: InputEventMouseButton = event as InputEventMouseButton
-	if mouse_event != null and mouse_event.pressed:
-		# O clique no próprio orbe é consumido pelo marcador e nunca chega aqui, então "clicar fora"
-		# é literalmente qualquer clique que sobrou.
+	if mouse_event != null and mouse_event.pressed and _is_click_button(mouse_event.button_index):
 		close()
-		get_viewport().set_input_as_handled()
+		# Na engine, _unhandled_input roda ANTES do physics picking que entrega o clique às Area2D.
+		# Clique no próprio orbe: consome, senão o orbe recebe o mesmo clique e reabre a caixa que
+		# acabou de fechar. Clique em qualquer outro lugar: deixa seguir, para clicar em outro orbe
+		# trocar a caixa num clique só.
+		if is_instance_valid(_anchor_marker) and _anchor_marker.is_mouse_event_inside(mouse_event):
+			get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed(&"ui_cancel"):
 		close()
 		get_viewport().set_input_as_handled()
+
+
+# Guarda o orbe que abriu a caixa, para um clique nele fechar a caixa em vez de reabri-la.
+func set_anchor_marker(marker: InsightMarker) -> void:
+	_anchor_marker = marker
 
 
 # Escreve o texto do insight na caixa. Recebe a chave, nunca o texto: tr() é chamado aqui, na hora de
@@ -63,10 +75,16 @@ func show_text(text_key: String) -> void:
 	_label.text = tr(text_key)
 
 
-# Fecha a caixa. Idempotente: fechar duas vezes (clique e afastamento no mesmo frame) não emite o
-# signal duas vezes nem tenta liberar o nó de novo.
+# Fecha a caixa. Idempotente: fechar duas vezes no mesmo frame não emite o signal duas vezes nem
+# tenta liberar o nó de novo.
 func close() -> void:
 	if is_queued_for_deletion():
 		return
 	closed.emit()
 	queue_free()
+
+
+# Diz se o botão do mouse conta como clique para fechar a caixa. A roda do mouse chega como
+# InputEventMouseButton pressionado também, e rolar a tela não pode fechar o que o jogador está lendo.
+func _is_click_button(button_index: MouseButton) -> bool:
+	return button_index == MOUSE_BUTTON_LEFT or button_index == MOUSE_BUTTON_RIGHT or button_index == MOUSE_BUTTON_MIDDLE
