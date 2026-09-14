@@ -77,7 +77,14 @@ func clear_orbit_layer(layer: HeadOrbitLayer) -> void:
 		_orbit_layer = null
 
 
-# Fontes registradas na cena atual, já sem as que foram liberadas. Usada pelos relatórios de debug.
+# A órbita do jogador da cena atual, ou null. Usada pelo InsightInteractor para oferecer foco aos
+# orbes de cabeça.
+func get_orbit_layer() -> HeadOrbitLayer:
+	return _orbit_layer
+
+
+# Fontes registradas na cena atual, já sem as que foram liberadas. Usada pelos relatórios de debug e
+# pelo InsightInteractor.
 func get_sources() -> Array[InsightSource]:
 	_purge_dead_sources()
 	return _sources.duplicate()

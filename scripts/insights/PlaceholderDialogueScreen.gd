@@ -39,6 +39,9 @@ func _on_dialogue_requested(head_id: StringName, text_key: String) -> void:
 	_head_name_label.text = tr(HeadRegistry.get_display_name_key(head_id))
 	_text_label.text = tr(text_key)
 	_root.show()
+	# Foco no botão de fechar para quem abriu pelo controle (ou pela tecla de interagir) conseguir
+	# fechar com o botão de confirmar, e não só com o de cancelar.
+	_close_button.grab_focus()
 	get_tree().paused = true
 	print("[Insights] - Tela de diálogo (placeholder) aberta para a cabeça \"%s\"" % head_id)
 
@@ -47,6 +50,7 @@ func _on_dialogue_requested(head_id: StringName, text_key: String) -> void:
 func close() -> void:
 	if not _root.visible:
 		return
+	_close_button.release_focus()
 	_root.hide()
 	get_tree().paused = false
 	print("[Insights] - Tela de diálogo (placeholder) fechada")
