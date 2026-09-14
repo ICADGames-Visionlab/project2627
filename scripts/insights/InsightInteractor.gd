@@ -1,4 +1,5 @@
-# InsightInteractor.gd — Abre insights sem mouse: tecla de interagir e controle.
+# InsightInteractor.gd — Aciona os orbes de insight a partir do jogador: tecla de interagir, controle
+# e a prioridade do clique no orbe sobre o clique para andar.
 #
 # Não contradiz a regra "não há tecla para revelar nada" (docs/insights.md): essa regra fala de
 # ESCONDER orbes atrás de uma tecla. Aqui todo orbe continua sempre na tela; a tecla só ACIONA o que
@@ -15,7 +16,12 @@
 #     qualquer botão/analógico do controle, e desliga quando o mouse se move. Quem joga de mouse não
 #     vê um anel pulando entre orbes a cada passo.
 #
-# Vive como filho do Player, porque "mais perto" é mais perto do jogador.
+# Clique do mouse: com a movimentação por clique ligada, o clique esquerdo num orbe precisa abrir o
+# insight e NÃO mover o personagem. Ver _handle_orb_click().
+#
+# Vive como filho do Player por dois motivos: "mais perto" é mais perto do jogador, e ser filho é o
+# que garante receber o clique antes do Player (ver _handle_orb_click()). Tirar este nó de dentro do
+# Player faz o clique no orbe voltar a mover o personagem.
 #
 # O guia completo está em docs/insights.md.
 class_name InsightInteractor
@@ -72,6 +78,10 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
+	if mouse_button != null and mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_LEFT:
+		_handle_orb_click(mouse_button)
+		return
 	if event.is_action_pressed(INTERACT_ACTION):
 		get_viewport().set_input_as_handled()
 		_set_focus_mode(true)
@@ -106,6 +116,31 @@ func _interact() -> void:
 	_close_bubbles_except(source)
 	print("[Insights] - Interagir: orbe acionado pelo teclado/controle")
 	_focused_marker.activate()
+
+
+# Resolve o clique esquerdo num orbe antes de ele virar movimento. No esquema de clique, o Player
+# anda até o ponto clicado em _unhandled_input — que roda ANTES do physics picking que entregaria o
+# clique ao orbe —, então clicar num orbe também faria o personagem sair andando até ele.
+#
+# Funciona porque este nó é filho do Player: a engine chama _unhandled_input dos nós mais adiante na
+# árvore primeiro, e filho vem depois do pai. A caixa de texto (filha de uma fonte, depois do Player)
+# recebe o clique antes daqui e já consome o clique no próprio orbe.
+func _handle_orb_click(event: InputEventMouseButton) -> void:
+	var hit_marker: InsightMarker = null
+	var hit_distance: float = INF
+	for marker: InsightMarker in _collect_targets():
+		if not marker.is_mouse_event_inside(event):
+			continue
+		# Orbes sobrepostos: vence o de centro mais perto do clique.
+		var local_event: InputEventMouse = marker.make_input_local(event) as InputEventMouse
+		var distance: float = local_event.position.length()
+		if distance < hit_distance:
+			hit_distance = distance
+			hit_marker = marker
+	if hit_marker == null:
+		return
+	get_viewport().set_input_as_handled()
+	hit_marker.activate()
 
 
 # Passa o foco para o próximo orbe, na ordem de _collect_targets(), e fixa a escolha.

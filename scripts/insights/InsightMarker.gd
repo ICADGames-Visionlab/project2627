@@ -301,7 +301,8 @@ func _rekindle_progress() -> float:
 
 # Aceita o clique esquerdo e consome o evento. Sem set_input_as_handled(), o mesmo clique continua
 # viajando para quem estiver atrás do orbe — e isso reaparece semanas depois como bug intermitente
-# caro de achar.
+# caro de achar. Na cidade, o InsightInteractor resolve o clique antes (para ele não virar movimento)
+# e este caminho nem chega a rodar; ele continua valendo em qualquer cena sem o Player.
 func _on_input_event(_viewport: Node, event: InputEvent, _shape_index: int) -> void:
 	var mouse_event: InputEventMouseButton = event as InputEventMouseButton
 	if mouse_event == null or not mouse_event.pressed or mouse_event.button_index != MOUSE_BUTTON_LEFT:
