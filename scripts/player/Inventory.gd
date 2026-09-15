@@ -35,15 +35,35 @@ signal item_destroyed(item: ItemData, amount: int)
 # InventoryUI encontra o inventário do jogador sem precisar de uma referência exportada.
 const GROUP_NAME: StringName = &"inventory"
 
-# Cena instanciada no chão quando um item é largado (drop_item). Exportado para poder trocar por
-# uma variante diferente por personagem, se um dia existir mais de um tipo de "embrulho".
-@export var pickup_scene: PackedScene = preload("res://scenes/items/ItemPickup.tscn")
+# Caminho da cena instanciada no chão quando um item é largado (drop_item). Carregado sob demanda
+# com load() dentro de drop_item() — e NÃO com preload() no topo do script — de propósito:
+# ItemPickup.gd referencia a classe Inventory (Inventory.GROUP_NAME, "as Inventory"), então um
+# preload() aqui em cima criaria uma dependência circular em tempo de COMPILAÇÃO entre os dois
+# scripts (Inventory precisaria de ItemPickup já compilado, que precisa de Inventory já
+# compilado — nenhum dos dois termina). load() dentro de uma função só roda em runtime, quando os
+# dois já compilaram; mesmo resultado, sem o ciclo.
+const PICKUP_SCENE_PATH: String = "res://scenes/items/ItemPickup.tscn"
+
+# Distância, em pixels, entre o dono deste inventário e o ItemPickup instanciado por drop_item().
+# Precisa ser maior que a soma dos dois raios de colisão (CapsuleShape2D do Player, radius 14, +
+# CircleShape2D do ItemPickup, radius 24 — ver Player.tscn e ItemPickup.tscn). Sem essa folga, o
+# pickup nasce sobrepondo o colisor do próprio dono e a Area2D dele dispara o pickup de volta no
+# mesmo frame em que foi largado.
+const DROP_OFFSET_DISTANCE: float = 56.0
+
+# Cena instanciada no chão quando um item é largado. Exportado para poder trocar por uma variante
+# diferente por personagem; deixado vazio (null) por padrão — drop_item() carrega
+# PICKUP_SCENE_PATH sob demanda quando este campo não foi preenchido no Inspector (ver comentário
+# de PICKUP_SCENE_PATH acima).
+@export var pickup_scene: PackedScene
 
 # Itens conhecidos por este inventário só para fins de debug: alimenta as sugestões e a busca do
 # comando de console "dar_evidencia" (ver _register_debug_commands). Não é o catálogo do jogo
 # inteiro, só o que foi arrastado aqui pra teste — vazio não quebra nada, só faz o comando não
-# encontrar item nenhum.
-@export var debug_item_catalog: Array[ItemData] = []
+# encontrar item nenhum. Já vem com o item de exemplo do projeto pra dar pra testar sem precisar
+# abrir o Inspector. ItemData.gd não referencia Inventory nem ItemPickup, então preload() aqui não
+# tem o problema de ciclo do pickup_scene acima.
+@export var debug_item_catalog: Array[ItemData] = [preload("res://items/EvidenciaExemplo.tres")]
 
 # Pilhas atuais, indexadas pelo id do item. Uma pilha só por item — ver "Limitações atuais" em
 # docs/Inventory.md para como isso escalaria para múltiplas pilhas do mesmo item.
@@ -111,10 +131,13 @@ func drop_item(item_id: StringName, amount: int = 1) -> bool:
 	var item: ItemData = stack.item
 	_remove_from_stack(stack, amount)
 
-	var pickup: ItemPickup = pickup_scene.instantiate() as ItemPickup
+	var scene: PackedScene = pickup_scene
+	if scene == null:
+		scene = load(PICKUP_SCENE_PATH) as PackedScene
+	var pickup: ItemPickup = scene.instantiate() as ItemPickup
 	pickup.item = item
 	pickup.amount = amount
-	pickup.global_position = _get_owner_position()
+	pickup.global_position = _get_drop_position()
 	get_tree().current_scene.add_child(pickup)
 
 	item_dropped.emit(item, amount)
@@ -150,15 +173,25 @@ func _remove_from_stack(stack: ItemStack, amount: int) -> void:
 		_stacks.erase(stack.item.id)
 
 
-# Posição onde um item largado deve aparecer: a do nó dono deste inventário (o Player, hoje), se
-# ele for um Node2D. Cai na origem se o dono não for 2D — só evita crash, não deveria acontecer
-# hoje (Inventory só existe dentro de Player.tscn).
-func _get_owner_position() -> Vector2:
+# Posição onde um item largado deve aparecer: um pouco afastada do dono deste inventário (ver
+# DROP_OFFSET_DISTANCE), na direção pra onde ele está se movendo — ou "pra baixo" (Vector2.DOWN)
+# se estiver parado. NUNCA em cima do próprio dono: ver o comentário de DROP_OFFSET_DISTANCE para
+# o porquê. Cai na origem se o dono não for um Node2D — só evita crash, não deveria acontecer hoje
+# (Inventory só existe dentro de Player.tscn).
+func _get_drop_position() -> Vector2:
 	var owner_node: Node2D = get_parent() as Node2D
-	return owner_node.global_position if owner_node != null else Vector2.ZERO
+	if owner_node == null:
+		return Vector2.ZERO
+
+	var direction: Vector2 = Vector2.DOWN
+	var owner_body: CharacterBody2D = owner_node as CharacterBody2D
+	if owner_body != null and owner_body.velocity.length() > 0.01:
+		direction = owner_body.velocity.normalized()
+
+	return owner_node.global_position + direction * DROP_OFFSET_DISTANCE
 
 
-# Registra o comando de debug "dar_evidencia" no DebugMenu (F4). Existe só para testar o
+# Registra o comando de debug "dar_evidencia" no DebugMenu (F4/F1). Existe só para testar o
 # inventário sem precisar espalhar ItemPickup pelo mapa; a lista de itens sugeridos vem de
 # debug_item_catalog, preenchido no Inspector. register_input já não faz nada em build de
 # release, então não precisa de guarda extra aqui.

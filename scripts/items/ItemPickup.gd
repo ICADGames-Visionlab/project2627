@@ -14,6 +14,17 @@ extends Area2D
 @export var item: ItemData
 @export_range(1, 99, 1) var amount: int = 1
 
+# Tempo (em segundos) que o pickup fica "surdo" pro próprio corpo que acabou de largá-lo, antes
+# de aceitar ser coletado de novo. Existe pro caso comum de a maioria dos jogos: jogador larga o
+# item e continua parado ali perto (ou o offset de drop não foi longe o bastante pra separar os
+# colisores) — sem esse cooldown, o mesmo corpo recolhe o item de volta assim que ele entra em
+# contato de novo. Variável de balanceamento: ajuste no Inspector.
+@export_range(0.0, 3.0, 0.05) var pickup_delay: float = 0.5
+
+# Fica false até pickup_delay terminar (ver _ready()). Enquanto false, _on_body_entered ignora
+# qualquer corpo que entre na área — inclusive quem acabou de largar o item.
+var _collectible: bool = false
+
 ## Espaço para variáveis onready
 
 @onready var _sprite: Sprite2D = $Sprite2D
@@ -29,12 +40,21 @@ func _ready() -> void:
 	_sprite.texture = item.icon
 	body_entered.connect(_on_body_entered)
 
+	# Cooldown antes de aceitar coleta (ver comentário de pickup_delay). await em vez de Timer +
+	# connect(): mesmo padrão usado em GameManager.gd pra esperas simples, sem precisar de um nó
+	# a mais na cena nem de desconectar nada depois.
+	await get_tree().create_timer(pickup_delay).timeout
+	_collectible = true
+
 ## Espaço para funções personalizadas
 
-# Coleta o item para o Inventory do corpo que entrou na área, se for o Player. Pega o inventário
-# direto do corpo (e não pelo grupo Inventory.GROUP_NAME) porque aqui já sabemos exatamente de
-# quem estamos falando — ver docs/Inventory.md, "Por que NÃO é um Singleton".
+# Coleta o item para o Inventory do corpo que entrou na área, se for o Player e o cooldown de
+# pickup_delay já tiver terminado. Pega o inventário direto do corpo (e não pelo grupo
+# Inventory.GROUP_NAME) porque aqui já sabemos exatamente de quem estamos falando — ver
+# docs/Inventory.md, "Por que NÃO é um Singleton".
 func _on_body_entered(body: Node2D) -> void:
+	if not _collectible:
+		return
 	if not body is Player:
 		return
 

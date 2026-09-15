@@ -1,14 +1,14 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://c18vaw3hcywmf"]
 
-[ext_resource type="Script" path="res://scripts/items/ItemPickup.gd" id="1_item_pickup"]
+[ext_resource type="Script" uid="uid://cn5nrukfcsc4m" path="res://scripts/items/ItemPickup.gd" id="1_item_pickup"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_pickup"]
 radius = 24.0
 
-[node name="ItemPickup" type="Area2D"]
+[node name="ItemPickup" type="Area2D" unique_id=1076624078]
 script = ExtResource("1_item_pickup")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1116382480]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=136231722]
 shape = SubResource("CircleShape2D_pickup")
