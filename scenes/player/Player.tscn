@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://bhexx6mj1xv3q" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="14_pcam_script"]
 [ext_resource type="Texture2D" uid="uid://wamull3pntox" path="res://images/placeholder/Top-Down Asset Pack (Oct 2025)/run/run complete sprite sheet (transparent BG).png" id="24_ye1dr"]
 [ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="33_jtlb7"]
+[ext_resource type="Script" path="res://scripts/player/Inventory.gd" id="40_inventory"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_4gydf"]
 atlas = ExtResource("2_tpg5x")
@@ -1243,3 +1244,6 @@ tween_resource = SubResource("Resource_ye1dr")
 tween_on_load = false
 follow_offset = Vector2(0, -64)
 follow_damping = true
+
+[node name="Inventory" type="Node" parent="."]
+script = ExtResource("40_inventory")
