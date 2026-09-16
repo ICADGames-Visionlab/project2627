@@ -1,6 +1,8 @@
 [gd_scene format=3 uid="uid://dcvj26wj3lmda"]
 
 [ext_resource type="Script" uid="uid://xiu6yalm00v6" path="res://scripts/player/Player.gd" id="1_player_script"]
+[ext_resource type="PackedScene" path="res://scenes/insights/HeadOrbitLayer.tscn" id="34_head_orbit"]
+[ext_resource type="PackedScene" path="res://scenes/insights/InsightInteractor.tscn" id="35_insight_interactor"]
 [ext_resource type="Script" uid="uid://bhexx6mj1xv3q" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="14_pcam_script"]
 [ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="33_jtlb7"]
 [ext_resource type="SpriteFrames" path="res://resources/player_sprite_frames.tres" id="34_frames"]
@@ -41,3 +43,8 @@ tween_resource = SubResource("Resource_ye1dr")
 tween_on_load = false
 follow_offset = Vector2(0, -64)
 follow_damping = true
+
+[node name="HeadOrbitLayer" parent="." instance=ExtResource("34_head_orbit")]
+position = Vector2(0, -90)
+
+[node name="InsightInteractor" parent="." instance=ExtResource("35_insight_interactor")]

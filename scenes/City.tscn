@@ -14,6 +14,15 @@
 [ext_resource type="Script" path="res://scripts/npc/NPCDirector.gd" id="12_ndir"]
 [ext_resource type="PackedScene" path="res://scenes/npc/NPC.tscn" id="13_npcsc"]
 [ext_resource type="Resource" path="res://resources/npcs/npc_roster.tres" id="14_roster"]
+[ext_resource type="PackedScene" path="res://scenes/insights/InsightSource.tscn" id="9_insight_source"]
+[ext_resource type="PackedScene" path="res://scenes/insights/PlaceholderDialogueScreen.tscn" id="10_dialogue"]
+[ext_resource type="PackedScene" path="res://scenes/insights/InsightAudio.tscn" id="11_insight_audio"]
+[ext_resource type="Resource" path="res://resources/insights/city_ground_puddle.tres" id="12_puddle"]
+[ext_resource type="Resource" path="res://resources/insights/city_building1_bricks.tres" id="13_bricks"]
+[ext_resource type="Resource" path="res://resources/insights/city_building1_mortar.tres" id="14_mortar"]
+[ext_resource type="Resource" path="res://resources/insights/city_building2_windows.tres" id="15_windows"]
+[ext_resource type="Resource" path="res://resources/insights/city_building3_warm_wall.tres" id="16_warm_wall"]
+[ext_resource type="Resource" path="res://resources/insights/city_building3_gutter.tres" id="17_gutter"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -123,3 +132,31 @@ script = ExtResource("12_ndir")
 roster = ExtResource("14_roster")
 npc_scene = ExtResource("13_npcsc")
 agents_parent = NodePath("../YSort")
+
+[node name="PuddleInsight" parent="." instance=ExtResource("9_insight_source")]
+position = Vector2(-380, 280)
+insights = Array[InsightData]([ExtResource("12_puddle")])
+interaction_radius = 220.0
+marker_offset = Vector2(0, -40)
+
+[node name="FirestationBricksInsight" parent="." instance=ExtResource("9_insight_source")]
+position = Vector2(560, -400)
+insights = Array[InsightData]([ExtResource("13_bricks"), ExtResource("14_mortar")])
+interaction_radius = 260.0
+marker_offset = Vector2(0, -170)
+
+[node name="FirestationWarmWallInsight" parent="." instance=ExtResource("9_insight_source")]
+position = Vector2(417, -478)
+insights = Array[InsightData]([ExtResource("16_warm_wall"), ExtResource("17_gutter")])
+interaction_radius = 260.0
+marker_offset = Vector2(0, -220)
+
+[node name="FirestationWindowsInsight" parent="." instance=ExtResource("9_insight_source")]
+position = Vector2(1017, -334)
+insights = Array[InsightData]([ExtResource("15_windows")])
+interaction_radius = 260.0
+marker_offset = Vector2(0, -230)
+
+[node name="PlaceholderDialogueScreen" parent="." instance=ExtResource("10_dialogue")]
+
+[node name="InsightAudio" parent="." instance=ExtResource("11_insight_audio")]
