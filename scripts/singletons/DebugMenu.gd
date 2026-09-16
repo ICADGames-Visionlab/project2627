@@ -391,6 +391,7 @@ func _slugify(text: String) -> String:
 # Resolve um nome digitado no console para as entradas cujo command bate exatamente ou cujo
 # sufixo (depois do ".") bate — o "sufixo mais curto que for único" documentado em
 # docs/debug_menu.md. Prioriza sempre o match exato sobre sufixos.
+@warning_ignore("shadowed_variable_base_class")
 func _resolve_command(name: String) -> Array[DebugEntry]:
 	_purge_dead_entries()
 	var exact: Array[DebugEntry] = []

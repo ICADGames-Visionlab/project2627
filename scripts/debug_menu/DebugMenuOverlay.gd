@@ -299,6 +299,7 @@ func _build_number_control(param: DebugParam, on_change: Callable) -> Control:
 	spin_box.custom_minimum_size.x = 90
 
 	var apply_value: Callable = func(new_value: float) -> void:
+		@warning_ignore("incompatible_ternary")
 		on_change.call(int(new_value) if param.type == DebugParam.Type.INT else new_value)
 
 	if not param.use_slider:
@@ -425,6 +426,7 @@ func _update_header() -> void:
 	var current_scene: Node = get_tree().current_scene
 	if current_scene != null:
 		var scene_path: String = current_scene.scene_file_path
+		@warning_ignore("incompatible_ternary")
 		scene_name = scene_path.get_file() if not scene_path.is_empty() else current_scene.name
 	var text: String = "DEBUG MENU        %d fps · %s" % [Engine.get_frames_per_second(), scene_name]
 	if _filter_active:

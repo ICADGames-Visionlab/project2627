@@ -6,18 +6,7 @@ extends CharacterBody2D
 # AnimatedSprite2D), por isso é um Signal direto e não um evento no EventBus; se no futuro outro
 # sistema precisar reagir a isso (som de passo, poeira ao correr), dá pra escutar esse mesmo sinal
 # sem mexer aqui.
-signal movement_state_changed(is_moving: bool, facing_direction: FacingDirection)
-
-# As 8 direções que o personagem pode encarar, nomeadas pelo rumo na tela e ordenadas a partir do
-# leste no sentido horário — a mesma varredura que Vector2.angle() faz (no Godot o eixo Y cresce
-# pra baixo, então ângulo positivo vai pro sul). Essa ordem não é decorativa: o valor de cada
-# item é exatamente o ângulo do input dividido por 45°, o que deixa a conversão de direção em
-# animação ser uma conta só, sem cadeia de ifs (ver _get_facing_direction).
-enum FacingDirection { E, SE, S, SW, W, NW, N, NE }
-
-# Sufixo do nome da animação de cada FacingDirection, na mesma ordem do enum — o valor do enum é
-# o índice nesta lista.
-const DIRECTION_SUFFIXES: Array[StringName] = [&"e", &"se", &"s", &"sw", &"w", &"nw", &"n", &"ne"]
+signal movement_state_changed(is_moving: bool, facing_direction: Isometric.Facing)
 
 @export var speed: float = 300.0
 
@@ -60,7 +49,7 @@ const BLOCKED_SPEED_FRACTION: float = 0.1
 const BLOCKED_GRACE_SECONDS: float = 0.25
 
 var _is_moving: bool = false
-var _facing_direction: FacingDirection = FacingDirection.S
+var _facing_direction: Isometric.Facing = Isometric.Facing.S
 
 # Caminho que o personagem está percorrendo no esquema de clique, e em qual ponto dele está. Vem
 # pronto do Pathfinder (ou é um ponto só, quando não há Pathfinder na cena). Caminho vazio
@@ -157,11 +146,9 @@ func _get_click_direction() -> Vector2:
 
 	var to_waypoint: Vector2 = _path[_path_index] - global_position
 
-	# to_waypoint é uma distância medida na tela, onde o chão já está achatado; _to_screen_velocity()
-	# logo em seguida espera receber uma direção cartesiana, como a que vem do teclado. Desfazer o
-	# achatamento aqui faz as duas contas se cancelarem no eixo Y, e o personagem anda em linha
-	# reta até o ponto (vertical_speed_factor muda só a rapidez do trajeto, não o rumo).
-	return Vector2(to_waypoint.x, to_waypoint.y / isometric_y_ratio).normalized()
+	# to_waypoint é uma distância medida na tela, onde o chão já está achatado, e o resto do fluxo
+	# espera uma direção cartesiana como a que vem do teclado (ver Isometric.to_cartesian).
+	return Isometric.to_cartesian(to_waypoint, isometric_y_ratio)
 
 
 # Desiste do caminho quando o personagem trava. Com o Pathfinder o traçado já desvia da geometria
@@ -191,22 +178,11 @@ func _clear_path() -> void:
 	_blocked_time = 0.0
 
 
-# Converte a direção cartesiana do input na velocidade final, em pixels de tela por segundo.
-#
-# Três etapas com responsabilidades separadas, e vale manter assim porque cada uma resolve um
-# problema diferente:
-#
-#   1. O achatamento em Y decide a DIREÇÃO — é ele que faz W+D andar em cima da diagonal do grid
-#      isométrico (onde correm as ruas) em vez de a 45° na tela.
-#   2. A normalização tira o corte de velocidade que o achatamento causaria de tabela, deixando o
-#      módulo sob controle de um parâmetro só, em vez de ser efeito colateral da geometria.
-#   3. vertical_speed_factor decide o MÓDULO, interpolando conforme o quanto a direção é vertical
-#      na tela: horizontal puro anda a speed, vertical puro a speed * vertical_speed_factor, e as
-#      diagonais no meio.
+# Converte a direção cartesiana do input na velocidade final, em pixels de tela por segundo. A
+# conta em si mora em Isometric porque é a mesma para todo agente que anda neste chão (o NPC usa
+# a mesma); o que é do Player são os três números que entram nela.
 func _to_screen_velocity(direction: Vector2) -> Vector2:
-	var screen_direction: Vector2 = Vector2(direction.x, direction.y * isometric_y_ratio).normalized()
-	var verticality: float = absf(screen_direction.y)
-	return screen_direction * speed * lerpf(1.0, vertical_speed_factor, verticality)
+	return Isometric.screen_velocity(direction, speed, isometric_y_ratio, vertical_speed_factor)
 
 
 # Calcula o estado de movimento (parado/andando + direção encarada) a partir do input deste
@@ -215,10 +191,10 @@ func _to_screen_velocity(direction: Vector2) -> Vector2:
 # a cada frame, só quando muda.
 func _update_movement_state(input_direction: Vector2) -> void:
 	var is_moving: bool = input_direction != Vector2.ZERO
-	var facing_direction: FacingDirection = _facing_direction
+	var facing_direction: Isometric.Facing = _facing_direction
 
 	if is_moving:
-		facing_direction = _get_facing_direction(input_direction)
+		facing_direction = Isometric.facing_from_direction(input_direction)
 
 	if is_moving == _is_moving and facing_direction == _facing_direction:
 		return
@@ -228,26 +204,8 @@ func _update_movement_state(input_direction: Vector2) -> void:
 	movement_state_changed.emit(_is_moving, _facing_direction)
 
 
-# Descobre qual das 8 direções o input representa, fatiando o círculo em setores de 45° e
-# arredondando pro setor mais próximo. Usa o input cartesiano e não a velocidade já achatada de
-# propósito: no input as 8 combinações de teclas caem exatamente no centro de um setor, enquanto
-# no vetor achatado as diagonais caem perto da fronteira entre dois setores e a animação poderia
-# oscilar. Como o enum está na mesma ordem do ângulo, o índice do setor já é o valor do enum.
-func _get_facing_direction(input_direction: Vector2) -> FacingDirection:
-	var sector: int = roundi(input_direction.angle() / (PI / 4.0))
-	return posmod(sector, DIRECTION_SUFFIXES.size()) as FacingDirection
-
-
 # Reage à mudança de estado de movimento tocando a animação correspondente. Só roda quando
 # movement_state_changed é emitido (ou seja, quando o estado muda de verdade), não a cada frame.
-func _on_movement_state_changed(is_moving: bool, facing_direction: FacingDirection) -> void:
-	_animated_sprite.play(_get_animation_name(facing_direction, is_moving))
-
-
-# Monta o nome da animação a partir do prefixo (correndo/parado) e do sufixo da direção. Os nomes
-# montados aqui precisam existir na SpriteFrames do AnimatedSprite2D: idle_e, idle_se, ..., run_e,
-# run_se, ... — as 8 direções do spritesheet, que já vêm desenhadas e por isso dispensam o flip_h
-# que o placeholder anterior, de 4 direções, precisava.
-func _get_animation_name(facing_direction: FacingDirection, is_moving: bool) -> StringName:
+func _on_movement_state_changed(is_moving: bool, facing_direction: Isometric.Facing) -> void:
 	var prefix: StringName = &"run" if is_moving else &"idle"
-	return StringName("%s_%s" % [prefix, DIRECTION_SUFFIXES[facing_direction]])
+	_animated_sprite.play(Isometric.animation_name(prefix, facing_direction))

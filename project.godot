@@ -23,6 +23,7 @@ AudioManager="*uid://ukx856cnpid2"
 DebugMenu="*res://scripts/singletons/DebugMenu.gd"
 GameManager="*uid://buitflbj0i6hu"
 PhantomCameraManager="*uid://duq6jhf6unyis"
+GameClock="*res://scripts/singletons/GameClock.gd"
 InsightDirector="*res://scripts/singletons/InsightDirector.gd"
 HeadRegistry="*res://scripts/singletons/HeadRegistry.gd"
 InsightJournal="*res://scripts/singletons/InsightJournal.gd"
@@ -122,6 +123,16 @@ move_up={
 , Object(InputEventJoypadMotion,"resource_local_to_scene":false,"resource_name":"","device":-1,"axis":1,"axis_value":-1.0,"script":null)
 ]
 }
+
+[layer_names]
+
+; Camada 1: o cenário que bloqueia passagem (Structure e afins). É a máscara que o
+; Pathfinder usa para montar o grafo de visibilidade — só o que está aqui é obstáculo.
+; Camada 2: quem anda (Player e NPCs). Fica FORA da máscara de obstáculo de propósito:
+; agente não é parede, e um agente parado em cima de uma aresta do grafo não pode
+; derrubar essa aresta no rebuild.
+2d_physics/layer_1="Obstáculos"
+2d_physics/layer_2="Agentes"
 
 [internationalization]
 

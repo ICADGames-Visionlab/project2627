@@ -19,6 +19,23 @@ MENU_CONTINUE,Continue,Continuar
 DYNAMIC_EXAMPLE,%s testes!,testes %s!
 PLACEHOLDER_CITY_GROUND,Placeholder - City ground (final art pending),Placeholder - Chão da cidade (arte final pendente)
 PLACEHOLDER_CITY_BUILDING,Placeholder - Building (final art pending),Placeholder - Prédio (arte final pendente)
+TIME_FORMAT,%02d:%02d,%02d:%02d
+DAY_LABEL,Day %d,Dia %d
+WEEKDAY_MON,Monday,Segunda
+WEEKDAY_TUE,Tuesday,Terça
+WEEKDAY_WED,Wednesday,Quarta
+WEEKDAY_THU,Thursday,Quinta
+WEEKDAY_FRI,Friday,Sexta
+WEEKDAY_SAT,Saturday,Sábado
+WEEKDAY_SUN,Sunday,Domingo
+NPC_NAME_ZE,Joe,Zé
+NPC_NAME_ANA,Ana,Ana
+EMOTION_ANGER,Anger,Raiva
+EMOTION_SADNESS,Sadness,Tristeza
+EMOTION_FEAR,Fear,Medo
+EMOTION_EUPHORIA,Euphoria,Euforia
+PLACEHOLDER_NPC_BODY,Placeholder - NPC body reuses the player sprite (final art pending),Placeholder - Corpo de NPC reaproveita o sprite do player (arte final pendente)
+PLACEHOLDER_BAKERY_INTERIOR,Placeholder - Bakery interior (scene pending),Placeholder - Interior da padaria (cena pendente)
 INSIGHT_CITY_GROUND_PUDDLE,"The puddle never dries here. Whatever runs under this street runs all year.","A poça nunca seca aqui. O que corre por baixo desta rua corre o ano inteiro."
 INSIGHT_CITY_BUILDING1_BRICKS,"The bricks were laid by someone in a hurry. Two rows out of line, and nobody ever came back to fix them.","Os tijolos foram assentados por alguém com pressa. Duas fiadas fora de prumo, e ninguém nunca voltou para consertar."
 INSIGHT_CITY_BUILDING1_MORTAR,"Fresh mortar on the same wall. Someone patched this after the puddle showed up, and used sea water to do it.","Argamassa nova na mesma parede. Alguém remendou isto depois que a poça apareceu, e usou água do mar para fazer isso."

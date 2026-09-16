@@ -1,0 +1,23 @@
+[gd_scene format=3 uid="uid://d3qucjg50f2e6"]
+
+[ext_resource type="Script" uid="uid://dnjhvxugpauln" path="res://scripts/ui/ClockHud.gd" id="1_clock"]
+
+[node name="ClockHud" type="CanvasLayer" unique_id=1588644083]
+layer = 10
+script = ExtResource("1_clock")
+
+[node name="Panel" type="PanelContainer" parent="." unique_id=795710199]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -240.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 100.0
+grow_horizontal = 0
+
+[node name="Label" type="Label" parent="Panel" unique_id=1563581267]
+layout_mode = 2
+text = "Dia 1"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="NPCRoutine" format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_w0idb"]
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutine.gd" id="2_kyatg"]
+
+[sub_resource type="Resource" id="Resource_m7fso"]
+script = ExtResource("1_w0idb")
+hour = 6
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_da_ana"
+
+[sub_resource type="Resource" id="Resource_lw4h3"]
+script = ExtResource("1_w0idb")
+hour = 9
+scene_path = "res://scenes/City.tscn"
+waypoint = &"feira"
+
+[sub_resource type="Resource" id="Resource_r1wak"]
+script = ExtResource("1_w0idb")
+hour = 17
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_da_ana"
+
+[resource]
+script = ExtResource("2_kyatg")
+entries = Array[ExtResource("1_w0idb")]([SubResource("Resource_m7fso"), SubResource("Resource_lw4h3"), SubResource("Resource_r1wak")])
+resumo = "3 entradas (ordem de relógio):
+  06:00  City / casa_da_ana
+  09:00  City / feira
+  17:00  City / casa_da_ana"

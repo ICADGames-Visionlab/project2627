@@ -2,7 +2,7 @@
 ## transparente sozinha quando o jogador passa atrás dela.
 ##
 ## COMO USAR:
-##   1. StaticBody2D com este script, dentro de um nó com y_sort_enabled (o YSort de main.tscn).
+##   1. StaticBody2D com este script, dentro de um nó com y_sort_enabled (o YSort de city.tscn).
 ##   2. Um Sprite2D filho, com a arte.
 ##   3. Um CollisionPolygon2D filho, com o losango da base.
 ##   4. A ORIGEM DO NÓ tem que ficar no centro da base (não em 0,0 com o sprite deslocado).
@@ -16,7 +16,8 @@
 ##
 ## Se alguma estrutura tiver um formato que a silhueta automática não acerta, basta adicionar uma
 ## Area2D filha à mão com a shape que você quiser — se existir uma, o script usa ela e não gera
-## nada.
+## nada. Nesse caso, deixe a máscara dela na camada "Agentes" (ver AGENTS_LAYER abaixo), senão ela
+## não enxerga o jogador.
 @tool
 class_name Structure
 extends StaticBody2D
@@ -25,6 +26,11 @@ extends StaticBody2D
 
 # Distância máxima, em pixels, entre a origem do nó e o centro da base antes do editor reclamar.
 const ORIGIN_TOLERANCE: float = 24.0
+
+# Máscara de física da área que detecta o jogador: a camada "Agentes" (ver [layer_names] em
+# project.godot). Precisa ser explícita porque Player e NPCs NÃO estão na camada de obstáculo —
+# eles saíram dela pro Pathfinder não confundir agente com parede.
+const AGENTS_LAYER: int = 2
 
 # Opacidade da estrutura enquanto o jogador está atrás dela. 0 some de vez; o padrão deixa a
 # silhueta visível, que é o normal em jogo isométrico — o jogador precisa continuar entendendo
@@ -128,6 +134,9 @@ func _build_player_detector() -> Area2D:
 
 	var detector: Area2D = Area2D.new()
 	detector.name = &"PlayerDetector"
+	# Sensor puro: não precisa ser detectável por ninguém (layer 0) e só precisa VER os agentes.
+	detector.collision_layer = 0
+	detector.collision_mask = AGENTS_LAYER
 	detector.add_child(collision_polygon)
 	return detector
 

@@ -1,0 +1,44 @@
+[gd_resource type="Resource" script_class="NPCRoutine" format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_x26gw"]
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutine.gd" id="2_i3evv"]
+
+[sub_resource type="Resource" id="Resource_oem1h"]
+script = ExtResource("1_x26gw")
+hour = 6
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_ze"
+
+[sub_resource type="Resource" id="Resource_vogp1"]
+script = ExtResource("1_x26gw")
+hour = 10
+scene_path = "res://scenes/City.tscn"
+waypoint = &"praca"
+
+[sub_resource type="Resource" id="Resource_rh56j"]
+script = ExtResource("1_x26gw")
+hour = 14
+scene_path = "res://scenes/City.tscn"
+waypoint = &"banco_da_praca"
+
+[sub_resource type="Resource" id="Resource_uljak"]
+script = ExtResource("1_x26gw")
+hour = 18
+scene_path = "res://scenes/City.tscn"
+waypoint = &"feira"
+
+[sub_resource type="Resource" id="Resource_klfuc"]
+script = ExtResource("1_x26gw")
+hour = 21
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_ze"
+
+[resource]
+script = ExtResource("2_i3evv")
+entries = Array[ExtResource("1_x26gw")]([SubResource("Resource_oem1h"), SubResource("Resource_vogp1"), SubResource("Resource_rh56j"), SubResource("Resource_uljak"), SubResource("Resource_klfuc")])
+resumo = "5 entradas (ordem de relógio):
+  06:00  City / casa_do_ze
+  10:00  City / praca
+  14:00  City / banco_da_praca
+  18:00  City / feira
+  21:00  City / casa_do_ze"
