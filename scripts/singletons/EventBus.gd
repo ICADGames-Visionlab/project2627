@@ -5,9 +5,9 @@
 # Todos os eventos do jogo ficam neste arquivo, agrupados por módulo, cada um com um comentário
 # acima dizendo quem emite e quem escuta. Abrir este arquivo é ver o jogo inteiro conversando.
 #
-# ESTADO ATUAL: os eventos de tempo (GameClock) e os do sistema de insights. Eventos nascem
-# junto com o sistema que produz os fatos — criar antes disso seria adivinhar features que o
-# conceito do jogo ainda não decidiu.
+# ESTADO ATUAL: os eventos de tempo (GameClock), os do sistema de insights e os do sistema de
+# diálogo. Eventos nascem junto com o sistema que produz os fatos — criar antes disso seria
+# adivinhar features que o conceito do jogo ainda não decidiu.
 #
 # Para adicionar um evento, é uma edição só: declarar o sinal abaixo, tipado e comentado.
 #
@@ -68,10 +68,28 @@ signal day_ended(day: int, reason: int)
 signal insight_revealed(event: InsightRevealedEvent)
 
 # Pede a exibição de uma fala na tela de diálogo. Pedido: espera exatamente 1 ouvinte, e o logger
-# acusa no console quando a contagem não é essa — é assim que esquecer de desligar o placeholder no
-# dia em que a tela real entrar vira erro visível em vez de duas telas abrindo juntas.
-# Emissor: InsightDirector. Ouvinte: a tela de diálogo (PlaceholderDialogueScreen por enquanto).
+# acusa no console quando a contagem não é essa.
+# Emissor: InsightDirector. Ouvinte: DialogueScreen.
 signal dialogue_requested(head_id: StringName, text_key: String)
+
+# ------------------------------------------------------------------------------------
+# Diálogo
+# ------------------------------------------------------------------------------------
+
+# Pede o início de uma conversa. Pedido: espera exatamente 1 ouvinte.
+# initiator_id é quem puxou a conversa (id do NPC, ou &"" para gatilho e debug); ele é repassado em
+# conversation_started para quem precisa segurar aquele NPC.
+# Emissor: NPCInteraction, debug. Ouvinte: DialogueScreen.
+signal conversation_requested(conversation_id: StringName, initiator_id: StringName)
+
+# Emitido quando uma conversa abre.
+# Emissor: DialogueScreen. Ouvintes: Player (trava movimento), NPCDirector (segura o NPC),
+# InsightInteractor (desliga orbes).
+signal conversation_started(conversation_id: StringName, initiator_id: StringName)
+
+# Emitido quando uma conversa fecha, com o nó onde terminou.
+# Emissor: DialogueScreen. Ouvintes: os mesmos de conversation_started.
+signal conversation_ended(conversation_id: StringName, end_node_id: StringName)
 
 var _logger: EventBusLogger
 

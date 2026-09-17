@@ -72,6 +72,19 @@ const ALL_WEEKDAYS: int = 127
 ## mais devagar que uma criança.
 @export var walk_speed: float = 220.0
 
+@export_group("Diálogo")
+
+## Cor do nome do NPC na coluna de diálogo. Diferente de tint (que é placeholder de sprite): esta
+## precisa passar no contraste mínimo contra o fundo da coluna de diálogo.
+@export var dialogue_color: Color = Color("#E0C080"):
+	set(value):
+		dialogue_color = value
+		_refresh_summary()
+
+## Conversa aberta ao clicar no NPC (o id da conversa no catálogo de diálogo). Vazio = NPC não
+## conversa (NPCInteraction não pede nada ao clicar nele).
+@export var conversation_id: StringName = &""
+
 @export_group("Emoções")
 
 ## A emoção do slot 1 deste NPC. Pode ser diferente da de qualquer outro NPC.
@@ -211,6 +224,12 @@ func collect_issues() -> PackedStringArray:
 		issues.append("Sem emoção no slot 2.")
 	if get_routine(EmotionSlot.NEUTRAL, DayType.WORKDAY) == null:
 		issues.append("Sem rotina neutro/trabalho — ela é o último fallback de todos os outros slots.")
+
+	var dialogue_style: DialogueStyle = load("res://resources/dialogue/dialogue_style.tres")
+	if dialogue_style != null:
+		var ratio: float = DialogueContrast.worst_case_ratio(dialogue_color, 1.0, dialogue_style, 0.82)
+		if ratio < dialogue_style.min_contrast_ratio:
+			issues.append("Cor de diálogo com contraste %.1f:1 (mínimo %.1f:1)." % [ratio, dialogue_style.min_contrast_ratio])
 
 	for slot: int in EmotionSlot.values():
 		for day_type: int in DayType.values():

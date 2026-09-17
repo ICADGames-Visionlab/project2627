@@ -1,0 +1,90 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/dialogue/DialogueScreen.gd" id="1_screen"]
+[ext_resource type="Theme" path="res://resources/dialogue/dialogue_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueLog.tscn" id="3_log"]
+[ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueOptionList.tscn" id="4_options"]
+[ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueScrollIndicator.tscn" id="5_indicator"]
+[ext_resource type="Shader" path="res://resources/shaders/backdrop_blur.gdshader" id="6_blur_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_backdrop_blur"]
+shader = ExtResource("6_blur_shader")
+shader_parameter/blur_radius = 3.0
+
+[node name="DialogueScreen" type="CanvasLayer"]
+layer = 40
+process_mode = 1
+script = ExtResource("1_screen")
+
+[node name="Root" type="Control" parent="."]
+mouse_filter = 2
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+
+[node name="Backdrop" type="TextureRect" parent="Root"]
+mouse_filter = 2
+layout_mode = 0
+
+[node name="BackBufferCopy" type="BackBufferCopy" parent="Root"]
+visible = false
+copy_mode = 2
+
+[node name="BlurRect" type="ColorRect" parent="Root"]
+visible = false
+mouse_filter = 2
+layout_mode = 0
+material = SubResource("ShaderMaterial_backdrop_blur")
+
+[node name="Panel" type="PanelContainer" parent="Root"]
+mouse_filter = 0
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -600.0
+offset_top = 48.0
+offset_right = -96.0
+offset_bottom = -48.0
+grow_horizontal = 0
+
+[node name="Margin" type="MarginContainer" parent="Root/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
+
+[node name="Column" type="VBoxContainer" parent="Root/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LogArea" type="Control" parent="Root/Panel/Margin/Column"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Log" parent="Root/Panel/Margin/Column/LogArea" instance=ExtResource("3_log")]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ScrollIndicator" parent="Root/Panel/Margin/Column/LogArea" instance=ExtResource("5_indicator")]
+layout_mode = 1
+
+[node name="Separator" type="ColorRect" parent="Root/Panel/Margin/Column"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+visible = false
+color = Color(1, 1, 1, 0.12)
+
+[node name="OptionsScroll" type="ScrollContainer" parent="Root/Panel/Margin/Column"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Options" parent="Root/Panel/Margin/Column/OptionsScroll" instance=ExtResource("4_options")]
+layout_mode = 2
+size_flags_horizontal = 3

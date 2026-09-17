@@ -51,6 +51,9 @@ const BLOCKED_GRACE_SECONDS: float = 0.25
 var _is_moving: bool = false
 var _facing_direction: Isometric.Facing = Isometric.Facing.S
 
+# Verdadeiro enquanto uma conversa está aberta: nenhum esquema de movimento responde (SPEC §11.5).
+var _is_input_locked: bool = false
+
 # Caminho que o personagem está percorrendo no esquema de clique, e em qual ponto dele está. Vem
 # pronto do Pathfinder (ou é um ponto só, quando não há Pathfinder na cena). Caminho vazio
 # significa "sem destino", então não precisa de bandeira separada.
@@ -65,6 +68,8 @@ var _blocked_time: float = 0.0
 
 func _ready() -> void:
 	movement_state_changed.connect(_on_movement_state_changed)
+	EventBus.conversation_started.connect(_on_conversation_started)
+	EventBus.conversation_ended.connect(_on_conversation_ended)
 	print("[Player] - Controlador inicializado na posição %s" % [global_position])
 
 
@@ -80,6 +85,8 @@ func _physics_process(delta: float) -> void:
 # assim um clique consumido pela interface — um botão, um menu aberto por cima do jogo — não faz
 # o personagem sair andando pra trás da UI.
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_input_locked:
+		return
 	if GameManager.movement_scheme != GameManager.MovementScheme.CLICK:
 		return
 
@@ -92,6 +99,8 @@ func _unhandled_input(event: InputEvent) -> void:
 # vice-versa. Daqui pra frente o resto do script não sabe (nem precisa saber) de onde veio a
 # direção — achatamento isométrico e escolha de animação são iguais nos dois casos.
 func _get_movement_direction() -> Vector2:
+	if _is_input_locked:
+		return Vector2.ZERO
 	if GameManager.movement_scheme == GameManager.MovementScheme.CLICK:
 		return _get_click_direction()
 
@@ -176,6 +185,15 @@ func _clear_path() -> void:
 	_path = PackedVector2Array()
 	_path_index = 0
 	_blocked_time = 0.0
+
+
+func _on_conversation_started(_conversation_id: StringName, _initiator_id: StringName) -> void:
+	_is_input_locked = true
+	_clear_path()
+
+
+func _on_conversation_ended(_conversation_id: StringName, _end_node_id: StringName) -> void:
+	_is_input_locked = false
 
 
 # Converte a direção cartesiana do input na velocidade final, em pixels de tela por segundo. A

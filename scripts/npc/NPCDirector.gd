@@ -95,6 +95,8 @@ func _ready() -> void:
 
 	EventBus.time_changed.connect(_on_time_changed)
 	EventBus.day_changed.connect(_on_day_changed)
+	EventBus.conversation_started.connect(_on_conversation_started)
+	EventBus.conversation_ended.connect(_on_conversation_ended)
 
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "NPCs" do menu (F4) e do console (F1).
@@ -307,6 +309,23 @@ func _on_day_changed(day: int) -> void:
 	_refresh_emotion_slots()
 	_apply_routines(true)
 	print("[NPCDirector] - Dia %d: rotinas reavaliadas" % day)
+
+
+# Segura o NPC que iniciou a conversa e vira ele para o jogador (SPEC §11.4). initiator_id vazio
+# (gatilho, cutscene, debug) não segura ninguém.
+func _on_conversation_started(_conversation_id: StringName, initiator_id: StringName) -> void:
+	var body: NPC = _bodies.get(initiator_id) as NPC
+	if body == null:
+		return
+	body.hold()
+	var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
+	if player != null:
+		body.face_toward(player.global_position)
+
+
+func _on_conversation_ended(_conversation_id: StringName, _end_node_id: StringName) -> void:
+	for body: Variant in _bodies.values():
+		(body as NPC).release()
 
 
 func _on_npc_arrived(definition: NPCDefinition) -> void:

@@ -44,6 +44,30 @@ INSIGHT_CITY_BUILDING3_WARM_WALL,"The wall is warm. Something behind it has been
 INSIGHT_CITY_BUILDING3_GUTTER,"That gutter drains into the street, not into the sea. Whoever built it had never seen a real tide.","Aquela calha despeja na rua, não no mar. Quem a construiu nunca tinha visto uma maré de verdade."
 HEAD_PLAYER_NAME,"Me","Eu"
 HEAD_OLD_FISHERMAN_NAME,"The Old Fisherman","O Velho Pescador"
-INSIGHT_DIALOGUE_CLOSE,"Close","Fechar"
-PLACEHOLDER_DIALOGUE_SCREEN,"Placeholder - Dialogue screen (final screen pending)","Placeholder - Tela de diálogo (tela final pendente)"
 PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pending)","Placeholder - Orbe de insight desenhado em código (arte final pendente)"
+DIALOGUE_SPEAKER_PLAYER,You,Você
+DIALOGUE_SPEAKER_SEPARATOR," — "," — "
+DIALOGUE_SPEAKER_NARRATOR,Narrator,Narrador
+DIALOGUE_OPTION_FORMAT,"%d. - ","%d. - "
+DIALOGUE_CONTINUE,Continue,Continuar
+DIALOGUE_END,End,Encerrar
+DIALOGUE_NEW_LINES,%d new,%d nova(s)
+DIALOGUE_LOG_TRIMMED,… earlier lines,… falas anteriores
+DIALOGUE_TAG_AUTHORITY,Authority,Autoridade
+DEMO_GARTE_01,"""Not so fast."" He points at you. ""You owe me 130 reais.""","""Não tão rápido."" Ele aponta para você. ""Você me deve 130 reais."""
+DEMO_OPT_REAL,What's a real?,O que é real?
+DEMO_GARTE_02,"Money, detective.","Dinheiro, detetive."
+DEMO_OPT_AUTH,Put him in his place.,Coloque ele no lugar dele.
+DEMO_REASON_BADGE,Requires the badge,Precisa do distintivo
+DEMO_GARTE_03,"[i]He steps back half a pace.[/i] ""Fine, fine.""","[i]Ele recua meio passo.[/i] ""Tá, tá."""
+DEMO_OPT_EXIT,Leave.,Ir embora.
+SETTINGS_DIALOGUE_TEXT_SCALE,Dialogue text size,Tamanho do texto do diálogo
+SETTINGS_DIALOGUE_ALT_FONT,Sans-serif dialogue font,Fonte sem serifa no diálogo
+SETTINGS_DIALOGUE_PANEL_OPACITY,Dialogue panel opacity,Opacidade do painel de diálogo
+SETTINGS_DIALOGUE_REVEAL,Text reveal,Revelação de texto
+SETTINGS_DIALOGUE_REVEAL_INSTANT,Instant,Instantânea
+SETTINGS_DIALOGUE_REVEAL_PROGRESSIVE,Progressive,Progressiva
+SETTINGS_DIALOGUE_ANIMATION,Dialogue animation,Animação do diálogo
+SETTINGS_DIALOGUE_ANIMATION_NORMAL,Normal,Normal
+SETTINGS_DIALOGUE_ANIMATION_FAST,Fast,Rápida
+SETTINGS_DIALOGUE_ANIMATION_INSTANT,Instant,Instantânea
