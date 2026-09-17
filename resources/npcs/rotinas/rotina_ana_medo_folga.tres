@@ -1,7 +1,7 @@
-[gd_resource type="Resource" script_class="NPCRoutine" format=3]
+[gd_resource type="Resource" script_class="NPCRoutine" format=3 uid="uid://jg7gnemm6nr7"]
 
-[ext_resource type="Script" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_3u7nx"]
-[ext_resource type="Script" path="res://scripts/npc/NPCRoutine.gd" id="2_27b4q"]
+[ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_3u7nx"]
+[ext_resource type="Script" uid="uid://dnf7l0o4aeaw2" path="res://scripts/npc/NPCRoutine.gd" id="2_27b4q"]
 
 [sub_resource type="Resource" id="Resource_3gcqw"]
 script = ExtResource("1_3u7nx")

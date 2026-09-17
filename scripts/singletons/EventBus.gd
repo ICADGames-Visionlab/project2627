@@ -58,6 +58,17 @@ signal day_changed(day: int)
 signal day_ended(day: int, reason: int)
 
 # ------------------------------------------------------------------------------------
+# Interação
+# ------------------------------------------------------------------------------------
+
+# Pede o aviso de ação no rodapé da tela ("Aperte ESPAÇO para dormir"). text_key é uma chave de
+# localização; a string VAZIA é o pedido de esconder o aviso.
+# Um pedido substitui o anterior: o aviso é um só, e quem chega por último é quem o jogador está
+# olhando. Por isso quem mostrou também precisa esconder ao sair de alcance.
+# Emissor: objetos interativos do mundo (Bed). Ouvinte: ActionPrompt.
+signal action_prompt_changed(text_key: String)
+
+# ------------------------------------------------------------------------------------
 # Insights
 # ------------------------------------------------------------------------------------
 

@@ -47,3 +47,5 @@ HEAD_OLD_FISHERMAN_NAME,"The Old Fisherman","O Velho Pescador"
 INSIGHT_DIALOGUE_CLOSE,"Close","Fechar"
 PLACEHOLDER_DIALOGUE_SCREEN,"Placeholder - Dialogue screen (final screen pending)","Placeholder - Tela de diálogo (tela final pendente)"
 PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pending)","Placeholder - Orbe de insight desenhado em código (arte final pendente)"
+PROMPT_SLEEP,Press SPACE to sleep,Aperte ESPAÇO para dormir
+PROMPT_SLEEP_TOO_EARLY,It is not time to sleep yet,Ainda não é hora de dormir

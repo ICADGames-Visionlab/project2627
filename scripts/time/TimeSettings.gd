@@ -38,6 +38,19 @@ const MINUTES_PER_DAY: int = 1440
 		playable_hours = value
 		_refresh_summary()
 
+@export_group("Hora de dormir")
+
+## Quantas horas de jogo antes do fim do dia a cama passa a aceitar o jogador. 2 h num dia que
+## acaba às 00:00 = pode dormir a partir das 22:00.
+##
+## É uma DURAÇÃO e não um horário de propósito: assim mexer em playable_hours arrasta a hora de
+## dormir junto, e não existe a combinação quebrada de uma janela que cai fora do dia jogável.
+## O horário que sai daqui aparece por extenso no resumo.
+@export_range(0.5, 12.0, 0.5, "suffix:h de jogo") var sleep_window_hours: float = 2.0:
+	set(value):
+		sleep_window_hours = value
+		_refresh_summary()
+
 @export_group("Ritmo")
 
 ## Quanto tempo REAL dura um dia jogável inteiro, de acordar até o limite.
@@ -50,7 +63,16 @@ const MINUTES_PER_DAY: int = 1440
 @export_group("")
 
 ## Só leitura: o que as opções acima produzem, escrito por extenso. Editar aqui não faz nada.
-@export_multiline var resumo: String = ""
+##
+## É CALCULADO NA HORA, não guardado. O texto também vai parar no .tres (todo @export vai), e se
+## ele fosse um campo comum o valor gravado seria aplicado por último no carregamento e passaria
+## por cima do resumo recém-calculado: bastava mexer no código do resumo para o Inspector
+## continuar mostrando a versão antiga até alguém tocar em algum campo.
+@export_multiline var resumo: String:
+	get:
+		return _build_summary()
+	set(_value):
+		pass
 
 ## Espaço para funções nativas
 
@@ -70,21 +92,48 @@ func day_length_minutes() -> int:
 func seconds_per_game_minute() -> float:
 	return (real_minutes_per_day * 60.0) / float(day_length_minutes())
 
+# Quantos minutos de jogo dura a janela de dormir.
+func sleep_window_minutes() -> int:
+	return int(sleep_window_hours * float(MINUTES_PER_HOUR))
+
+# Diz se a cama aceita o jogador, a partir de quanto falta para o fim do dia (GameClock.get_minutes_left()).
+#
+# A conta é feita no que FALTA, e não na hora do relógio de parede, porque é isso que a janela
+# significa: o fim do dia. Sai de graça o que seria o caso chato na outra conta — a virada da
+# meia-noite no meio da janela — e o próprio horário máximo, com 0 minutos restantes, entra na
+# janela por definição, em vez de precisar de uma exceção para a partida não travar lá.
+func is_sleep_time(minutes_left: int) -> bool:
+	return minutes_left <= sleep_window_minutes()
+
+# Em que minuto do relógio de parede a janela de dormir abre. Só para exibição (resumo, HUD).
+func sleep_start_clock_minutes() -> int:
+	return (end_clock_minutes() - sleep_window_minutes() + MINUTES_PER_DAY) % MINUTES_PER_DAY
+
 # Em que hora do relógio de parede o dia acaba, já dando a volta na meia-noite.
 func end_clock_minutes() -> int:
 	return (wake_hour * MINUTES_PER_HOUR + day_length_minutes()) % MINUTES_PER_DAY
 
-# Reescreve o resumo depois de qualquer mudança. notify_property_list_changed() é o que faz o
-# Inspector redesenhar na hora, em vez de só na próxima vez que o recurso for selecionado.
+# Manda o Inspector redesenhar depois de qualquer mudança — é o que faz o resumo se reescrever na
+# hora, em vez de só na próxima vez que o recurso for selecionado.
 func _refresh_summary() -> void:
+	notify_property_list_changed()
+
+
+# Monta o texto do resumo a partir do estado atual. Chamado pelo getter de "resumo".
+func _build_summary() -> String:
 	var ending: int = end_clock_minutes()
+	var sleep_start: int = sleep_start_clock_minutes()
 	var per_minute: float = seconds_per_game_minute()
 	@warning_ignore("integer_division")
 	var ending_hour: int = ending / MINUTES_PER_HOUR
 	@warning_ignore("integer_division")
-	resumo = "Dia jogável: %02d:00 -> %02d:%02d (%.1f h de jogo)\n" % [
+	var sleep_start_hour: int = sleep_start / MINUTES_PER_HOUR
+
+	var text: String = "Dia jogável: %02d:00 -> %02d:%02d (%.1f h de jogo)\n" % [
 		wake_hour, ending_hour, ending % MINUTES_PER_HOUR, playable_hours]
-	resumo += "Duração real: %.1f min reais por dia\n" % real_minutes_per_day
-	resumo += "1 h de jogo = %.0f s reais  ·  1 min de jogo = %.2f s reais" % [
+	text += "Pode começar a dormir em %02d:%02d (%.1f h antes do fim)\n" % [
+		sleep_start_hour, sleep_start % MINUTES_PER_HOUR, sleep_window_hours]
+	text += "Duração real: %.1f min reais por dia\n" % real_minutes_per_day
+	text += "1 h de jogo = %.0f s reais  ·  1 min de jogo = %.2f s reais" % [
 		per_minute * 60.0, per_minute]
-	notify_property_list_changed()
+	return text

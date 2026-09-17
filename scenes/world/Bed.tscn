@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://ccctarlfxibdl"]
+
+[ext_resource type="Script" uid="uid://donmkplgh4rqn" path="res://scripts/world/Bed.gd" id="1_bed"]
+
+[node name="Bed" type="Node2D" unique_id=246715020]
+script = ExtResource("1_bed")
+
+[node name="Placeholder" type="Polygon2D" parent="." unique_id=590863983]
+color = Color(0.56, 0.33, 0.26, 1)
+polygon = PackedVector2Array(-160, 0, 0, -80, 160, 0, 0, 80)
+
+[node name="PlayerDetector" type="Area2D" parent="." unique_id=773919044]
+collision_layer = 0
+collision_mask = 2
+
+[node name="Placeholder2" type="CollisionPolygon2D" parent="PlayerDetector" unique_id=1133992469]
+polygon = PackedVector2Array(-160, 0, 0, -80, 160, 0, 0, 80)
