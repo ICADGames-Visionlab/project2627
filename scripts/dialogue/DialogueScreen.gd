@@ -21,6 +21,7 @@ const FREEZE_REASON: StringName = &"dialogue"
 @onready var _backbuffer_copy: BackBufferCopy = $Root/BackBufferCopy
 @onready var _blur_rect: ColorRect = $Root/BlurRect
 @onready var _panel: PanelContainer = $Root/Panel
+@onready var _portrait: DialoguePortrait = $Root/Portrait
 @onready var _log: DialogueLog = $Root/Panel/Margin/Column/LogArea/Log
 @onready var _separator: ColorRect = $Root/Panel/Margin/Column/Separator
 @onready var _options_scroll: ScrollContainer = $Root/Panel/Margin/Column/OptionsScroll
@@ -39,6 +40,8 @@ var _pending_step: DialogueStep
 var _current_entry: DialogueEntry
 var _last_node_id: StringName = &""
 var _initiator_id: StringName = &""
+# O NPC cujo retrato está na moldura: o que abriu a conversa, ou o último NPC que falou nela.
+var _portrait_npc: NPCDefinition
 var _screen_time: float = 0.0
 var _finalized: bool = true
 
@@ -163,6 +166,9 @@ func _begin(runner: DialogueRunner, conversation_id: StringName, initiator_id: S
 	_pending_step = null
 	_last_node_id = &""
 	_initiator_id = initiator_id
+	_portrait_npc = _resolver.find_npc(initiator_id) if initiator_id != &"" else null
+	if _portrait_npc != null:
+		_portrait.show_npc(_portrait_npc, style)
 	_finalized = false
 
 	GameClock.freeze(FREEZE_REASON)
@@ -191,6 +197,9 @@ func close(force: bool = false) -> void:
 	tween.set_parallel(true)
 	tween.tween_property(_panel, "modulate:a", 0.0, duration)
 	tween.tween_property(_panel, "position:x", target_x, duration)
+	if _portrait.visible:
+		tween.tween_property(_portrait, "modulate:a", 0.0, duration)
+		tween.tween_property(_portrait, "position:x", _portrait.position.x + style.open_slide_px, duration)
 	await tween.finished
 	_finalize_close()
 
@@ -219,6 +228,7 @@ func _apply_layout() -> void:
 	style.apply_to_theme(_root.theme, text_scale, GameManager.dialogue_use_alt_font)
 	_update_panel_style()
 	_update_backdrop()
+	_update_portrait_layout()
 	_apply_options_height_cap()
 
 
@@ -276,6 +286,47 @@ func _update_backdrop() -> void:
 		_blur_rect.size = _panel.size
 
 
+# O retrato fica na moldura à esquerda da coluna (slot reservado em DialogueStyle.portrait_slot_size).
+# Some quando a conversa ainda não tem um NPC conhecido, ou quando a tela é estreita demais para ele.
+func _update_portrait_layout() -> void:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	var panel_left: float = _panel.offset_left + viewport_size.x
+	var rect: Rect2 = DialoguePortraitLayout.compute_rect(panel_left, _panel.offset_top, viewport_size, style)
+	_portrait.visible = _portrait_npc != null and rect.has_area()
+	if rect.has_area():
+		_portrait.position = rect.position
+		_portrait.size = rect.size
+
+
+# A conversa pode ter mais de um NPC falando: o retrato acompanha o último que falou. Jogador,
+# narração e cabeças de insight não têm retrato, então a moldura fica como estava.
+func _show_portrait_npc(npc: NPCDefinition) -> void:
+	if npc == _portrait_npc:
+		return
+	var was_visible: bool = _portrait.visible
+	_portrait_npc = npc
+	_portrait.show_npc(npc, style)
+	_update_portrait_layout()
+	if _portrait.visible:
+		_fade_in_portrait(not was_visible)
+
+
+# Entra junto com o painel (mesma duração e deslize) na abertura, ou só com um fade curto quando o
+# retrato troca de NPC no meio da conversa.
+func _fade_in_portrait(slide: bool) -> void:
+	var duration: float = style.scaled(style.open_duration if slide else style.entry_fade_in,
+		GameManager.dialogue_animation_multiplier)
+	var target_x: float = _portrait.position.x
+	_portrait.modulate.a = 0.0
+	if slide:
+		_portrait.position.x = target_x + style.open_slide_px
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(_portrait, "modulate:a", 1.0, duration)
+	if slide:
+		tween.tween_property(_portrait, "position:x", target_x, duration)
+
+
 # A lista de opções não pode empurrar o log pra fora da coluna (SPEC §7.1): acima de 50% da altura
 # da coluna — escala 200% + várias opções longas —, ela ganha rolagem própria (custom_minimum_size
 # trava a altura) e o log (único filho com EXPAND_FILL) fica com o resto, sempre acima de 30%.
@@ -296,6 +347,8 @@ func _play_open_animation() -> void:
 	tween.set_parallel(true)
 	tween.tween_property(_panel, "modulate:a", 1.0, duration)
 	tween.tween_property(_panel, "position:x", target_x, duration)
+	if _portrait.visible:
+		_fade_in_portrait(true)
 	await tween.finished
 	if _state == State.OPENING:
 		_resolve_pending_step()
@@ -327,6 +380,8 @@ func _process_step(step: DialogueStep) -> void:
 		return
 	var line: DialogueLine = step.lines[0]
 	var resolved: DialogueSpeakerResolver.Resolved = _resolver.resolve(line.speaker_id)
+	if resolved.npc != null:
+		_show_portrait_npc(resolved.npc)
 	_current_entry = _log.append_line(line, resolved, _exchange_tracker.current_exchange)
 	_state = State.SHOWING_LINE
 	_play_sfx_or_placeholder(style.sfx_new_line, DialoguePlaceholderAudio.new_line())
@@ -452,6 +507,8 @@ func _finalize_close() -> void:
 	_separator.visible = false
 	_scroll_indicator.set_pending_count(0)
 	_root.hide()
+	_portrait.modulate.a = 1.0
+	_portrait_npc = null
 	_state = State.CLOSED
 	_runner = null
 	_pending_step = null
@@ -588,10 +645,10 @@ func _is_left_click(event: InputEvent) -> bool:
 
 func _register_debug_entries() -> void:
 	DebugMenu.register_input(DEBUG_SECTION, "Iniciar conversa", _debug_start_conversation, [
-		DebugParam.string_value("conversation_id", "__proto_garte", _debug_conversation_suggestions),
+		DebugParam.string_value("conversation_id", "", _debug_conversation_suggestions),
 	])
 	DebugMenu.register_input(DEBUG_SECTION, "Pular para nó", _debug_jump_to_node, [
-		DebugParam.string_value("conversation_id", "__proto_garte", _debug_conversation_suggestions),
+		DebugParam.string_value("conversation_id", "", _debug_conversation_suggestions),
 		DebugParam.string_value("node_id", ""),
 	])
 	DebugMenu.register_action(DEBUG_SECTION, "Validar conversas", _debug_validate_conversations)
@@ -600,20 +657,17 @@ func _register_debug_entries() -> void:
 	DebugMenu.register_toggle(DEBUG_SECTION, "Ignorar condições", _debug_set_ignore_conditions, DialogueRunner.ignore_conditions)
 	DebugMenu.register_action(DEBUG_SECTION, "Teste de estresse de texto", _debug_stress_test)
 	DebugMenu.register_input(DEBUG_SECTION, "Passeio automático", _debug_auto_walk, [
-		DebugParam.string_value("conversation_id", "__proto_garte", _debug_conversation_suggestions),
+		DebugParam.string_value("conversation_id", "", _debug_conversation_suggestions),
 		DebugParam.int_value("runs", 50, 1, 500),
 	])
 	DebugMenu.register_action(DEBUG_SECTION, "Resetar escolhas", _debug_reset_choices, true)
 	DebugMenu.register_action(DEBUG_SECTION, "Autoteste do diálogo", _debug_run_self_test)
-	DebugMenu.register_action(DEBUG_SECTION, "Abrir protótipo", _debug_open_prototype)
-
-
-func _debug_open_prototype() -> void:
-	open(&"__proto_garte")
 
 
 func _debug_conversation_suggestions() -> PackedStringArray:
-	return PackedStringArray(["__proto_garte", "__stress_text"])
+	var suggestions: PackedStringArray = PackedStringArray(["__stress_text"])
+	suggestions.append_array(DialogueCatalog.list_script_ids())
+	return suggestions
 
 
 func _debug_start_conversation(conversation_id: String) -> void:

@@ -1,4 +1,4 @@
-[gd_resource type="SpriteFrames" load_steps=163 format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dnfxs67jse31q"]
 
 [ext_resource type="Texture2D" uid="uid://bi1amch3axeaw" path="res://images/placeholder/Top-Down Asset Pack (Oct 2025)/idle/idle full sprite sheet (transparent BG).png" id="1_idle"]
 [ext_resource type="Texture2D" uid="uid://wamull3pntox" path="res://images/placeholder/Top-Down Asset Pack (Oct 2025)/run/run complete sprite sheet (transparent BG).png" id="2_run"]

@@ -1,6 +1,23 @@
-# MemoryRunner.gd — Lê uma conversa a partir de um Dictionary (SPEC §5.3). Serve à fase 1 (prova
-# visual, sem addon) e ao protótipo de debug; o formato do conteúdo está documentado em
-# DialoguePrototypeData.gd.
+# MemoryRunner.gd — Lê uma conversa a partir de um Dictionary (SPEC §5.3). Roda todo roteiro .dlg
+# (o DialogueScriptParser produz este formato) e as conversas sintéticas de debug
+# (DialoguePrototypeData). Formato do conteúdo:
+#
+#   {
+#       "start": &"n1",
+#       "nodes": {
+#           &"n1": {
+#               "line": [line_id, speaker_id, text_key, tags (opcional)],
+#               "choices": [
+#                   { "id": &"...", "text": "CHAVE", "next": &"n2" },
+#                   # opcionais: "tag", "if_flag", "show_disabled", "reason", "grant"
+#               ],
+#           },
+#           &"n2": { "line": [...], "next": &"n3", "advance": "auto" },
+#       },
+#   }
+#
+# Nó sem "choices" avança por "next" (com Continuar, ou sozinho se "advance" for "auto"); sem
+# "next", ou com "next" = &"END", encerra a conversa.
 class_name MemoryRunner
 extends DialogueRunner
 

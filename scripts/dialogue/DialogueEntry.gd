@@ -1,6 +1,6 @@
-# DialogueEntry.gd — Uma fala dentro do log (SPEC §7.4). Duas colunas (Name + Text) para hanging
-# indent determinístico; nome longo demais faz a Row virar vertical (Row é um BoxContainer puro,
-# então alternar vertical/horizontal é só um bool, sem trocar de nó).
+# DialogueEntry.gd — Uma fala dentro do log (SPEC §7.4). Nome e fala moram no mesmo RichTextLabel,
+# em fluxo contínuo: o nome é só o começo do parágrafo, então a margem esquerda do texto é a da
+# coluna inteira, não a largura do nome — nome longo não empurra a fala nem abre uma segunda coluna.
 class_name DialogueEntry
 extends MarginContainer
 
@@ -10,8 +10,6 @@ enum EntryState { ENTERING, CURRENT, PAST }
 
 static var show_ids: bool = false
 
-@onready var _row: BoxContainer = $Row
-@onready var _name_label: RichTextLabel = $Row/Name
 @onready var _text_label: RichTextLabel = $Row/Text
 @onready var _id_label: Label = $Row/IdLabel
 
@@ -24,12 +22,15 @@ var _state: EntryState = EntryState.ENTERING
 var _reveal_schedule: PackedFloat32Array = PackedFloat32Array()
 var _reveal_elapsed: float = 0.0
 var _revealing: bool = false
+# Quantos caracteres o nome ocupa no começo do label: ele não é revelado letra por letra, então a
+# revelação sempre mostra o prefixo inteiro mais o que o cronograma já liberou da fala.
+var _prefix_chars: int = 0
+var _revealed_chars: int = 0
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	_text_label.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
-	resized.connect(_update_layout_mode)
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	set_process(false)
@@ -54,23 +55,29 @@ func refresh() -> void:
 		return
 	var content: String = _sanitized_text()
 	_text_label.clear()
+	_prefix_chars = 0
 	if _line.is_narration():
-		_name_label.visible = false
 		_text_label.push_color(_style.narration_color)
 		_text_label.push_italics()
 		_text_label.append_text(content)
 		_text_label.pop()
 		_text_label.pop()
 	else:
-		_name_label.visible = true
-		_name_label.clear()
-		_name_label.push_color(_resolved.color)
-		_name_label.append_text("[b]%s[/b]%s" % [tr(_resolved.name_key).to_upper(), tr(&"DIALOGUE_SPEAKER_SEPARATOR")])
-		_name_label.pop()
+		# add_text (e não append_text) no nome: nome é dado do projeto, não BBCode — um "[" num nome
+		# não pode virar tag.
+		var speaker_name: String = _speaker_display_name()
+		var separator: String = tr(&"DIALOGUE_SPEAKER_SEPARATOR")
+		_prefix_chars = speaker_name.length() + separator.length()
+		_text_label.push_color(_resolved.color)
+		_text_label.push_bold()
+		_text_label.add_text(speaker_name)
+		_text_label.pop()
+		_text_label.add_text(separator)
+		_text_label.pop()
 		_text_label.push_color(_style.text_color)
 		_text_label.append_text(content)
 		_text_label.pop()
-	call_deferred("_update_layout_mode")
+	_apply_visible_chars()
 
 
 func play_enter(duration: float) -> void:
@@ -94,7 +101,8 @@ func start_reveal() -> void:
 	_reveal_schedule = DialogueRevealTimer.build_schedule(plain, _style)
 	_reveal_elapsed = 0.0
 	_revealing = true
-	_text_label.visible_characters = 0
+	_revealed_chars = 0
+	_apply_visible_chars()
 	set_process(true)
 
 
@@ -103,7 +111,7 @@ func complete_reveal() -> void:
 		return
 	_revealing = false
 	set_process(false)
-	_text_label.visible_characters = -1
+	_apply_visible_chars()
 	reveal_finished.emit()
 
 
@@ -126,7 +134,8 @@ func _process(delta: float) -> void:
 	var count: int = 0
 	while count < _reveal_schedule.size() and _reveal_schedule[count] <= _reveal_elapsed:
 		count += 1
-	_text_label.visible_characters = count
+	_revealed_chars = count
+	_apply_visible_chars()
 	if count >= _reveal_schedule.size():
 		complete_reveal()
 
@@ -136,14 +145,21 @@ func _notification(what: int) -> void:
 		refresh()
 
 
-func _update_layout_mode() -> void:
-	if _style == null or not _name_label.visible:
-		return
-	var available: float = size.x
-	if available <= 0.0:
-		return
-	var name_width: float = _name_label.get_minimum_size().x
-	_row.vertical = name_width > _style.max_name_column_ratio * available
+# O nome aparece inteiro desde o primeiro quadro da revelação; só a fala anda pelo cronograma. Fora
+# da revelação (inclusive depois de um refresh por troca de idioma), o label mostra tudo.
+func _apply_visible_chars() -> void:
+	_text_label.visible_characters = (_prefix_chars + _revealed_chars) if _revealing else -1
+
+
+# "NOME, ALCUNHA" (ver DialogueSpeakerResolver.EPITHET_KEY_SUFFIX). Alcunha sem tradução — tr()
+# devolve a própria chave — cai para só o nome, em vez de mostrar a chave crua para o jogador.
+func _speaker_display_name() -> String:
+	var speaker_name: String = tr(_resolved.name_key)
+	var epithet_key: String = _resolved.get_epithet_key()
+	var epithet: String = tr(epithet_key) if epithet_key != "" else ""
+	if epithet == "" or epithet == epithet_key:
+		return speaker_name.to_upper()
+	return (tr(&"DIALOGUE_SPEAKER_EPITHET_FORMAT") % [speaker_name, epithet]).to_upper()
 
 
 func _sanitized_text() -> String:

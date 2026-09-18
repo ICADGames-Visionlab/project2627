@@ -59,6 +59,8 @@ const ALL_WEEKDAYS: int = 127
 
 ## Chave de tradução do nome, em translations/translations.csv (ex.: NPC_NAME_ZE). É o que aparece
 ## acima da cabeça dele. Nunca escreva o nome direto aqui.
+## No diálogo o nome segue o padrão "Nome, Alcunha": a alcunha é a linha <name_key>_ALCUNHA do CSV
+## (ex.: NPC_NAME_ZE_ALCUNHA = "O Padeiro"). Não há campo para ela aqui.
 @export var name_key: StringName = &"":
 	set(value):
 		name_key = value
@@ -84,6 +86,11 @@ const ALL_WEEKDAYS: int = 127
 ## Conversa aberta ao clicar no NPC (o id da conversa no catálogo de diálogo). Vazio = NPC não
 ## conversa (NPCInteraction não pede nada ao clicar nele).
 @export var conversation_id: StringName = &""
+
+## Retrato mostrado numa moldura ao lado da coluna de diálogo enquanto este NPC conversa. Vazio =
+## o diálogo desenha uma silhueta na dialogue_color (PLACEHOLDER até a arte final). O slot é 3:4
+## (DialogueStyle.portrait_slot_size, 180x240): imagem em outra proporção é cortada embaixo.
+@export var portrait: Texture2D
 
 @export_group("Emoções")
 

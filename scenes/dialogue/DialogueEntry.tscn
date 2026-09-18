@@ -6,19 +6,10 @@
 mouse_filter = 1
 script = ExtResource("1_entry")
 
-[node name="Row" type="BoxContainer" parent="."]
+[node name="Row" type="HBoxContainer" parent="."]
 layout_mode = 2
 mouse_filter = 1
 theme_override_constants/separation = 0
-
-[node name="Name" type="RichTextLabel" parent="Row"]
-layout_mode = 2
-mouse_filter = 1
-bbcode_enabled = true
-fit_content = true
-scroll_active = false
-autowrap_mode = 0
-theme_type_variation = "DialogueSpeakerName"
 
 [node name="Text" type="RichTextLabel" parent="Row"]
 layout_mode = 2

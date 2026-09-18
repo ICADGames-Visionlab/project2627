@@ -15,13 +15,27 @@ extends Resource
 @export var panel_margin_bottom: float = 48.0
 @export var panel_padding_h: float = 32.0
 @export var panel_padding_v: float = 24.0
+# Respiro dentro da caixa de cada opção — o mesmo em repouso e em destaque, porque é ele que dá
+# corpo ao preenchimento do hover sem mexer na posição da linha.
+@export var option_padding_h: float = 12.0
+@export var option_padding_v: float = 6.0
 @export var panel_color: Color = Color("#141414", 0.82)
 @export_range(0.0, 1.0) var backdrop_dim_alpha: float = 0.45
 @export var backdrop_fade_width: float = 240.0
 @export var backdrop_blur_enabled: bool = false
 @export var top_fade_height: float = 64.0
 @export var portrait_slot_size: Vector2 = Vector2(180, 240)
-@export var max_name_column_ratio: float = 0.4
+# Retrato do NPC (DialoguePortrait): fica à esquerda da coluna, alinhado ao topo dela. Em tela
+# estreita encolhe até portrait_min_scale do slot e some abaixo disso.
+@export var portrait_gap: float = 24.0
+@export var portrait_margin_left: float = 24.0
+@export var portrait_offset_top: float = 0.0
+@export_range(0.1, 1.0) var portrait_min_scale: float = 0.6
+@export var portrait_bg_color: Color = Color("#141414", 0.9)
+@export var portrait_frame_color: Color = Color("#8A8A8A")
+@export var portrait_frame_width: float = 3.0
+# Opacidade da silhueta de placeholder, sobre o portrait_bg_color.
+@export_range(0.0, 1.0) var portrait_placeholder_alpha: float = 0.55
 @export var max_log_entries: int = 300
 
 @export_group("Tipografia")
@@ -37,8 +51,9 @@ extends Resource
 @export var narration_color: Color = Color("#BDBDBD")
 @export var text_color: Color = Color("#EDEDED")
 @export var option_color: Color = Color("#E8663D")
-@export var option_hover_text_color: Color = Color("#FFFFFF")
-@export var option_hover_bar_color: Color = Color("#C4461F")
+# Texto da opção em destaque. A caixa vira a cor que o texto tinha em repouso (option_color ou
+# option_chosen_color), então esta é a cor da caixa antes do hover — o panel_color.
+@export var option_hover_text_color: Color = Color("#141414")
 @export var option_chosen_color: Color = Color("#B07A66")
 @export var option_disabled_color: Color = Color("#8A8A8A")
 @export var option_tag_color: Color = Color("#D9B26A")

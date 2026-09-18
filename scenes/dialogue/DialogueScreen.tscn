@@ -1,6 +1,7 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/dialogue/DialogueScreen.gd" id="1_screen"]
+[ext_resource type="Script" path="res://scripts/dialogue/DialoguePortrait.gd" id="7_portrait"]
 [ext_resource type="Theme" path="res://resources/dialogue/dialogue_theme.tres" id="2_theme"]
 [ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueLog.tscn" id="3_log"]
 [ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueOptionList.tscn" id="4_options"]
@@ -37,6 +38,12 @@ visible = false
 mouse_filter = 2
 layout_mode = 0
 material = SubResource("ShaderMaterial_backdrop_blur")
+
+[node name="Portrait" type="Control" parent="Root"]
+visible = false
+mouse_filter = 2
+layout_mode = 0
+script = ExtResource("7_portrait")
 
 [node name="Panel" type="PanelContainer" parent="Root"]
 mouse_filter = 0

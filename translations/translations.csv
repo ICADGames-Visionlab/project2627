@@ -30,6 +30,8 @@ WEEKDAY_SAT,Saturday,Sábado
 WEEKDAY_SUN,Sunday,Domingo
 NPC_NAME_ZE,Joe,Zé
 NPC_NAME_ANA,Ana,Ana
+NPC_NAME_ZE_ALCUNHA,The Baker,O Padeiro
+NPC_NAME_ANA_ALCUNHA,The Market Vendor,A Feirante
 EMOTION_ANGER,Anger,Raiva
 EMOTION_SADNESS,Sadness,Tristeza
 EMOTION_FEAR,Fear,Medo
@@ -47,6 +49,7 @@ HEAD_OLD_FISHERMAN_NAME,"The Old Fisherman","O Velho Pescador"
 PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pending)","Placeholder - Orbe de insight desenhado em código (arte final pendente)"
 DIALOGUE_SPEAKER_PLAYER,You,Você
 DIALOGUE_SPEAKER_SEPARATOR," — "," — "
+DIALOGUE_SPEAKER_EPITHET_FORMAT,"%s, %s","%s, %s"
 DIALOGUE_SPEAKER_NARRATOR,Narrator,Narrador
 DIALOGUE_OPTION_FORMAT,"%d. - ","%d. - "
 DIALOGUE_CONTINUE,Continue,Continuar
@@ -54,13 +57,6 @@ DIALOGUE_END,End,Encerrar
 DIALOGUE_NEW_LINES,%d new,%d nova(s)
 DIALOGUE_LOG_TRIMMED,… earlier lines,… falas anteriores
 DIALOGUE_TAG_AUTHORITY,Authority,Autoridade
-DEMO_GARTE_01,"""Not so fast."" He points at you. ""You owe me 130 reais.""","""Não tão rápido."" Ele aponta para você. ""Você me deve 130 reais."""
-DEMO_OPT_REAL,What's a real?,O que é real?
-DEMO_GARTE_02,"Money, detective.","Dinheiro, detetive."
-DEMO_OPT_AUTH,Put him in his place.,Coloque ele no lugar dele.
-DEMO_REASON_BADGE,Requires the badge,Precisa do distintivo
-DEMO_GARTE_03,"[i]He steps back half a pace.[/i] ""Fine, fine.""","[i]Ele recua meio passo.[/i] ""Tá, tá."""
-DEMO_OPT_EXIT,Leave.,Ir embora.
 SETTINGS_DIALOGUE_TEXT_SCALE,Dialogue text size,Tamanho do texto do diálogo
 SETTINGS_DIALOGUE_ALT_FONT,Sans-serif dialogue font,Fonte sem serifa no diálogo
 SETTINGS_DIALOGUE_PANEL_OPACITY,Dialogue panel opacity,Opacidade do painel de diálogo
@@ -71,3 +67,8 @@ SETTINGS_DIALOGUE_ANIMATION,Dialogue animation,Animação do diálogo
 SETTINGS_DIALOGUE_ANIMATION_NORMAL,Normal,Normal
 SETTINGS_DIALOGUE_ANIMATION_FAST,Fast,Rápida
 SETTINGS_DIALOGUE_ANIMATION_INSTANT,Instant,Instantânea
+DIALOGUE_ANA_TESTE_N1_C1,"","Oi Ana!"
+DIALOGUE_ANA_TESTE_N1_C2,"","Na relação AUTOMOVEIS cada automóvel é identificado por um código nacional, de acordo com o par. kkkkkkkkkkkkkkkkkkkkkkkkk \              kkkkkkkkkkkk"
+DIALOGUE_ANA_TESTE_N1_C3,"","VTNC!"
+DIALOGUE_ANA_TESTE_N1,"","Oi, eu sou a Ana."
+DIALOGUE_ANA_TESTE_OI_ANA,"","Prazer!"

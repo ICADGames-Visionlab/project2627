@@ -1,21 +1,23 @@
 # DialogueValidator.gd — "Validar conversas" (SPEC §15.2).
 #
-# O addon Godot Dialogue Manager ainda não foi instalado (D1 continua pendente para o Lead, ver
-# SPEC §18), então não existem roteiros reais em res://dialogue/**/*.dialogue para varrer. O que dá
-# para validar hoje é justamente o que já roda no jogo sem o addon: as chaves fixas do sistema e as
-# conversas sintéticas de debug (DialoguePrototypeData). Quando o addon entrar, a varredura dos
-# roteiros reais se soma às checagens daqui, sem substituí-las.
+# D1 decidido: sem addon Godot Dialogue Manager. Roteiro real é um .dlg em res://dialogue/,
+# convertido pelo DialogueScriptParser — erro de sintaxe vira Issue igual a qualquer outro problema.
+# Confere as chaves fixas do sistema, as conversas sintéticas de debug (DialoguePrototypeData) e
+# todo roteiro real (DialogueCatalog.list_script_ids()), com os mesmos critérios de conteúdo pros
+# três: falante desconhecido, chave sem tradução, mais de 9 opções e fala acima de max_line_chars.
+# Também confere o padrão de nome dos personagens: todo NPC do roster com alcunha no CSV.
 class_name DialogueValidator
 extends RefCounted
 
 enum Severity { ERROR, WARNING }
 
 const FIXED_KEYS: PackedStringArray = [
-	"DIALOGUE_SPEAKER_PLAYER", "DIALOGUE_SPEAKER_SEPARATOR", "DIALOGUE_OPTION_FORMAT",
+	"DIALOGUE_SPEAKER_PLAYER", "DIALOGUE_SPEAKER_SEPARATOR", "DIALOGUE_SPEAKER_EPITHET_FORMAT",
+	"DIALOGUE_OPTION_FORMAT",
 	"DIALOGUE_CONTINUE", "DIALOGUE_END", "DIALOGUE_NEW_LINES", "DIALOGUE_LOG_TRIMMED",
 	"DIALOGUE_TAG_AUTHORITY",
 ]
-const SYNTHETIC_IDS: PackedStringArray = ["__proto_garte", "__stress_text"]
+const SYNTHETIC_IDS: PackedStringArray = ["__stress_text"]
 
 
 class Issue:
@@ -35,11 +37,15 @@ class Issue:
 static func run() -> Array[Issue]:
 	var issues: Array[Issue] = []
 	issues.append_array(_validate_fixed_keys())
-	var rows: Dictionary = _read_csv_rows()
+	var rows: Dictionary = read_csv_rows()
+	issues.append_array(_validate_npc_epithets(rows))
 	var style: DialogueStyle = load("res://resources/dialogue/dialogue_style.tres")
 	var resolver: DialogueSpeakerResolver = DialogueCatalog.make_default_resolver(style)
 	for id: String in SYNTHETIC_IDS:
-		issues.append_array(_validate_synthetic(StringName(id), rows, style, resolver))
+		var content: Dictionary = DialoguePrototypeData.get_content(StringName(id))
+		issues.append_array(_validate_content(StringName(id), content, rows, style, resolver))
+	for id: String in DialogueCatalog.list_script_ids():
+		issues.append_array(_validate_script(StringName(id), rows, style, resolver))
 	return issues
 
 
@@ -61,16 +67,31 @@ static func report() -> String:
 			lines.append("  ✗ %s — %s (aviso)" % [label, issue.message])
 	if issues.is_empty():
 		lines.append("  ✓ Nenhum problema encontrado.")
-	lines.append("  Roteiros reais: 0 (addon Godot Dialogue Manager ainda não instalado)")
-	var summary: String = "[Dialogue] - Validação: %d erro(s), %d aviso(s) em %d conversa(s) sintética(s)" % [
-		errors, warnings, SYNTHETIC_IDS.size()
+	var script_count: int = DialogueCatalog.list_script_ids().size()
+	var summary: String = "[Dialogue] - Validação: %d erro(s), %d aviso(s) em %d conversa(s) sintética(s) e %d roteiro(s) real(is)" % [
+		errors, warnings, SYNTHETIC_IDS.size(), script_count
 	]
 	return summary + "\n" + "\n".join(lines)
 
 
+# Faz o parser do .dlg e roda os mesmos critérios de conteúdo da conversa sintética; erro de
+# sintaxe vira Issue de ERROR (sem node_id — o próprio parser já aponta a linha na mensagem).
+static func _validate_script(conversation_id: StringName, rows: Dictionary, style: DialogueStyle,
+		resolver: DialogueSpeakerResolver) -> Array[Issue]:
+	var path: String = DialogueCatalog.get_script_path(conversation_id)
+	var source: String = FileAccess.get_file_as_string(path)
+	var result: DialogueScriptParser.Result = DialogueScriptParser.parse(source, conversation_id)
+	if not result.ok():
+		var issues: Array[Issue] = []
+		for error: DialogueScriptParser.ParseError in result.errors:
+			issues.append(Issue.new(Severity.ERROR, conversation_id, "", str(error)))
+		return issues
+	return _validate_content(conversation_id, result.content, rows, style, resolver)
+
+
 static func _validate_fixed_keys() -> Array[Issue]:
 	var issues: Array[Issue] = []
-	var rows: Dictionary = _read_csv_rows()
+	var rows: Dictionary = read_csv_rows()
 	if rows.is_empty():
 		issues.append(Issue.new(Severity.ERROR, &"", "translations.csv", "não foi possível ler o CSV"))
 		return issues
@@ -85,13 +106,30 @@ static func _validate_fixed_keys() -> Array[Issue]:
 	return issues
 
 
-# Confere uma conversa sintética do MemoryRunner (§15.6): chave ausente no CSV, falante
-# desconhecido, mais de 9 opções e fala acima de max_line_chars — os mesmos critérios do §15.2 que
-# não dependem do addon.
-static func _validate_synthetic(conversation_id: StringName, rows: Dictionary, style: DialogueStyle,
-		resolver: DialogueSpeakerResolver) -> Array[Issue]:
+# Padrão "Nome, Alcunha" (DialogueSpeakerResolver.EPITHET_KEY_SUFFIX): todo NPC do roster precisa
+# da linha <name_key>_ALCUNHA no CSV. Aviso, não erro — sem ela o diálogo ainda funciona, só mostra
+# o nome sozinho.
+static func _validate_npc_epithets(rows: Dictionary) -> Array[Issue]:
 	var issues: Array[Issue] = []
-	var content: Dictionary = DialoguePrototypeData.get_content(conversation_id)
+	var roster: NPCRoster = load(DialogueCatalog.NPC_ROSTER_PATH)
+	if roster == null or rows.is_empty():
+		return issues
+	for definition: NPCDefinition in roster.npcs:
+		if definition == null or definition.name_key == &"":
+			continue
+		var epithet_key: String = DialogueSpeakerResolver.epithet_key_for(String(definition.name_key))
+		if not rows.has(epithet_key):
+			issues.append(Issue.new(Severity.WARNING, &"", "npc:%s" % definition.id,
+				"sem alcunha: chave \"%s\" ausente no CSV" % epithet_key))
+	return issues
+
+
+# Confere um conteúdo já no formato do MemoryRunner (§15.6), venha de conversa sintética ou de
+# roteiro real já parseado: chave ausente no CSV, falante desconhecido, mais de 9 opções e fala
+# acima de max_line_chars.
+static func _validate_content(conversation_id: StringName, content: Dictionary, rows: Dictionary,
+		style: DialogueStyle, resolver: DialogueSpeakerResolver) -> Array[Issue]:
+	var issues: Array[Issue] = []
 	var nodes: Dictionary = content.get("nodes", {})
 	for node_id: Variant in nodes.keys():
 		var node: Dictionary = nodes[node_id]
@@ -134,8 +172,9 @@ static func _check_length(issues: Array[Issue], rows: Dictionary, style: Dialogu
 
 
 # Lê o CSV inteiro para um dicionário chave -> colunas, para não reabrir o arquivo a cada chave
-# checada (ver o mesmo cuidado em InsightCatalog._ensure_translation_keys()).
-static func _read_csv_rows() -> Dictionary:
+# checada (ver o mesmo cuidado em InsightCatalog._ensure_translation_keys()). Público porque o
+# __stress_text (DialoguePrototypeData) também varre o CSV inteiro.
+static func read_csv_rows() -> Dictionary:
 	var file: FileAccess = FileAccess.open(InsightCatalog.TRANSLATIONS_CSV, FileAccess.READ)
 	if file == null:
 		return {}

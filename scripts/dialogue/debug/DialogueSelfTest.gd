@@ -42,6 +42,8 @@ func run() -> void:
 	_test_state()
 	_test_style()
 	_test_placeholder_audio()
+	_test_portrait_layout()
+	_test_script_parser()
 
 	DialogueState.from_dict(state_snapshot)
 	DialogueState.autosave_enabled = was_autosaving
@@ -60,6 +62,7 @@ func _test_resolver() -> void:
 	var style := DialogueStyle.new()
 	var npc_definition := NPCDefinition.new()
 	npc_definition.id = &"__selftest_npc"
+	npc_definition.name_key = &"__SELFTEST_NPC_NAME"
 	npc_definition.dialogue_color = Color(0.2, 0.4, 0.6)
 	var roster := NPCRoster.new()
 	roster.npcs = [npc_definition]
@@ -101,6 +104,14 @@ func _test_resolver() -> void:
 	_expect_true("NPC do roster resolve com dialogue_color, e ganha de uma cabeça com o mesmo id",
 		npc_resolved.kind == DialogueSpeakerResolver.Kind.NPC
 		and npc_resolved.color == npc_definition.dialogue_color)
+	_expect_true("Alcunha do NPC é a chave do nome com _ALCUNHA (padrão \"Nome, Alcunha\")",
+		npc_resolved.get_epithet_key() == "__SELFTEST_NPC_NAME_ALCUNHA")
+	_expect_true("Jogador não tem alcunha", player_resolved.get_epithet_key() == "")
+	_expect_true("Só o NPC do roster carrega o NPCDefinition (é de onde sai o retrato)",
+		npc_resolved.npc == npc_definition and player_resolved.npc == null and forced_head.npc == null)
+	_expect_true("find_npc acha o NPC do roster e devolve null para quem não é NPC",
+		resolver.find_npc(&"__selftest_npc") == npc_definition and resolver.find_npc(&"player") == null
+		and resolver.find_npc(&"__selftest_speaker") == null)
 
 	var speaker_resolved: DialogueSpeakerResolver.Resolved = resolver.resolve(&"__selftest_speaker")
 	_expect_true("DialogueSpeaker resolve como último recurso conhecido",
@@ -303,6 +314,101 @@ func _test_placeholder_audio() -> void:
 		_expect_true("Placeholder de áudio \"%s\" gera dados" % cue, stream != null and stream.data.size() > 0)
 	_expect_true("Placeholder de áudio é cacheado (mesma instância na segunda chamada)",
 		DialoguePlaceholderAudio.open() == DialoguePlaceholderAudio.open())
+
+
+# --- Retrato do NPC ---
+
+func _test_portrait_layout() -> void:
+	var style := DialogueStyle.new()
+	var slot: Vector2 = style.portrait_slot_size
+	var viewport := Vector2(1280.0, 720.0)
+	var panel_left: float = 584.0
+	var panel_top: float = 48.0
+
+	var full: Rect2 = DialoguePortraitLayout.compute_rect(panel_left, panel_top, viewport, style)
+	_expect_true("Retrato cabe inteiro, colado à coluna pelo respiro do estilo e alinhado ao topo dela",
+		full.size.is_equal_approx(slot) and is_equal_approx(full.end.x, panel_left - style.portrait_gap)
+		and is_equal_approx(full.position.y, panel_top + style.portrait_offset_top))
+
+	var tight_left: float = style.portrait_margin_left + style.portrait_gap + slot.x * 0.8
+	var shrunk: Rect2 = DialoguePortraitLayout.compute_rect(tight_left, panel_top, viewport, style)
+	_expect_true("Sem largura para o slot inteiro, o retrato encolhe mantendo a proporção e sem passar da margem",
+		shrunk.has_area() and shrunk.size.x < slot.x
+		and is_equal_approx(shrunk.size.x / shrunk.size.y, slot.x / slot.y)
+		and shrunk.position.x >= style.portrait_margin_left - 0.01)
+
+	var too_narrow_left: float = style.portrait_margin_left + style.portrait_gap + slot.x * style.portrait_min_scale * 0.5
+	_expect_true("Abaixo de portrait_min_scale não há retrato (Rect2 vazio)",
+		not DialoguePortraitLayout.compute_rect(too_narrow_left, panel_top, viewport, style).has_area())
+
+	var short_viewport := Vector2(1280.0, 300.0)
+	var short: Rect2 = DialoguePortraitLayout.compute_rect(panel_left, panel_top, short_viewport, style)
+	_expect_true("Em tela baixa o retrato encolhe para não passar da margem inferior",
+		short.has_area() and short.size.y < slot.y
+		and short.end.y <= short_viewport.y - style.panel_margin_bottom + 0.01)
+
+	style.portrait_slot_size = Vector2.ZERO
+	_expect_true("Slot de tamanho zero desliga o retrato",
+		not DialoguePortraitLayout.compute_rect(panel_left, panel_top, viewport, style).has_area())
+
+
+# --- Formato de roteiro próprio (D1 decidido: sem addon) ---
+
+func _test_script_parser() -> void:
+	var basic: DialogueScriptParser.Result = DialogueScriptParser.parse(
+		"== n1 ==\nze: SELFTEST_FALA_01\n- SELFTEST_OPCAO_SAIR => END\n", &"__selftest_dlg")
+	_expect_true("Roteiro básico (chave, não texto) sem erro de sintaxe", basic.ok())
+	_expect_true("Nó inicial é o primeiro do arquivo", basic.content.get("start") == &"n1")
+	var n1: Dictionary = basic.content.get("nodes", {}).get(&"n1", {})
+	_expect_true("Fala do nó usa a chave escrita no roteiro, tal como está",
+		n1.get("line", [])[2] == "SELFTEST_FALA_01")
+	_expect_true("Opção para END não precisa de nó \"END\" declarado",
+		n1.get("choices", [])[0]["next"] == &"END")
+
+	var literal: DialogueScriptParser.Result = DialogueScriptParser.parse(
+		"== n1 ==\nze: Oi, eu sou a Ana.\n- Tchau. => END\n", &"__selftest_dlg")
+	_expect_true("Texto literal (não CAIXA_ALTA) na fala é erro de sintaxe", not literal.ok())
+	_expect_true("Texto literal na opção também é erro de sintaxe",
+		literal.errors.size() >= 2)
+
+	var chain: DialogueScriptParser.Result = DialogueScriptParser.parse(
+		"== n1 ==\nze: SELFTEST_FALA_01\nze: SELFTEST_FALA_02\n- SELFTEST_OPCAO_SAIR => END\n", &"__selftest_dlg")
+	var chain_nodes: Dictionary = chain.content.get("nodes", {})
+	_expect_true("Duas falas no mesmo nó viram dois nós encadeados", chain_nodes.size() == 2)
+	_expect_true("Primeiro elo avança para o segundo (\"Continuar\", sem opções)",
+		chain_nodes.get(&"n1", {}).get("next") == &"n1__2" and not chain_nodes[&"n1"].has("choices"))
+	_expect_true("Só o último elo leva as opções do roteiro",
+		chain_nodes.get(&"n1__2", {}).has("choices"))
+
+	var attrs: DialogueScriptParser.Result = DialogueScriptParser.parse(
+		"== n1 ==\nze: SELFTEST_FALA_01\n" +
+		"- SELFTEST_OPCAO_AUTORIDADE [tag:DIALOGUE_TAG_AUTHORITY if:badge_found show_disabled reason:SELFTEST_MOTIVO grant:selftest_flag] => END\n",
+		&"__selftest_dlg")
+	_expect_true("Roteiro com atributos (todos chave) sem erro", attrs.ok())
+	var choice: Dictionary = attrs.content.get("nodes", {}).get(&"n1", {}).get("choices", [])[0]
+	_expect_true("id da opção é prefixado pela conversa (não colide entre roteiros diferentes)",
+		choice.get("id") == &"__selftest_dlg:SELFTEST_OPCAO_AUTORIDADE")
+	_expect_true("tag/reason usam a chave como está", choice.get("tag") == "DIALOGUE_TAG_AUTHORITY"
+		and choice.get("reason") == "SELFTEST_MOTIVO")
+	_expect_true("if/show_disabled/grant aplicados", choice.get("if_flag") == &"badge_found"
+		and choice.get("show_disabled") == true and choice.get("grant") == &"selftest_flag")
+
+	var bad_attr: DialogueScriptParser.Result = DialogueScriptParser.parse(
+		"== n1 ==\nze: SELFTEST_FALA_01\n- SELFTEST_OPCAO_SAIR [reason:\"Falta o crachá\"] => END\n", &"__selftest_dlg")
+	_expect_true("Motivo/tag com texto literal entre aspas também é erro (tudo é chave agora)", not bad_attr.ok())
+
+	var missing_arrow: DialogueScriptParser.Result = DialogueScriptParser.parse(
+		"== n1 ==\nze: SELFTEST_FALA_01\n- SELFTEST_OPCAO_SAIR\n", &"__selftest_dlg")
+	_expect_true("Opção sem \"=> destino\" é erro de sintaxe", not missing_arrow.ok())
+
+	var dangling: DialogueScriptParser.Result = DialogueScriptParser.parse(
+		"== n1 ==\nze: SELFTEST_FALA_01\n- SELFTEST_OPCAO_SAIR => n_fantasma\n", &"__selftest_dlg")
+	_expect_true("Opção apontando pra nó inexistente é erro", not dangling.ok())
+
+	var duplicate: DialogueScriptParser.Result = DialogueScriptParser.parse(
+		"== n1 ==\nze: SELFTEST_FALA_01\n- SELFTEST_OPCAO_SAIR => END\n" +
+		"== n1 ==\nze: SELFTEST_FALA_02\n- SELFTEST_OPCAO_SAIR => END\n", &"__selftest_dlg")
+	_expect_true("Nó repetido é erro", not duplicate.ok())
 
 
 func _expect_true(label: String, condition: bool) -> void:

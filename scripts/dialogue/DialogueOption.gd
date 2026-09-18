@@ -1,11 +1,12 @@
 # DialogueOption.gd — Uma opção clicável na lista (SPEC §7.5). O destaque é decidido pela
 # DialogueOptionList (índice único, compartilhado); esta cena só sabe desenhar o estado que recebe.
+# Em destaque a opção inverte: a caixa inteira vira a cor que o texto tinha em repouso e o texto
+# vira a cor da caixa (option_hover_text_color).
 class_name DialogueOption
 extends PanelContainer
 
 signal confirmed(choice: DialogueChoice)
 
-@onready var _bar: ColorRect = $Row/Bar
 @onready var _marker: Label = $Row/Marker
 @onready var _number: Label = $Row/Number
 @onready var _text: RichTextLabel = $Row/Text
@@ -26,7 +27,6 @@ func setup(p_choice: DialogueChoice, p_shortcut: int, p_style: DialogueStyle) ->
 	choice = p_choice
 	shortcut = p_shortcut
 	style = p_style
-	_marker.text = style.option_marker_hover
 	_chosen_mark.text = style.option_marker_chosen
 	refresh()
 
@@ -42,17 +42,19 @@ func refresh() -> void:
 	if choice == null or style == null:
 		return
 	var available: bool = choice.is_available
+	var highlighted: bool = is_highlighted and available
 	mouse_filter = Control.MOUSE_FILTER_STOP if available else Control.MOUSE_FILTER_IGNORE
 	_number.text = tr(&"DIALOGUE_OPTION_FORMAT") % shortcut if (available and shortcut > 0) else ""
 	_chosen_mark.visible = choice.was_chosen_before and available
-	_marker.visible = is_highlighted and available
+	# Texto vazio em vez de visible = false: a coluna do marcador segue reservada, então entrar e
+	# sair do destaque não empurra a linha para o lado.
+	_marker.text = style.option_marker_hover if highlighted else ""
 
 	var state_color: Color = _current_color()
 	_number.add_theme_color_override("font_color", state_color)
-	_marker.add_theme_color_override("font_color", style.option_hover_text_color)
-	_chosen_mark.add_theme_color_override("font_color", style.option_chosen_color)
-	_bar.color = style.option_hover_bar_color
-	_bar.visible = is_highlighted and available
+	_marker.add_theme_color_override("font_color", state_color)
+	_chosen_mark.add_theme_color_override("font_color", state_color)
+	add_theme_stylebox_override("panel", _build_panel_box(highlighted))
 
 	_text.clear()
 	if not available:
@@ -60,7 +62,8 @@ func refresh() -> void:
 		_text.append_text("[%s] " % tr(choice.unavailable_reason_key))
 		_text.pop()
 	elif choice.tag_key != "":
-		_text.push_color(style.option_tag_color)
+		# A etiqueta também inverte no destaque: o dourado sobre o preenchimento não teria contraste.
+		_text.push_color(state_color if highlighted else style.option_tag_color)
 		_text.append_text("[%s] " % tr(choice.tag_key))
 		_text.pop()
 	_text.push_color(state_color)
@@ -68,14 +71,31 @@ func refresh() -> void:
 	_text.pop()
 
 
-func _current_color() -> Color:
+# A caixa em repouso é transparente, mas com as mesmas margens da caixa em destaque — sem isso a
+# linha inteira daria um pulo de largura ao ganhar o preenchimento.
+func _build_panel_box(highlighted: bool) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = _resting_color() if highlighted else Color(0, 0, 0, 0)
+	box.content_margin_left = style.option_padding_h
+	box.content_margin_right = style.option_padding_h
+	box.content_margin_top = style.option_padding_v
+	box.content_margin_bottom = style.option_padding_v
+	return box
+
+
+# Cor do texto fora do destaque — é ela que vira o fundo da caixa quando a opção é destacada.
+func _resting_color() -> Color:
 	if not choice.is_available:
 		return style.option_disabled_color
-	if is_highlighted:
-		return style.option_hover_text_color
 	if choice.was_chosen_before:
 		return style.option_chosen_color
 	return style.option_color
+
+
+func _current_color() -> Color:
+	if is_highlighted and choice.is_available:
+		return style.option_hover_text_color
+	return _resting_color()
 
 
 # Texto vira branco puro para o brilho de confirmação (SPEC §8.2), antes do pulso de escala.

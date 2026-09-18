@@ -284,6 +284,7 @@ Checklist rápido pra revisão de PR que mexa em NPC:
 - [ ] Nenhum NPC colocado à mão na cena — quem povoa é o `NPCDirector`, a partir do roster.
 - [ ] Nenhum `Timer` usado pra marcar hora de rotina.
 - [ ] Nenhum nome de NPC ou de emoção escrito direto: só chave do CSV (`NPC_NAME_*`, `EMOTION_*`).
+- [ ] NPC novo tem alcunha no CSV, na chave do nome com `_ALCUNHA` (`NPC_NAME_ZE_ALCUNHA`): no diálogo o nome sai como "Nome, Alcunha".
 - [ ] Nenhuma posição de NPC guardada em variável — a posição é derivada do relógio.
 - [ ] `find_path` chamado sempre com o próprio RID na lista de exclusão.
 - [ ] Agente novo entrou na camada de física 2 (e não na 1, dos obstáculos).

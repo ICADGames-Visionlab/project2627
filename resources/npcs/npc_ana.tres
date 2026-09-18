@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="NPCDefinition" format=3]
+[gd_resource type="Resource" script_class="NPCDefinition" format=3 uid="uid://csg3um5uweh8m"]
 
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_medo.tres" id="1_r7ulg"]
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_euforia.tres" id="2_pixw1"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_medo_folga.tres" id="3_bs1fm"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_medo_trabalho.tres" id="4_u6ttw"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_folga.tres" id="5_roqjy"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_trabalho.tres" id="6_7rdqp"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_euforia_folga.tres" id="7_sj6x0"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_euforia_trabalho.tres" id="8_q7tqg"]
-[ext_resource type="Script" path="res://scripts/npc/NPCDefinition.gd" id="9_wx0oo"]
+[ext_resource type="Resource" uid="uid://jg7gnemm6nr7" path="res://resources/npcs/rotinas/rotina_ana_medo_folga.tres" id="3_bs1fm"]
+[ext_resource type="Resource" uid="uid://dh2ps42hvth6j" path="res://resources/npcs/rotinas/rotina_ana_medo_trabalho.tres" id="4_u6ttw"]
+[ext_resource type="Resource" uid="uid://dh7wftfg33qf0" path="res://resources/npcs/rotinas/rotina_ana_folga.tres" id="5_roqjy"]
+[ext_resource type="Resource" uid="uid://cyk0pvvex4gsl" path="res://resources/npcs/rotinas/rotina_ana_trabalho.tres" id="6_7rdqp"]
+[ext_resource type="Resource" uid="uid://cmgptgva76vd3" path="res://resources/npcs/rotinas/rotina_ana_euforia_folga.tres" id="7_sj6x0"]
+[ext_resource type="Resource" uid="uid://b3lanonwna2vf" path="res://resources/npcs/rotinas/rotina_ana_euforia_trabalho.tres" id="8_q7tqg"]
+[ext_resource type="Script" uid="uid://bm7w16uuu8ll5" path="res://scripts/npc/NPCDefinition.gd" id="9_wx0oo"]
 
 [resource]
 script = ExtResource("9_wx0oo")
@@ -16,6 +16,7 @@ id = &"ana"
 name_key = &"NPC_NAME_ANA"
 tint = Color(1, 0.7, 0.5, 1)
 walk_speed = 240.0
+conversation_id = &"ana_teste"
 emotion_first = ExtResource("1_r7ulg")
 emotion_second = ExtResource("2_pixw1")
 starting_slot = 2

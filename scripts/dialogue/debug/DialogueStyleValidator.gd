@@ -28,8 +28,12 @@ static func run(style: DialogueStyle) -> Array[Result]:
 	_check(results, style, style.option_chosen_color, 1.0, "option_chosen_color")
 	_check(results, style, style.option_disabled_color, 1.0, "option_disabled_color")
 	_check(results, style, style.option_tag_color, 1.0, "option_tag_color")
-	_check_direct(results, style, style.option_hover_text_color, style.option_hover_bar_color,
-		"option_hover_text_color sobre option_hover_bar_color")
+	# No destaque a caixa vira a cor de repouso do texto, então o texto invertido é conferido contra
+	# os dois preenchimentos possíveis: opção nova e opção já escolhida.
+	_check_direct(results, style, style.option_hover_text_color, style.option_color,
+		"option_hover_text_color sobre option_color")
+	_check_direct(results, style, style.option_hover_text_color, style.option_chosen_color,
+		"option_hover_text_color sobre option_chosen_color")
 
 	var roster: NPCRoster = load(DialogueCatalog.NPC_ROSTER_PATH)
 	if roster != null:
@@ -73,8 +77,8 @@ static func _check_with_past(results: Array[Result], style: DialogueStyle, color
 	_check(results, style, color, style.past_alpha, label + " (passada)")
 
 
-# Contraste direto entre duas cores sólidas (texto em destaque sobre a barra de hover), sem passar
-# pelo pior caso de fundo — as duas já são opacas e uma cobre a outra.
+# Contraste direto entre duas cores sólidas (texto em destaque sobre o preenchimento do destaque),
+# sem passar pelo pior caso de fundo — as duas já são opacas e uma cobre a outra.
 static func _check_direct(results: Array[Result], style: DialogueStyle, foreground: Color,
 		background: Color, label: String) -> void:
 	var ratio: float = DialogueContrast.ratio(foreground, background)

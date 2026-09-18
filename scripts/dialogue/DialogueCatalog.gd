@@ -1,28 +1,66 @@
 # DialogueCatalog.gd — Acha o runner certo para uma conversa e monta o resolvedor de falantes
-# padrão (SPEC §5.2, §9.1). A indexação de roteiros reais (res://dialogue/**/*.dialogue) entra
-# junto com o addon Godot Dialogue Manager; até lá, só as conversas sintéticas de debug resolvem.
+# padrão (SPEC §5.2, §9.1). D1 decidido: sem o addon Godot Dialogue Manager. Roteiro real é um
+# arquivo de texto em res://dialogue/<id>.dlg (formato próprio, ver DialogueScriptParser.gd),
+# convertido pro mesmo Dictionary do MemoryRunner — não existe um "runner do addon" nem nunca vai
+# existir.
 class_name DialogueCatalog
 extends RefCounted
 
 const NPC_ROSTER_PATH: String = "res://resources/npcs/npc_roster.tres"
 const SPEAKERS_DIR: String = "res://resources/dialogue/speakers"
+const SCRIPTS_DIR: String = "res://dialogue"
 
 static var _speakers_cache: Dictionary = {}
 static var _speakers_loaded: bool = false
 
 
-# Prioridade (SPEC §5.2): conversa sintética de debug (__proto_*, __stress_*) -> MemoryRunner;
-# roteiro real -> DialogueManagerRunner (ainda não instalado); senão null, com erro no log.
+# Prioridade (SPEC §5.2): conversa sintética de debug (__stress_*) -> MemoryRunner com o
+# conteúdo do DialoguePrototypeData; senão, procura res://dialogue/<id>.dlg e faz o parser. Sem
+# addon: não há terceira opção.
 static func create_runner(conversation_id: StringName) -> DialogueRunner:
 	var id_str: String = String(conversation_id)
-	if id_str.begins_with("__proto_") or id_str.begins_with("__stress_"):
+	if id_str.begins_with("__stress_"):
 		var content: Dictionary = DialoguePrototypeData.get_content(conversation_id)
 		if content.is_empty():
 			push_error("[Dialogue] - Conversa sintética \"%s\" não encontrada" % conversation_id)
 			return null
 		return MemoryRunner.new(content)
-	push_error("[Dialogue] - Nenhum runner disponível para \"%s\" (roteiro real exige o addon Godot Dialogue Manager)" % conversation_id)
-	return null
+	return _create_script_runner(conversation_id)
+
+
+static func get_script_path(conversation_id: StringName) -> String:
+	return "%s/%s.dlg" % [SCRIPTS_DIR, conversation_id]
+
+
+static func _create_script_runner(conversation_id: StringName) -> DialogueRunner:
+	var path: String = get_script_path(conversation_id)
+	if not FileAccess.file_exists(path):
+		push_error("[Dialogue] - Roteiro \"%s\" não encontrado em \"%s\"" % [conversation_id, path])
+		return null
+	var source: String = FileAccess.get_file_as_string(path)
+	var result: DialogueScriptParser.Result = DialogueScriptParser.parse(source, conversation_id)
+	if not result.ok():
+		for error: DialogueScriptParser.ParseError in result.errors:
+			push_error("[Dialogue] - %s: %s" % [path, error])
+		return null
+	return MemoryRunner.new(result.content)
+
+
+# Todos os arquivos .dlg em res://dialogue/, sem a extensão — usado por "Validar conversas" e pelas
+# sugestões dos comandos de debug (SPEC §15.2).
+static func list_script_ids() -> PackedStringArray:
+	var ids: PackedStringArray = PackedStringArray()
+	var dir: DirAccess = DirAccess.open(SCRIPTS_DIR)
+	if dir == null:
+		return ids
+	dir.list_dir_begin()
+	var file_name: String = dir.get_next()
+	while file_name != "":
+		if file_name.ends_with(".dlg"):
+			ids.append(file_name.trim_suffix(".dlg"))
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return ids
 
 
 static func make_default_resolver(style: DialogueStyle) -> DialogueSpeakerResolver:
