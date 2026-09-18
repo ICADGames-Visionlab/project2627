@@ -134,6 +134,16 @@ const ALL_WEEKDAYS: int = 127
 		routine_second_day_off = value
 		_refresh_summary()
 
+@export_group("Mundo dos sonhos")
+
+## Onde este NPC fica enquanto o jogador sonha: a cena e o waypoint, no mesmo formato de uma entrada
+## de rotina. O HORÁRIO DA ENTRADA É IGNORADO — no sonho o relógio está travado (ver
+## TimeSettings.dream_hour) e o NPC não sai do lugar. Vazio = o NPC não aparece no sonho.
+@export var dream_entry: NPCRoutineEntry:
+	set(value):
+		dream_entry = value
+		_refresh_summary()
+
 @export_group("")
 
 ## Só leitura: as seis rotinas e o que está faltando, escrito por extenso. Editar aqui não faz nada.
@@ -211,6 +221,8 @@ func collect_issues() -> PackedStringArray:
 		issues.append("Sem emoção no slot 2.")
 	if get_routine(EmotionSlot.NEUTRAL, DayType.WORKDAY) == null:
 		issues.append("Sem rotina neutro/trabalho — ela é o último fallback de todos os outros slots.")
+	if dream_entry == null or dream_entry.scene_path == "" or dream_entry.waypoint == &"":
+		issues.append("Sem posição no mundo dos sonhos (dream_entry): some enquanto o jogador sonha.")
 
 	for slot: int in EmotionSlot.values():
 		for day_type: int in DayType.values():

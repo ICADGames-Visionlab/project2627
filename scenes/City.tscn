@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://blnddfwknn2bv" path="res://images/placeholder/Isometric City/Buildings/bld_firestation_a.png" id="5_fj3te"]
 [ext_resource type="PackedScene" uid="uid://dcvj26wj3lmda" path="res://scenes/player/Player.tscn" id="6_1u3pc"]
 [ext_resource type="PackedScene" path="res://scenes/ui/PauseMenu.tscn" id="7_oxvur"]
+[ext_resource type="Texture2D" uid="uid://du8e5iqmovbif" path="res://images/placeholder/Isometric City/Props/prop_lightpole_a.png" id="8_dkdui"]
 [ext_resource type="Script" uid="uid://dh46jdfcwp3b7" path="res://scripts/world/Pathfinder.gd" id="8_rmeea"]
 [ext_resource type="Script" uid="uid://b2nn3d1caqwax" path="res://scripts/world/GameSession.gd" id="9_gsess"]
 [ext_resource type="PackedScene" path="res://scenes/insights/InsightSource.tscn" id="9_insight_source"]
@@ -28,6 +29,7 @@
 [ext_resource type="PackedScene" uid="uid://dalu0ftdftp31" path="res://scenes/world/NightLight.tscn" id="19_nightlight"]
 [ext_resource type="PackedScene" uid="uid://ccctarlfxibdl" path="res://scenes/world/Bed.tscn" id="20_bed"]
 [ext_resource type="PackedScene" uid="uid://bm77g7wpn6avw" path="res://scenes/ui/ActionPrompt.tscn" id="21_prompt"]
+[ext_resource type="PackedScene" path="res://scenes/ui/DreamTransition.tscn" id="22_dream"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -52,7 +54,6 @@ sources/1 = SubResource("TileSetAtlasSource_tbgi4")
 physics_interpolation_mode = 1
 top_level = true
 position = Vector2(-81, 52)
-editor_draw_limits = true
 
 [node name="PhantomCameraHost" type="Node" parent="MainCamera" unique_id=1610871571]
 process_priority = 300
@@ -89,6 +90,18 @@ polygon = PackedVector2Array(-363.25, -28.75, 86.75, 191.25, 387.075, 39.35498, 
 [node name="Player" parent="YSort" unique_id=785984809 instance=ExtResource("6_1u3pc")]
 position = Vector2(-81, 116)
 
+[node name="PropLightpoleA" type="Sprite2D" parent="YSort" unique_id=1703637608]
+texture_filter = 1
+position = Vector2(-33.000004, -788.00006)
+scale = Vector2(5.96, 5.96)
+texture = ExtResource("8_dkdui")
+
+[node name="NightLight" parent="YSort/PropLightpoleA" unique_id=1549185543 instance=ExtResource("19_nightlight")]
+position = Vector2(-18.28859, 18.456388)
+scale = Vector2(0.16778524, 0.16778524)
+color = Color(0.88763225, 0.63657296, 1.5016794e-05, 1)
+dream_color = Color(1, 0.43452293, 0.5070191, 1)
+
 [node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_oxvur")]
 
 [node name="Pathfinder" type="Node2D" parent="." unique_id=1145640535]
@@ -100,6 +113,16 @@ script = ExtResource("9_gsess")
 [node name="ClockHud" parent="." unique_id=1987952723 instance=ExtResource("10_clock")]
 
 [node name="Waypoints" type="Node2D" parent="." unique_id=1759997908]
+
+[node name="SonhoZe" type="Marker2D" parent="Waypoints" unique_id=1104690092]
+position = Vector2(-176, -647)
+script = ExtResource("11_waypt")
+waypoint_id = &"sonho_ze"
+
+[node name="SonhoAna" type="Marker2D" parent="Waypoints" unique_id=1966441448]
+position = Vector2(121, -507)
+script = ExtResource("11_waypt")
+waypoint_id = &"sonho_ana"
 
 [node name="Praca" type="Marker2D" parent="Waypoints" unique_id=243516341]
 position = Vector2(0, 250)
@@ -169,7 +192,6 @@ marker_offset = Vector2(0, -230)
 
 [node name="DayNightCycle" parent="." unique_id=773577677 instance=ExtResource("18_daynight")]
 
-[node name="NightLight" parent="." unique_id=1549185543 instance=ExtResource("19_nightlight")]
-position = Vector2(-631, -430)
-
 [node name="ActionPrompt" parent="." unique_id=1074237785 instance=ExtResource("21_prompt")]
+
+[node name="DreamTransition" parent="." unique_id=560904957 instance=ExtResource("22_dream")]

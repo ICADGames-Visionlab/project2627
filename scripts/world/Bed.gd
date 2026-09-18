@@ -1,24 +1,33 @@
-## Bed - A cama: o único jeito de o dia virar.
+## Bed - A cama: a porta para o mundo dos sonhos, e o único jeito de o dia virar.
 ##
 ## COMO USAR: instancie Bed.tscn onde o jogador dorme. Nada mais precisa ser configurado — a
 ## Area2D em volta detecta o jogador e o aviso aparece sozinho no rodapé, via EventBus.
 ##
-## SÓ DÁ PRA DORMIR NA HORA DE DORMIR. A janela é o último pedaço do dia e fica no TimeSettings
-## (padrão: as últimas 2 h), e é lá que o design mexe — este arquivo só pergunta. Fora dela o
-## jogador ainda recebe um aviso, mas dizendo que não é hora, e a tecla não faz nada.
+## O CICLO, INTEIRO:
+##
+##   acordado, fora da janela  -> aviso "não é hora", a tecla não faz nada
+##   acordado, dentro da janela -> dorme: transição, mundo dos sonhos (GameClock.enter_dream)
+##   sonhando                   -> acorda: transição, dia seguinte (GameClock.start_next_day)
+##
+## A janela de dormir é o último pedaço do dia e fica no TimeSettings (padrão: as últimas 2 h).
 ##
 ## O DIA NÃO VIRA SOZINHO. Quando o relógio bate no horário máximo, o GameClock congela o tempo e
 ## fica esperando (ver GameClock.end_day): o jogador continua andando pela cidade, mas o relógio
-## não anda mais. Só dormir abre o dia seguinte. É por isso que este arquivo chama as DUAS
-## funções do relógio — fechar o dia e abrir o próximo.
+## não anda mais. Só a cama leva ao sonho, e só sair do sonho abre o dia seguinte.
+##
+## PROVISÓRIO: sair do sonho é interagir com a cama de novo, porque o mundo dos sonhos ainda é a
+## própria cidade (a mesma cena, com o relógio travado e os NPCs nas posições de sonho). Quando ele
+## ganhar forma própria, a saída muda de lugar, mas continua sendo uma chamada a
+## GameClock.start_next_day() atrás de uma transição.
 class_name Bed
 extends Node2D
 
 ## Espaço para constantes
 
-# Chaves de localização dos dois avisos. Quem traduz é o ActionPrompt.
+# Chaves de localização dos avisos. Quem traduz é o ActionPrompt.
 const PROMPT_KEY: String = "PROMPT_SLEEP"
 const PROMPT_TOO_EARLY_KEY: String = "PROMPT_SLEEP_TOO_EARLY"
+const PROMPT_WAKE_KEY: String = "PROMPT_WAKE"
 
 ## Espaço para variáveis exportadas
 
@@ -60,31 +69,54 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	get_viewport().set_input_as_handled()
-	_sleep()
+	_cross()
 
 ## Espaço para funções personalizadas
 
-# Diz se a cama aceita o jogador agora: a janela é o último pedaço do dia, e quem a define é o
-# TimeSettings (ver sleep_window_hours).
+# Diz se a cama aceita o jogador agora. Sonhando, sempre (é a saída do sonho); acordado, só na
+# janela de dormir, que é o último pedaço do dia e quem define é o TimeSettings.
 func _can_sleep() -> bool:
+	if GameClock.is_dreaming():
+		return true
 	return GameClock.settings.is_sleep_time(GameClock.get_minutes_left())
 
 
-# Coloca na tela o aviso que corresponde à hora atual. Chamado ao chegar perto e a cada virada de
-# hora, porque o jogador pode simplesmente esperar a hora chegar parado em cima da cama.
+# Coloca na tela o aviso que corresponde ao momento. Chamado ao chegar perto, a cada tique do
+# relógio (o jogador pode esperar a hora chegar parado em cima da cama) e depois de atravessar.
 func _update_prompt() -> void:
-	EventBus.action_prompt_changed.emit(PROMPT_KEY if _can_sleep() else PROMPT_TOO_EARLY_KEY)
+	var key: String = PROMPT_TOO_EARLY_KEY
+	if GameClock.is_dreaming():
+		key = PROMPT_WAKE_KEY
+	elif _can_sleep():
+		key = PROMPT_KEY
+	EventBus.action_prompt_changed.emit(key)
 
-# Fecha o dia e abre o seguinte.
-#
-# end_day() antes de start_next_day() para o resto do jogo (save, resumo do dia, NPCs) receber o
-# day_ended normalmente. Quando o jogador já tinha batido no horário máximo, o dia JÁ foi fechado
-# pelo relógio e o end_day daqui não faz nada — o que interessa nesse caso é o start_next_day,
-# que é justamente o que estava faltando para o tempo voltar a andar.
-func _sleep() -> void:
-	print("[Bed] - Jogador dormiu no dia %d às %s" % [
+
+# Atravessa para o outro lado: do mundo acordado para o sonho, ou do sonho para o dia seguinte.
+# A troca acontece no escuro da transição; sem transição na cena, troca seco e avisa.
+func _cross() -> void:
+	var action: Callable = _wake_up if GameClock.is_dreaming() else _fall_asleep
+	var transition: DreamTransition = get_tree().get_first_node_in_group(DreamTransition.GROUP) as DreamTransition
+
+	if transition == null:
+		push_warning("[Bed] - AVISO: nenhuma DreamTransition na cena, atravessando sem transição")
+		action.call()
+	else:
+		await transition.play(action)
+
+	# O jogador continua deitado na cama do outro lado, então o aviso muda (dormir <-> acordar).
+	if _player_near:
+		_update_prompt()
+
+
+func _fall_asleep() -> void:
+	print("[Bed] - Jogador adormeceu no dia %d às %s" % [
 		GameClock.time.get_day(), GameClock.time.format_clock()])
-	GameClock.end_day(GameClock.DayEndReason.SLEPT)
+	GameClock.enter_dream()
+
+
+func _wake_up() -> void:
+	print("[Bed] - Jogador acordou do sonho do dia %d" % GameClock.time.get_day())
 	GameClock.start_next_day()
 
 

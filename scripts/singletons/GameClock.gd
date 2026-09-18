@@ -69,6 +69,11 @@ var _is_running: bool = false
 # Porta 3: Dictionary usado como conjunto de motivos. Vazio = relógio solto.
 var _freeze_reasons: Dictionary = {}
 
+# true entre enter_dream() e start_next_day(). Mora aqui, e não na cena, porque o mundo dos sonhos
+# pode virar uma cena própria — e aí o estado precisa sobreviver à troca de cena, que é
+# exatamente o que um Autoload já garante.
+var _is_dreaming: bool = false
+
 # Sobra de tempo real que ainda não completou um minuto de jogo.
 var _accumulator: float = 0.0
 
@@ -181,6 +186,7 @@ func end_day(reason: DayEndReason = DayEndReason.SLEPT) -> void:
 # próximo dia, e não um advance(). Com advance(), o jogo dispararia viradas de hora que ninguém
 # viveu e bateria no horário máximo de novo no meio do caminho.
 func start_next_day() -> void:
+	_is_dreaming = false
 	_set_total_minutes((time.get_day_index() + 1) * GameTime.MINUTES_PER_DAY, false)
 	_accumulator = 0.0
 	unfreeze(FREEZE_DAY_END)
@@ -188,6 +194,36 @@ func start_next_day() -> void:
 	print("[GameClock] - Dia %d começou às %s" % [time.get_day(), time.format_clock()])
 	EventBus.day_changed.emit(time.get_day())
 	EventBus.time_changed.emit(time.total_minutes)
+
+
+# Adormece o jogador: fecha o dia (se o horário máximo ainda não tinha fechado) e trava o relógio
+# na hora do sonho (TimeSettings.dream_hour, 03:00 por padrão) até o start_next_day().
+#
+# A hora do sonho é ESCRITA, não vivida — igual às horas dormidas do start_next_day(): quem deita
+# às 22:00 não atravessa cinco horas de NPC andando e de hour_changed. E o relógio já fica parado
+# pelo freeze do end_day(), então nada mais precisa segurá-lo aqui.
+#
+# O dia de jogo continua o mesmo (o minuto 0 é a hora de acordar, ver GameTime): 03:00 é só mais
+# um minuto do fim do dia, mesmo quando cai depois do horário máximo.
+func enter_dream() -> void:
+	if _is_dreaming:
+		return
+
+	end_day(DayEndReason.SLEPT)
+	_is_dreaming = true
+
+	var dream_minute: int = posmod((settings.dream_hour - settings.wake_hour) * GameTime.MINUTES_PER_HOUR,
+		GameTime.MINUTES_PER_DAY)
+	_set_total_minutes(time.get_day_index() * GameTime.MINUTES_PER_DAY + dream_minute, false)
+
+	print("[GameClock] - Jogador sonhando no dia %d, relógio travado em %s" % [
+		time.get_day(), time.format_clock()])
+	EventBus.time_changed.emit(time.total_minutes)
+	EventBus.dream_started.emit(time.get_day())
+
+
+func is_dreaming() -> bool:
+	return _is_dreaming
 
 
 # Segura o relógio por um motivo. Registrar o mesmo motivo duas vezes não empilha duas vezes.
@@ -275,6 +311,7 @@ func _register_debug_entries() -> void:
 	DebugMenu.register_input(DEBUG_SECTION, "Avançar minutos", advance,
 		[DebugParam.int_value("minutos", 60, 1, 1440)])
 	DebugMenu.register_action(DEBUG_SECTION, "Dormir (ir para o dia seguinte)", _debug_sleep)
+	DebugMenu.register_action(DEBUG_SECTION, "Sonhar (entrar no mundo dos sonhos)", enter_dream)
 	DebugMenu.register_action(DEBUG_SECTION, "Mostrar data e hora", _debug_print_time)
 	DebugMenu.register_toggle(DEBUG_SECTION, "Congelar relógio", _debug_set_frozen)
 	DebugMenu.register_value(DEBUG_SECTION, "Minutos reais por dia", _debug_set_real_minutes,
@@ -282,9 +319,11 @@ func _register_debug_entries() -> void:
 		func() -> float: return settings.real_minutes_per_day)
 
 
-# [DEBUG] Fecha o dia como se o jogador tivesse dormido.
+# [DEBUG] Pula direto para o dia seguinte, sem passar pelo mundo dos sonhos. As duas chamadas
+# são necessárias: o dia não vira sozinho depois do end_day() (quem abre o dia é a cama).
 func _debug_sleep() -> void:
 	end_day(DayEndReason.SLEPT)
+	start_next_day()
 
 
 # [DEBUG] Imprime a data completa no console de debug.

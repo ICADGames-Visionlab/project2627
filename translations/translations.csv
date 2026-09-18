@@ -49,3 +49,4 @@ PLACEHOLDER_DIALOGUE_SCREEN,"Placeholder - Dialogue screen (final screen pending
 PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pending)","Placeholder - Orbe de insight desenhado em código (arte final pendente)"
 PROMPT_SLEEP,Press SPACE to sleep,Aperte ESPAÇO para dormir
 PROMPT_SLEEP_TOO_EARLY,It is not time to sleep yet,Ainda não é hora de dormir
+PROMPT_WAKE,Press SPACE to wake up,Aperte ESPAÇO para acordar

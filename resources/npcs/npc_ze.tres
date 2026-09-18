@@ -1,13 +1,20 @@
-[gd_resource type="Resource" script_class="NPCDefinition" format=3]
+[gd_resource type="Resource" script_class="NPCDefinition" format=3 uid="uid://drf322cu3mbxp"]
 
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_raiva.tres" id="1_dd48x"]
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_tristeza.tres" id="2_5bjh8"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_raiva_folga.tres" id="3_kvoqe"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_raiva_trabalho.tres" id="4_n0dhc"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_folga.tres" id="5_u603k"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_trabalho.tres" id="6_xrhdl"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ze_tristeza_folga.tres" id="7_bk0is"]
-[ext_resource type="Script" path="res://scripts/npc/NPCDefinition.gd" id="8_48vj3"]
+[ext_resource type="Resource" uid="uid://dy3n3cuiv1v6f" path="res://resources/npcs/rotinas/rotina_ze_raiva_folga.tres" id="3_kvoqe"]
+[ext_resource type="Resource" uid="uid://5ssbf5wg8ssg" path="res://resources/npcs/rotinas/rotina_ze_raiva_trabalho.tres" id="4_n0dhc"]
+[ext_resource type="Resource" uid="uid://7htp4q0fglr4" path="res://resources/npcs/rotinas/rotina_ze_folga.tres" id="5_u603k"]
+[ext_resource type="Resource" uid="uid://bovfft3x1ukh" path="res://resources/npcs/rotinas/rotina_ze_trabalho.tres" id="6_xrhdl"]
+[ext_resource type="Resource" uid="uid://ddpodb5sd0y2k" path="res://resources/npcs/rotinas/rotina_ze_tristeza_folga.tres" id="7_bk0is"]
+[ext_resource type="Script" uid="uid://bm7w16uuu8ll5" path="res://scripts/npc/NPCDefinition.gd" id="8_48vj3"]
+[ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="90_dream"]
+
+[sub_resource type="Resource" id="Resource_dream"]
+script = ExtResource("90_dream")
+hour = 0
+scene_path = "res://scenes/City.tscn"
+waypoint = &"sonho_ze"
 
 [resource]
 script = ExtResource("8_48vj3")
@@ -24,6 +31,7 @@ routine_first_workday = ExtResource("4_n0dhc")
 routine_first_day_off = ExtResource("3_kvoqe")
 routine_second_workday = ExtResource("6_xrhdl")
 routine_second_day_off = ExtResource("7_bk0is")
+dream_entry = SubResource("Resource_dream")
 resumo = "NPC \"ze\" · emoção inicial: neutro
 Trabalha: seg, ter, qua, qui, sex, sáb
 

@@ -52,10 +52,16 @@ signal hour_changed(hour: int)
 signal day_changed(day: int)
 
 # Emitido quando o dia fecha, por sono ou por ter batido no horário máximo. O relógio fica
-# congelado a partir daqui até alguém chamar GameClock.start_next_day().
+# congelado a partir daqui até alguém chamar GameClock.start_next_day() — hoje, a cama.
 # reason é um GameClock.DayEndReason.
-# Emissor: GameClock. Ouvintes: GameSession (abre o dia seguinte), tela de resumo, save.
+# Emissor: GameClock. Ouvintes: tela de resumo, save (quando existirem).
 signal day_ended(day: int, reason: int)
+
+# Emitido quando o jogador adormece e entra no mundo dos sonhos. A partir daqui o relógio fica
+# travado na hora do sonho (TimeSettings.dream_hour) e GameClock.is_dreaming() é true até ele
+# acordar — e acordar é o day_changed de sempre, por isso não existe um "dream_ended".
+# Emissor: GameClock. Ouvintes: NPCDirector (põe cada NPC na posição de sonho).
+signal dream_started(day: int)
 
 # ------------------------------------------------------------------------------------
 # Interação

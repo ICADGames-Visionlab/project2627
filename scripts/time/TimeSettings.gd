@@ -51,6 +51,14 @@ const MINUTES_PER_DAY: int = 1440
 		sleep_window_hours = value
 		_refresh_summary()
 
+@export_group("Mundo dos sonhos")
+
+## Hora em que o relógio fica travado enquanto o jogador sonha.
+@export_range(0, 23, 1, "suffix:h") var dream_hour: int = 3:
+	set(value):
+		dream_hour = value
+		_refresh_summary()
+
 @export_group("Ritmo")
 
 ## Quanto tempo REAL dura um dia jogável inteiro, de acordar até o limite.
@@ -133,6 +141,7 @@ func _build_summary() -> String:
 		wake_hour, ending_hour, ending % MINUTES_PER_HOUR, playable_hours]
 	text += "Pode começar a dormir em %02d:%02d (%.1f h antes do fim)\n" % [
 		sleep_start_hour, sleep_start % MINUTES_PER_HOUR, sleep_window_hours]
+	text += "Sonho travado em %02d:00\n" % dream_hour
 	text += "Duração real: %.1f min reais por dia\n" % real_minutes_per_day
 	text += "1 h de jogo = %.0f s reais  ·  1 min de jogo = %.2f s reais" % [
 		per_minute * 60.0, per_minute]

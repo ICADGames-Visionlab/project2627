@@ -30,6 +30,11 @@ const DEBUG_SECTION: StringName = &"Tempo"
 ## Deixe o primeiro e o último ponto com a MESMA cor, senão a virada da meia-noite pisca.
 @export var gradient: Gradient
 
+## Cor do mundo enquanto o jogador sonha, no lugar do gradiente. O padrão é um vinho escuro de
+## sangue velho: multiplicado pela arte, o verde vira lama e o céu some — a cidade de sempre, só
+## que errada. Branco desliga o efeito (o sonho fica com a cor da arte original).
+@export var dream_color: Color = Color(0.42, 0.13, 0.22)
+
 ## Espaço para variáveis
 
 # Tween da transição atual. Guardado para ser morto antes de começar o próximo — sem isso, dois
@@ -91,8 +96,12 @@ func _on_time_changed(total_minutes: int) -> void:
 	_tween.tween_property(self, "color", target, duration)
 
 
-# Cor correspondente à hora atual do relógio de parede.
+# Cor correspondente ao momento: a do sonho enquanto o jogador sonha, a da hora do relógio de
+# parede no resto do tempo. Entrar e sair do sonho sempre chegam como salto de tempo, então a
+# troca é aplicada seca — no escuro da transição, onde ninguém vê.
 func _color_at_clock() -> Color:
+	if GameClock.is_dreaming():
+		return dream_color
 	return gradient.sample(float(GameClock.time.get_clock_minutes()) / float(GameTime.MINUTES_PER_DAY))
 
 

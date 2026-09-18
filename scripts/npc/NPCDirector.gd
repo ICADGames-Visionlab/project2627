@@ -95,6 +95,7 @@ func _ready() -> void:
 
 	EventBus.time_changed.connect(_on_time_changed)
 	EventBus.day_changed.connect(_on_day_changed)
+	EventBus.dream_started.connect(_on_dream_started)
 
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "NPCs" do menu (F4) e do console (F1).
@@ -162,6 +163,13 @@ func _refresh_emotion_slots() -> void:
 # snap = true faz os NPCs ASSUMIREM a posição em vez de caminhar até ela. É o comportamento certo
 # quando não houve trajeto a percorrer: ao montar a cena, ao virar o dia e quando o tempo pula.
 func _apply_routines(snap: bool) -> void:
+	# No sonho a rotina não vale: todo mundo está na posição fixa de sonho. Desviar aqui, no ponto
+	# por onde TODA resolução passa (tique, virada de dia, debug), é o que garante que nenhum caminho
+	# esquecido tire um NPC do lugar enquanto o jogador sonha.
+	if GameClock.is_dreaming():
+		_apply_dream_positions()
+		return
+
 	var weekday: int = GameClock.time.get_weekday()
 	var minutes_into_day: int = GameClock.time.get_minutes_into_day()
 	var wake_hour: int = GameClock.settings.wake_hour
@@ -179,31 +187,48 @@ func _apply_routines(snap: bool) -> void:
 				_weekday_for_override(definition), minutes_into_day, wake_hour)
 
 		_decisions[definition.id] = decision
-		_apply_decision(definition, decision, snap)
+		_apply_entry(definition, decision.entry, snap)
 
 
-# Aplica a decisão de um NPC: nascer, andar, ficar ou desaparecer.
-func _apply_decision(definition: NPCDefinition, decision: NPCRoutineResolver.Decision, snap: bool) -> void:
+# Põe cada NPC na posição fixa de sonho, sem caminhar: ninguém atravessa a cidade para chegar a um
+# sonho. Quem não tem posição de sonho some — diferente do dia, em que o NPC sem rotina fica onde
+# está, porque no sonho "onde ele estava" é justamente o mundo acordado.
+func _apply_dream_positions() -> void:
+	for definition: NPCDefinition in roster.npcs:
+		if definition == null:
+			continue
+
+		if definition.dream_entry == null:
+			var body: NPC = _bodies.get(definition.id) as NPC
+			if body != null:
+				_despawn(definition.id, body)
+			continue
+
+		_apply_entry(definition, definition.dream_entry, true)
+
+
+# Aplica a entrada vigente de um NPC: nascer, andar, ficar ou desaparecer.
+func _apply_entry(definition: NPCDefinition, entry: NPCRoutineEntry, snap: bool) -> void:
 	var body: NPC = _bodies.get(definition.id) as NPC
 
-	if decision.entry == null:
+	if entry == null:
 		# Sem rotina executável. Quem já está em cena fica onde está (melhor que sumir), e quem não
 		# está não nasce. O aviso sai do "Validar rotinas", não daqui, pra não repetir a cada tique.
 		return
 
-	if not _is_current_scene(decision.entry.scene_path):
+	if not _is_current_scene(entry.scene_path):
 		if body != null:
 			_despawn(definition.id, body)
-		_entries[definition.id] = decision.entry
+		_entries[definition.id] = entry
 		return
 
-	var waypoint: Waypoint = Waypoint.find(get_tree(), decision.entry.waypoint)
+	var waypoint: Waypoint = Waypoint.find(get_tree(), entry.waypoint)
 	if waypoint == null:
-		_warn_missing_waypoint(definition, decision.entry)
+		_warn_missing_waypoint(definition, entry)
 		return
 
-	var changed: bool = _entries.get(definition.id) != decision.entry
-	_entries[definition.id] = decision.entry
+	var changed: bool = _entries.get(definition.id) != entry
+	_entries[definition.id] = entry
 
 	var target: Vector2 = _scattered_position(waypoint, definition)
 	if body == null:
@@ -307,6 +332,11 @@ func _on_day_changed(day: int) -> void:
 	_refresh_emotion_slots()
 	_apply_routines(true)
 	print("[NPCDirector] - Dia %d: rotinas reavaliadas" % day)
+
+
+func _on_dream_started(_day: int) -> void:
+	_apply_routines(true)
+	print("[NPCDirector] - Mundo dos sonhos: %d NPCs em posição de sonho nesta cena" % _bodies.size())
 
 
 func _on_npc_arrived(definition: NPCDefinition) -> void:
