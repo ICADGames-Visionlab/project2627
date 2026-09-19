@@ -1,0 +1,43 @@
+[gd_resource type="Resource" script_class="NPCRoutine" format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_tbvu4"]
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutineException.gd" id="2_07t6g"]
+[ext_resource type="Resource" path="res://resources/npcs/rondas/ronda_policial_raiva.tres" id="3_g0u84"]
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutine.gd" id="4_1xilb"]
+
+[sub_resource type="Resource" id="Resource_fvu7o"]
+script = ExtResource("1_tbvu4")
+hour = 6
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_policial"
+
+[sub_resource type="Resource" id="Resource_7wu46"]
+script = ExtResource("1_tbvu4")
+hour = 7
+scene_path = "res://scenes/City.tscn"
+waypoint = &"quartel_porta"
+
+[sub_resource type="Resource" id="Resource_k31ia"]
+script = ExtResource("1_tbvu4")
+hour = 18
+scene_path = "res://scenes/City.tscn"
+waypoint = &"beco"
+
+[sub_resource type="Resource" id="Resource_jatb6"]
+script = ExtResource("1_tbvu4")
+hour = 20
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_policial"
+
+[resource]
+script = ExtResource("4_1xilb")
+entries = Array[ExtResource("1_tbvu4")]([SubResource("Resource_fvu7o"), SubResource("Resource_7wu46"), SubResource("Resource_k31ia"), SubResource("Resource_jatb6")])
+exceptions = Array[ExtResource("2_07t6g")]([ExtResource("3_g0u84")])
+resumo = "4 entradas (ordem de relógio):
+  06:00  City / casa_do_policial
+  07:00  City / quartel_porta
+  18:00  City / beco
+  20:00  City / casa_do_policial
+
+Exceções (onde as faixas se sobrepõem, vale a primeira):
+  08:00-18:00  ronda em City: quartel_porta -> banco_da_praca -> praca -> beco -> praca -> banco_da_praca (20 min em cada, em ciclo)"

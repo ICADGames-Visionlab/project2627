@@ -13,7 +13,8 @@
 ## O CICLO, INTEIRO:
 ##
 ##   1. O relógio anda e o EventBus avisa.
-##   2. Para cada NPC do roster, o resolver diz qual é a entrada vigente da rotina dele.
+##   2. Para cada NPC do roster, o resolver diz qual é a entrada vigente da rotina dele — ou, se uma
+##      exceção estiver valendo (a ronda do policial), a parada em que ela o coloca agora.
 ##   3. Entrada nesta cena e sem corpo em cena  -> nasce no waypoint.
 ##      Entrada nesta cena e corpo já em cena   -> anda até o waypoint.
 ##      Entrada em outra cena e corpo em cena   -> desaparece.
@@ -70,6 +71,11 @@ var _entries: Dictionary = {}
 
 # Última decisão de cada NPC: id -> NPCRoutineResolver.Decision. Só o menu de debug lê.
 var _decisions: Dictionary = {}
+
+# Exceção que mandava em cada NPC na última resolução: id -> NPCRoutineException (ou null). Serve só
+# pra logar o instante em que a ronda começa e termina; onde o NPC está continua sendo derivado do
+# relógio, e nada aqui o decide.
+var _exceptions: Dictionary = {}
 
 # Waypoints que já foram reclamados, pra o aviso sair uma vez por nome e não a cada tique.
 var _missing_waypoints: Dictionary = {}
@@ -179,6 +185,7 @@ func _apply_routines(snap: bool) -> void:
 				_weekday_for_override(definition), minutes_into_day, wake_hour)
 
 		_decisions[definition.id] = decision
+		_log_exception_change(definition, decision)
 		_apply_decision(definition, decision, snap)
 
 
@@ -202,7 +209,9 @@ func _apply_decision(definition: NPCDefinition, decision: NPCRoutineResolver.Dec
 		_warn_missing_waypoint(definition, decision.entry)
 		return
 
-	var changed: bool = _entries.get(definition.id) != decision.entry
+	# Compara o LUGAR, e não a identidade da entrada: as paradas de uma exceção (a ronda) são entradas
+	# avulsas, recriadas a cada resolução, e o que faz o NPC andar é ter que ir pra um lugar diferente.
+	var changed: bool = not decision.entry.is_same_place(_entries.get(definition.id) as NPCRoutineEntry)
 	_entries[definition.id] = decision.entry
 
 	var target: Vector2 = _scattered_position(waypoint, definition)
@@ -212,6 +221,21 @@ func _apply_decision(definition: NPCDefinition, decision: NPCRoutineResolver.Dec
 		body.snap_to(target)
 	elif changed:
 		body.walk_to(target)
+
+
+# Registra no log quando uma exceção passa a mandar no NPC e quando deixa de mandar. É o instante em
+# que a ronda começa e termina, que de outro jeito só se percebe olhando o NPC andar. Só loga na
+# TRANSIÇÃO: a resolução roda a cada tique do relógio, e uma linha por tique seria ruído.
+func _log_exception_change(definition: NPCDefinition, decision: NPCRoutineResolver.Decision) -> void:
+	var previous: NPCRoutineException = _exceptions.get(definition.id) as NPCRoutineException
+	if decision.exception == previous:
+		return
+
+	_exceptions[definition.id] = decision.exception
+	if decision.exception != null:
+		print("[NPCDirector] - \"%s\" assumiu a exceção: %s" % [definition.id, decision.exception.describe()])
+	else:
+		print("[NPCDirector] - \"%s\" saiu da exceção e voltou à rotina padrão" % definition.id)
 
 
 # Instancia o corpo de um NPC já no lugar certo.
@@ -327,6 +351,7 @@ func _register_debug_entries() -> void:
 	DebugMenu.register_action(DEBUG_SECTION, "Listar NPCs", _debug_list_npcs)
 	DebugMenu.register_action(DEBUG_SECTION, "Listar waypoints da cena", _debug_list_waypoints)
 	DebugMenu.register_action(DEBUG_SECTION, "Validar rotinas", _debug_validate_routines)
+	DebugMenu.register_action(DEBUG_SECTION, "Autoteste das rotinas", _debug_run_self_test)
 	DebugMenu.register_toggle(DEBUG_SECTION, "Desenhar caminho dos NPCs", _debug_set_draw_paths, _draw_paths)
 
 
@@ -400,6 +425,8 @@ func _debug_list_npcs() -> void:
 			here])
 		print("      agora:   %s" % entry_text)
 		print("      próxima: %s" % next_text)
+		if decision.exception != null:
+			print("      exceção: %s" % decision.exception.describe())
 		if decision.fallback_reason != "":
 			print("      fallback: %s" % decision.fallback_reason)
 
@@ -447,6 +474,7 @@ func _debug_validate_routines() -> void:
 					print("  - %s: %s" % [label, issue])
 					problems += 1
 				problems += _validate_entries(label, routine, wake_hour, day_length)
+				problems += _validate_exceptions(label, routine, wake_hour, day_length)
 
 	if problems == 0:
 		print("  Nenhum problema encontrado.")
@@ -483,9 +511,57 @@ func _validate_entries(label: String, routine: NPCRoutine, wake_hour: int, day_l
 	return problems
 
 
+# [DEBUG] Confere as exceções de uma rotina contra o mundo de verdade, do mesmo jeito que
+# _validate_entries confere as entradas: faixa que o jogador nunca vive, cena que não existe, waypoint
+# que não existe nesta cena. O que dá pra conferir sem o jogo rodando (ronda sem pontos, faixas que se
+# sobrepõem) já saiu do NPCRoutine.collect_issues. Devolve quantos problemas achou.
+func _validate_exceptions(label: String, routine: NPCRoutine, wake_hour: int, day_length: int) -> int:
+	var problems: int = 0
+
+	for exception: NPCRoutineException in routine.exceptions:
+		if exception == null:
+			continue
+
+		# Faixa depois do fim do dia jogável: o jogador já apagou, então a exceção nunca é vista.
+		if not exception.overlaps_playable_day(wake_hour, day_length):
+			print("  - %s: a faixa da exceção (%s) cai depois do fim do dia jogável e nunca é alcançada" % [
+				label, exception.describe_window()])
+			problems += 1
+
+		# Uma cena que não existe é um problema só, mesmo que vários pontos da exceção morem nela.
+		var missing_scenes: Dictionary = {}
+
+		for place: NPCRoutineEntry in exception.get_places():
+			if place.scene_path == "":
+				continue
+
+			if not ResourceLoader.exists(place.scene_path):
+				if not missing_scenes.has(place.scene_path):
+					missing_scenes[place.scene_path] = true
+					print("  - %s: a cena \"%s\" da exceção (%s) não existe" % [
+						label, place.scene_path, exception.describe_window()])
+					problems += 1
+				continue
+
+			if _is_current_scene(place.scene_path) and Waypoint.find(get_tree(), place.waypoint) == null:
+				print("  - %s: o waypoint \"%s\" da exceção (%s) não existe nesta cena" % [
+					label, place.waypoint, exception.describe_window()])
+				problems += 1
+
+	return problems
+
+
 # [DEBUG] Liga/desliga o desenho do caminho de todos os NPCs em cena, inclusive dos que nascerem
 # depois.
 func _debug_set_draw_paths(enabled: bool) -> void:
 	_draw_paths = enabled
 	for body: Variant in _bodies.values():
 		(body as NPC).draw_path = enabled
+
+
+# [DEBUG] Roda o autoteste da resolução de rotinas (as exceções incluídas) e imprime o relatório. É a
+# mesma coisa que o script de linha de comando tests/run_npc_routine_self_test.gd faz, sem sair do jogo.
+func _debug_run_self_test() -> void:
+	var self_test: NPCRoutineSelfTest = NPCRoutineSelfTest.new()
+	self_test.run()
+	print(self_test.report())

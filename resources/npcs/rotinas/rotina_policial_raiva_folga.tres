@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="NPCRoutine" format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_67mgb"]
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutineException.gd" id="2_sax5n"]
+[ext_resource type="Script" path="res://scripts/npc/NPCRoutine.gd" id="3_b4sc8"]
+
+[sub_resource type="Resource" id="Resource_njnot"]
+script = ExtResource("1_67mgb")
+hour = 6
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_policial"
+
+[sub_resource type="Resource" id="Resource_mjwvh"]
+script = ExtResource("1_67mgb")
+hour = 13
+scene_path = "res://scenes/City.tscn"
+waypoint = &"beco"
+
+[sub_resource type="Resource" id="Resource_1jt84"]
+script = ExtResource("1_67mgb")
+hour = 20
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_policial"
+
+[resource]
+script = ExtResource("3_b4sc8")
+entries = Array[ExtResource("1_67mgb")]([SubResource("Resource_njnot"), SubResource("Resource_mjwvh"), SubResource("Resource_1jt84")])
+resumo = "3 entradas (ordem de relógio):
+  06:00  City / casa_do_policial
+  13:00  City / beco
+  20:00  City / casa_do_policial"

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="NPCPatrol" format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/NPCPatrol.gd" id="1_er5xt"]
+
+[resource]
+script = ExtResource("1_er5xt")
+scene_path = "res://scenes/City.tscn"
+waypoints = Array[StringName]([&"quartel_porta", &"banco_da_praca", &"praca", &"feira", &"praca", &"banco_da_praca"])
