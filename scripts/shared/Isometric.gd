@@ -80,3 +80,21 @@ static func screen_velocity(direction: Vector2, speed: float, y_ratio: float, ve
 # até o ponto (o vertical_factor muda só a rapidez do trajeto, não o rumo).
 static func to_cartesian(screen_delta: Vector2, y_ratio: float) -> Vector2:
 	return Vector2(screen_delta.x, screen_delta.y / y_ratio).normalized()
+
+
+# Quanto tempo, em segundos, um agente leva pra percorrer um caminho de tela a partir de `from`, andando
+# como andaria de verdade: cada trecho na velocidade que o screen_velocity dá pra aquela direção (mais
+# devagar quanto mais vertical). É a MESMA conta do movimento, chamada em vez de reescrita, pelo motivo de
+# este arquivo existir: duas cópias da conta é a garantia de elas divergirem. Serve pra calcular quando um
+# NPC chega a um ponto sem precisar simular a caminhada (ver NPCRoutineException.TravelTimes).
+static func walk_seconds(from: Vector2, path: PackedVector2Array, speed: float, y_ratio: float,
+		vertical_factor: float) -> float:
+	var seconds: float = 0.0
+	var cursor: Vector2 = from
+	for point: Vector2 in path:
+		var delta: Vector2 = point - cursor
+		var velocity: Vector2 = screen_velocity(to_cartesian(delta, y_ratio), speed, y_ratio, vertical_factor)
+		if delta != Vector2.ZERO and velocity.length() > 0.0:
+			seconds += delta.length() / velocity.length()
+		cursor = point
+	return seconds

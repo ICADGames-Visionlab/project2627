@@ -1,14 +1,14 @@
-[gd_resource type="Resource" script_class="NPCDefinition" format=3]
+[gd_resource type="Resource" script_class="NPCDefinition" format=3 uid="uid://j1gf18af5qqs"]
 
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_tristeza.tres" id="1_rn71n"]
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_raiva.tres" id="2_1engy"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_policial_tristeza_folga.tres" id="3_j1tg8"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_policial_tristeza_trabalho.tres" id="4_tlos3"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_policial_folga.tres" id="5_k4jvk"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_policial_trabalho.tres" id="6_xgmx4"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_policial_raiva_folga.tres" id="7_ku6yi"]
-[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_policial_raiva_trabalho.tres" id="8_hpvjt"]
-[ext_resource type="Script" path="res://scripts/npc/NPCDefinition.gd" id="9_7ypmh"]
+[ext_resource type="Resource" uid="uid://cm67xakva4eok" path="res://resources/npcs/rotinas/rotina_policial_tristeza_folga.tres" id="3_j1tg8"]
+[ext_resource type="Resource" uid="uid://vlra43f0h4k" path="res://resources/npcs/rotinas/rotina_policial_tristeza_trabalho.tres" id="4_tlos3"]
+[ext_resource type="Resource" uid="uid://bd0075adp3epj" path="res://resources/npcs/rotinas/rotina_policial_folga.tres" id="5_k4jvk"]
+[ext_resource type="Resource" uid="uid://d1qp086mn35rr" path="res://resources/npcs/rotinas/rotina_policial_trabalho.tres" id="6_xgmx4"]
+[ext_resource type="Resource" uid="uid://g54h0hacpnx" path="res://resources/npcs/rotinas/rotina_policial_raiva_folga.tres" id="7_ku6yi"]
+[ext_resource type="Resource" uid="uid://cwujcllobikr8" path="res://resources/npcs/rotinas/rotina_policial_raiva_trabalho.tres" id="8_hpvjt"]
+[ext_resource type="Script" uid="uid://bm7w16uuu8ll5" path="res://scripts/npc/NPCDefinition.gd" id="9_7ypmh"]
 
 [resource]
 script = ExtResource("9_7ypmh")

@@ -8,17 +8,21 @@
 ## É OPCIONAL: NPCRoutine.exceptions vazio é o normal, e é o que todo NPC comum tem. Uma rotina sem
 ## exceção se comporta exatamente como se esta classe não existisse.
 ##
-## COMO FUNCIONA: dentro da faixa a exceção manda, e fora dela a rotina padrão volta a valer sozinha
-## (o policial termina a ronda e retoma a entrada em que estava). Se duas faixas da mesma rotina se
-## sobrepõem, vale a primeira da lista. A exceção continua sendo uma FUNÇÃO DO RELÓGIO, como o resto
-## do sistema (ver NPCRoutineResolver): dado o minuto do dia, ela diz onde o NPC está, sem guardar
-## estado — então pular o tempo, dormir e carregar um save funcionam sem código nenhum.
+## COMO FUNCIONA: dentro da faixa a exceção manda, e fora dela a rotina padrão vale sozinha. A rotina
+## padrão continua correndo POR BAIXO da exceção, então quando a faixa acaba vale a entrada que a rotina
+## tem para aquele horário (a ronda das 08:00 às 17:00 termina e vale a entrada das 17:00), e não a que
+## estava valendo quando a faixa abriu. Se duas faixas da mesma rotina se sobrepõem, vale a primeira da
+## lista. A exceção continua sendo uma FUNÇÃO DO RELÓGIO, como o resto do sistema (ver
+## NPCRoutineResolver): dado o minuto do dia, ela diz onde o NPC está, sem guardar estado — então pular
+## o tempo, dormir e carregar um save funcionam sem código nenhum.
 ##
 ## ESTA É A CLASSE BASE, e por isso é abstrata: só sabe da faixa de horário. O QUE o NPC faz dentro
-## dela é de cada tipo de exceção, e o primeiro é o NPCPatrol (a ronda). Tipo novo (vagar por uma
-## área, sumir do mapa, o que o design inventar) é um script novo que estende esta classe e implementa
-## get_stop() e get_minutes_until_stop_change() — o resolver, o diretor e as rotinas que já existem não
-## mudam.
+## dela é de cada tipo de exceção, e o primeiro é o NPCPatrol (a ronda). Tipo novo (alternar entre dois
+## pontos com tempos diferentes, sair pra outra cena por um tempo, o que o design inventar) é um script
+## novo que estende esta classe e implementa get_stop() e get_minutes_until_stop_change() — o resolver,
+## o diretor e as rotinas que já existem não mudam. Dois limites do contrato: a parada é sempre uma
+## cena e um waypoint (nunca uma coordenada solta), e get_stop() só sabe quantos minutos se passaram
+## desde a abertura da faixa, não o dia nem a emoção.
 ##
 ## O guia completo está em docs/sistema_de_npc.md.
 @tool
@@ -31,6 +35,50 @@ extends Resource
 # Reaproveitadas do NPCRoutineEntry: a conta de horário existe em uma fonte só.
 const MINUTES_PER_HOUR: int = NPCRoutineEntry.MINUTES_PER_HOUR
 const MINUTES_PER_DAY: int = NPCRoutineEntry.MINUTES_PER_DAY
+
+## Espaço para classes internas
+
+# O que uma exceção pode perguntar ao mundo: quanto tempo de jogo o NPC leva pra andar de um waypoint a
+# outro. Existe porque o tempo PARADO de uma parada (o dwell_minutes da ronda) conta a partir da CHEGADA, e
+# a chegada depende da caminhada. Quem sabe medir a caminhada é o NPCDirector (tem o Pathfinder e a
+# velocidade do NPC); a exceção só consome os minutos, e por isso continua sendo uma função pura do
+# relógio. Sem ele (null), a caminhada vale zero: é o que os testes usam, e o comportamento de antes.
+class TravelTimes extends RefCounted:
+	# Onde o NPC estava quando a faixa abriu ("" = não se sabe): a primeira parada também conta a caminhada
+	# até ela, e ela só existe se ele estava na mesma cena.
+	var origin_scene: String = ""
+	var origin: StringName = &""
+
+	var _lookup: Callable = Callable()
+
+	# O lookup recebe (de: StringName, para: StringName) e devolve os minutos de jogo da caminhada.
+	func _init(p_lookup: Callable = Callable()) -> void:
+		_lookup = p_lookup
+
+
+	# Uma cópia que sabe de onde o NPC vem quando a faixa abre. Cópia, e não a mesma instância, porque a
+	# origem é de cada faixa e uma rotina pode ter mais de uma.
+	func with_origin(p_scene_path: String, p_waypoint: StringName) -> TravelTimes:
+		var copy: TravelTimes = TravelTimes.new(_lookup)
+		copy.origin_scene = p_scene_path
+		copy.origin = p_waypoint
+		return copy
+
+
+	# Minutos de jogo pra andar de um waypoint a outro. Zero quando não há como saber (sem lookup, ponto
+	# vazio, mesmo ponto): a exceção trata "não sei" como "não anda".
+	func minutes(from_id: StringName, to_id: StringName) -> int:
+		if not _lookup.is_valid() or from_id == &"" or to_id == &"" or from_id == to_id:
+			return 0
+		return maxi(int(_lookup.call(from_id, to_id)), 0)
+
+
+	# Minutos pra andar do lugar em que ele estava quando a faixa abriu até um ponto da cena dada. Zero se
+	# ele veio de outra cena: nesse caso ele aparece no ponto, e não anda até lá.
+	func minutes_from_origin(scene_path: String, to_id: StringName) -> int:
+		if origin == &"" or NPCRoutineEntry.to_scene_path(origin_scene) != NPCRoutineEntry.to_scene_path(scene_path):
+			return 0
+		return minutes(origin, to_id)
 
 ## Espaço para variáveis exportadas
 
@@ -70,14 +118,17 @@ const MINUTES_PER_DAY: int = NPCRoutineEntry.MINUTES_PER_DAY
 ## Espaço para funções personalizadas
 
 # [CONTRATO] Onde o NPC está `elapsed_minutes` depois do começo da faixa, escrito como uma entrada de
-# rotina cujo horário é o de QUANDO ele chegou ali (ver NPCRoutineEntry.from_clock_minutes). Devolve
-# null quando a exceção não sabe dizer (configuração incompleta): nesse caso a rotina padrão vale.
-@abstract func get_stop(elapsed_minutes: int) -> NPCRoutineEntry
+# rotina cujo horário é o de QUANDO ele é mandado pra lá (ver NPCRoutineEntry.from_clock_minutes).
+# Devolve null quando a exceção não sabe dizer (configuração incompleta): nesse caso a rotina padrão
+# vale. `travel` diz quanto a caminhada entre pontos leva, pra um tempo parado poder contar a partir da
+# chegada; pode ser null (caminhada zero), e tipo de exceção que não precisa dele simplesmente o ignora.
+@abstract func get_stop(elapsed_minutes: int, travel: TravelTimes) -> NPCRoutineEntry
 
 
 # [CONTRATO] Daqui a quantos minutos, contados de `elapsed_minutes`, o NPC muda de lugar sem que a
-# faixa tenha acabado. Devolve 0 quando ele fica onde está até o fim da faixa.
-@abstract func get_minutes_until_stop_change(elapsed_minutes: int) -> int
+# faixa tenha acabado. Devolve 0 quando ele fica onde está até o fim da faixa. Mesmo `travel` do
+# get_stop, e as duas respostas precisam concordar sobre onde cada parada começa e termina.
+@abstract func get_minutes_until_stop_change(elapsed_minutes: int, travel: TravelTimes) -> int
 
 
 # Todos os lugares aonde esta exceção pode mandar o NPC, como entradas avulsas, sem repetição. Só o
@@ -110,7 +161,7 @@ func describe_window() -> String:
 # Diz se a exceção é executável: se ela consegue dizer onde o NPC está no começo da faixa. Exceção
 # que não consegue (ronda sem cena, sem pontos...) é ignorada pelo resolver, e a rotina padrão vale.
 func is_executable() -> bool:
-	return get_stop(0) != null
+	return get_stop(0, null) != null
 
 
 # Minuto do relógio de parede (0 = 00:00) em que a faixa começa.
@@ -154,14 +205,14 @@ func is_active_at(minutes_into_day: int, wake_hour: int) -> bool:
 # Em quantos minutos esta exceção muda algo na decisão do NPC, contados do instante dado. Com a faixa
 # valendo: a próxima parada ou o fim da faixa, o que vier antes. Fora dela: o começo da faixa. É o que
 # deixa o menu de debug dizer "próxima mudança em N min" sem conhecer nenhum tipo de exceção.
-func get_minutes_until_change(minutes_into_day: int, wake_hour: int) -> int:
+func get_minutes_until_change(minutes_into_day: int, wake_hour: int, travel: TravelTimes = null) -> int:
 	var elapsed: int = get_elapsed_minutes(minutes_into_day, wake_hour)
 	var length: int = get_length_minutes()
 	if elapsed >= length:
 		return MINUTES_PER_DAY - elapsed
 
 	var until_end: int = length - elapsed
-	var until_stop: int = get_minutes_until_stop_change(elapsed)
+	var until_stop: int = get_minutes_until_stop_change(elapsed, travel)
 	if until_stop > 0:
 		return mini(until_stop, until_end)
 	return until_end

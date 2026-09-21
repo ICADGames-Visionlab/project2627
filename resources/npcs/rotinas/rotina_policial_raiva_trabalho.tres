@@ -1,9 +1,9 @@
-[gd_resource type="Resource" script_class="NPCRoutine" format=3]
+[gd_resource type="Resource" script_class="NPCRoutine" format=3 uid="uid://cwujcllobikr8"]
 
-[ext_resource type="Script" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_tbvu4"]
-[ext_resource type="Script" path="res://scripts/npc/NPCRoutineException.gd" id="2_07t6g"]
-[ext_resource type="Resource" path="res://resources/npcs/rondas/ronda_policial_raiva.tres" id="3_g0u84"]
-[ext_resource type="Script" path="res://scripts/npc/NPCRoutine.gd" id="4_1xilb"]
+[ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_tbvu4"]
+[ext_resource type="Script" uid="uid://c8uw224es2o8w" path="res://scripts/npc/NPCRoutineException.gd" id="2_07t6g"]
+[ext_resource type="Resource" uid="uid://c6b7s3r8sm8t3" path="res://resources/npcs/rondas/ronda_policial_raiva.tres" id="3_g0u84"]
+[ext_resource type="Script" uid="uid://dnf7l0o4aeaw2" path="res://scripts/npc/NPCRoutine.gd" id="4_1xilb"]
 
 [sub_resource type="Resource" id="Resource_fvu7o"]
 script = ExtResource("1_tbvu4")
@@ -40,4 +40,4 @@ resumo = "4 entradas (ordem de relógio):
   20:00  City / casa_do_policial
 
 Exceções (onde as faixas se sobrepõem, vale a primeira):
-  08:00-18:00  ronda em City: quartel_porta -> banco_da_praca -> praca -> beco -> praca -> banco_da_praca (20 min em cada, em ciclo)"
+  08:00-18:00  ronda em uhsb0fmpfbay: quartel_porta -> banco_da_praca -> praca -> beco -> praca -> banco_da_praca (20 min em cada, em ciclo)"

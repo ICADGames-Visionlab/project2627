@@ -65,7 +65,7 @@ class Decision extends RefCounted:
 
 # O ponto de entrada: cruza NPC + emoção vigente + relógio e devolve a decisão completa.
 static func resolve(definition: NPCDefinition, slot: int, weekday: int, minutes_into_day: int,
-		wake_hour: int) -> Decision:
+		wake_hour: int, travel: NPCRoutineException.TravelTimes = null) -> Decision:
 	var decision: Decision = Decision.new()
 	if definition == null:
 		return decision
@@ -76,17 +76,17 @@ static func resolve(definition: NPCDefinition, slot: int, weekday: int, minutes_
 		return decision
 
 	var ordered: Array[NPCRoutineEntry] = sorted_entries(decision.routine, wake_hour)
-	decision.entry = entry_at(decision.routine, ordered, minutes_into_day, wake_hour, decision)
+	decision.entry = entry_at(decision.routine, ordered, minutes_into_day, wake_hour, decision, travel)
 	if decision.entry == null:
 		return decision
 
 	# A próxima entrada é o que estará valendo quando a decisão mudar, e não "a linha seguinte da
 	# rotina": com uma ronda em andamento, a próxima mudança é a próxima parada dela.
 	decision.minutes_until_next = minutes_until_change(
-		decision.routine, ordered, minutes_into_day, wake_hour, decision.exception)
+		decision.routine, ordered, minutes_into_day, wake_hour, decision.exception, travel)
 	var change_minute: int = minutes_into_day + decision.minutes_until_next
 	decision.next_entry = _starting_at(
-		entry_at(decision.routine, ordered, change_minute, wake_hour), change_minute, wake_hour)
+		entry_at(decision.routine, ordered, change_minute, wake_hour, null, travel), change_minute, wake_hour)
 
 	return decision
 
@@ -147,9 +147,10 @@ static func resolve_routine(definition: NPCDefinition, slot: int, day_type: int,
 # implementação que poderia divergir da primeira.
 #
 # O parâmetro decision é opcional e serve pra registrar QUAL exceção mandou, pro log e pro menu de
-# debug poderem dizer "em ronda" — o mesmo esquema do resolve_routine.
+# debug poderem dizer "em ronda" — o mesmo esquema do resolve_routine. O travel também é opcional: é o
+# quanto o NPC leva pra andar entre waypoints, e sem ele a caminhada vale zero.
 static func entry_at(routine: NPCRoutine, ordered: Array[NPCRoutineEntry], minutes_into_day: int,
-		wake_hour: int, decision: Decision = null) -> NPCRoutineEntry:
+		wake_hour: int, decision: Decision = null, travel: NPCRoutineException.TravelTimes = null) -> NPCRoutineEntry:
 	# O instante pode passar de um dia quando é o futuro (agora + minutos até a próxima mudança).
 	var minute: int = posmod(minutes_into_day, NPCRoutineEntry.MINUTES_PER_DAY)
 
@@ -158,7 +159,8 @@ static func entry_at(routine: NPCRoutine, ordered: Array[NPCRoutineEntry], minut
 	for exception: NPCRoutineException in routine.exceptions:
 		if exception == null or not exception.is_active_at(minute, wake_hour):
 			continue
-		var stop: NPCRoutineEntry = exception.get_stop(exception.get_elapsed_minutes(minute, wake_hour))
+		var stop: NPCRoutineEntry = exception.get_stop(
+			exception.get_elapsed_minutes(minute, wake_hour), window_travel(exception, ordered, wake_hour, travel))
 		if stop != null:
 			if decision != null:
 				decision.exception = exception
@@ -180,9 +182,11 @@ static func entry_at(routine: NPCRoutine, ordered: Array[NPCRoutineEntry], minut
 # verdade: uma "próxima mudança" que ignorasse a ronda mentiria justamente na ferramenta que o design
 # usa pra conferir a rotina.
 static func minutes_until_change(routine: NPCRoutine, ordered: Array[NPCRoutineEntry],
-		minutes_into_day: int, wake_hour: int, active: NPCRoutineException = null) -> int:
+		minutes_into_day: int, wake_hour: int, active: NPCRoutineException = null,
+		travel: NPCRoutineException.TravelTimes = null) -> int:
 	if active != null:
-		return active.get_minutes_until_change(minutes_into_day, wake_hour)
+		return active.get_minutes_until_change(
+			minutes_into_day, wake_hour, window_travel(active, ordered, wake_hour, travel))
 
 	var soonest: int = 0
 	if not ordered.is_empty():
@@ -192,12 +196,28 @@ static func minutes_until_change(routine: NPCRoutine, ordered: Array[NPCRoutineE
 	for exception: NPCRoutineException in routine.exceptions:
 		if exception == null or not exception.is_executable():
 			continue
-		var until_change: int = exception.get_minutes_until_change(minutes_into_day, wake_hour)
+		var until_change: int = exception.get_minutes_until_change(
+			minutes_into_day, wake_hour, window_travel(exception, ordered, wake_hour, travel))
 		# Zero não é uma mudança: é o "próxima entrada = a mesma" de uma rotina de entrada única.
 		if until_change > 0 and (soonest <= 0 or until_change < soonest):
 			soonest = until_change
 
 	return soonest
+
+
+# O TravelTimes que uma exceção recebe: o mesmo do chamador, mas sabendo de onde o NPC vem quando a faixa
+# abre. "De onde ele vem" é a entrada da rotina padrão que valia no minuto ANTERIOR à abertura. Não olha as
+# outras exceções de propósito: uma faixa que abre colada em outra pediria o fim da anterior, e uma faixa
+# do dia inteiro pediria o próprio fim (recursão sem saída). Devolve null se o chamador não tem
+# TravelTimes, e a caminhada vale zero.
+static func window_travel(exception: NPCRoutineException, ordered: Array[NPCRoutineEntry],
+		wake_hour: int, travel: NPCRoutineException.TravelTimes) -> NPCRoutineException.TravelTimes:
+	if travel == null or ordered.is_empty():
+		return travel
+
+	var before: int = posmod(exception.get_start_minutes_into_day(wake_hour) - 1, NPCRoutineEntry.MINUTES_PER_DAY)
+	var origin: NPCRoutineEntry = ordered[current_index(ordered, before, wake_hour)]
+	return travel.with_origin(origin.scene_path, origin.waypoint)
 
 
 # As entradas ordenadas pelo minuto do DIA DE JOGO (não pelo relógio de parede): com wake_hour 6,

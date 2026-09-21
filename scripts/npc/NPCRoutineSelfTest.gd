@@ -40,9 +40,13 @@ func run() -> void:
 	_lines.clear()
 
 	_test_entry_helpers()
+	_test_scene_paths()
 	_test_baseline()
 	_test_patrol()
 	_test_next_change()
+	_test_travel()
+	_test_travel_consistency()
+	_test_walk_seconds()
 	_test_window_shapes()
 	_test_priority()
 	_test_incomplete()
@@ -69,6 +73,29 @@ func _test_entry_helpers() -> void:
 	_expect_true("Mesmo lugar em horários diferentes é o mesmo lugar", first.is_same_place(second))
 	_expect_true("Waypoint diferente é lugar diferente", not first.is_same_place(elsewhere))
 	_expect_true("Nenhuma entrada é o mesmo lugar que nada", not first.is_same_place(null))
+
+
+# O caminho de cena que o Inspector grava. Desde o Godot 4.4 um campo @export_file escolhido pelo seletor
+# vira "uid://...", e o jogo compara "res://...": sem a conversão o NPC some de cena sem nenhum aviso.
+func _test_scene_paths() -> void:
+	_expect_equal("Caminho de cena comum passa direto", NPCRoutineEntry.to_scene_path(SCENE), SCENE)
+	_expect_equal("Caminho de cena vazio passa direto", NPCRoutineEntry.to_scene_path(""), "")
+	_expect_equal("UID que não existe passa direto, e nunca bate com uma cena em jogo",
+		NPCRoutineEntry.to_scene_path("uid://__selftest_inexistente"), "uid://__selftest_inexistente")
+
+	var scene_uid: String = ResourceUID.path_to_uid(SCENE)
+	if not scene_uid.begins_with("uid://"):
+		_skip("UID da cena vira o caminho dela", "a cena não tem UID neste checkout")
+		return
+	_expect_equal("UID da cena vira o caminho dela", NPCRoutineEntry.to_scene_path(scene_uid), SCENE)
+
+	var by_uid: NPCRoutineEntry = _entry(8, 0, &"praca")
+	by_uid.scene_path = scene_uid
+	_expect_true("A descrição mostra o nome da cena, e não o UID", by_uid.describe().contains("City"))
+
+	var patrol: NPCPatrol = _patrol(8, 17, 30, [&"a", &"b"])
+	patrol.scene_path = scene_uid
+	_expect_true("A ronda com cena em UID também mostra o nome da cena", patrol.describe().contains("ronda em City"))
 
 
 # Rotina sem exceção: tem que resolver exatamente como resolvia antes de as exceções existirem.
@@ -147,6 +174,132 @@ func _test_next_change() -> void:
 	decision = _decide(with_lunch, 11, 50)
 	_expect_true("Entrada da rotina no meio da ronda não conta como mudança",
 		decision.next_entry.waypoint == &"c" and decision.minutes_until_next == 10)
+
+	# A rotina padrão continua correndo por baixo da ronda: quando a faixa acaba às 17:00, vale a entrada
+	# que a rotina tem PARA AQUELE HORÁRIO (a das 11:55, quartel). "casa" seria o resultado de retomar a
+	# entrada que valia quando a ronda abriu, às 08:00.
+	_expect_waypoint("Ao fim da faixa vale a entrada da rotina para aquele horário, e não a de quando a faixa abriu",
+		_decide(with_lunch, 17, 0), &"quartel")
+
+
+# O tempo parado conta a partir da chegada: cada parada dura a caminhada até o ponto MAIS o tempo parado.
+# A caminhada vem do TravelTimes (que em jogo o NPCDirector monta com o Pathfinder); aqui é uma tabela.
+func _test_travel() -> void:
+	# Ronda 08:00-17:00, 30 min parado, pontos a, b, c. A rotina padrão o deixa no "quartel" antes da faixa.
+	var entries: Array = [_entry(6, 0, &"casa"), _entry(7, 30, &"quartel"), _entry(19, 0, &"casa")]
+	var definition: NPCDefinition = _definition(entries, [_patrol(8, 17, 30, [&"a", &"b", &"c"])])
+	var flat: NPCRoutineException.TravelTimes = _flat_travel(10)
+
+	# Caminhada de 10 min entre pontos diferentes (inclusive do quartel até o primeiro ponto): cada parada
+	# dura 40 min. Sem a caminhada, dura 30.
+	_expect_waypoint("Com caminhada, a primeira parada dura a caminhada da origem mais o tempo parado",
+		_decide_travel(definition, 8, 39, flat), &"a")
+	_expect_waypoint("Só aos 40 min ele é mandado pro segundo ponto", _decide_travel(definition, 8, 40, flat), &"b")
+	_expect_waypoint("Segunda parada: mais 40 min", _decide_travel(definition, 9, 19, flat), &"b")
+	_expect_waypoint("Terceira parada", _decide_travel(definition, 9, 20, flat), &"c")
+	_expect_waypoint("Ao fim da volta, o primeiro ponto volta (a caminhada agora vem do último)",
+		_decide_travel(definition, 10, 0, flat), &"a")
+	_expect_equal("O horário da parada é o de quando ele é mandado pra lá",
+		_decide_travel(definition, 8, 45, flat).entry.format_clock(), "08:40")
+
+	var decision: NPCRoutineResolver.Decision = _decide_travel(definition, 8, 10, flat)
+	_expect_true("A próxima mudança conta a caminhada: daqui a 30 min, às 08:40, no segundo ponto",
+		decision.next_entry.waypoint == &"b" and decision.minutes_until_next == 30
+		and decision.next_entry.format_clock() == "08:40")
+
+	decision = _decide_travel(definition, 16, 50, flat)
+	_expect_true("O fim da faixa continua mandando: às 17:00 a rotina padrão volta, mesmo no meio da caminhada",
+		decision.minutes_until_next == 10 and decision.next_entry.waypoint == &"quartel")
+
+	# A origem: só conta se ele vinha de OUTRO ponto da mesma cena.
+	var at_first: NPCDefinition = _definition(
+		[_entry(6, 0, &"casa"), _entry(7, 30, &"a")], [_patrol(8, 17, 30, [&"a", &"b", &"c"])])
+	_expect_waypoint("Já no primeiro ponto quando a faixa abre: a primeira parada dura só o tempo parado",
+		_decide_travel(at_first, 8, 29, flat), &"a")
+	_expect_waypoint("...e o segundo ponto vem aos 30 min", _decide_travel(at_first, 8, 30, flat), &"b")
+
+	var came_from_inside: NPCRoutineEntry = _entry(7, 30, &"forno")
+	came_from_inside.scene_path = "res://scenes/BakeryInterior.tscn"
+	var from_other_scene: NPCDefinition = _definition(
+		[_entry(6, 0, &"casa"), came_from_inside], [_patrol(8, 17, 30, [&"a", &"b", &"c"])])
+	_expect_waypoint("Veio de outra cena: ele aparece no ponto, sem caminhada até ele",
+		_decide_travel(from_other_scene, 8, 29, flat), &"a")
+	_expect_waypoint("...e a segunda parada já começa aos 30 min", _decide_travel(from_other_scene, 8, 30, flat), &"b")
+
+	# Caminhadas diferentes por trecho: quartel->a 10, a->b 10, b->c 20, c->a 30.
+	var table: NPCRoutineException.TravelTimes = _table_travel({
+		"quartel>a": 10, "a>b": 10, "b>c": 20, "c>a": 30})
+	_expect_waypoint("Trechos diferentes: a primeira parada dura 40", _decide_travel(definition, 8, 39, table), &"a")
+	_expect_waypoint("...a segunda começa aos 40 e dura 40", _decide_travel(definition, 9, 19, table), &"b")
+	_expect_waypoint("...a terceira começa aos 80 e dura 50 (caminhada de 20)", _decide_travel(definition, 10, 9, table), &"c")
+	_expect_waypoint("...a volta ao primeiro ponto começa aos 130 e dura 60 (caminhada de 30)",
+		_decide_travel(definition, 10, 10, table), &"a")
+	_expect_waypoint("...e a seguinte, já na segunda volta, aos 190", _decide_travel(definition, 11, 10, table), &"b")
+
+	# A "próxima mudança" também usa a caminhada. Às 09:40 ele está no terceiro ponto (que dura até os 130),
+	# e o próximo é o primeiro, às 10:10: sem caminhada a conta cairia no segundo ponto, então este caso
+	# só passa se a caminhada entrar no cálculo do futuro e não só no do presente.
+	decision = _decide_travel(definition, 9, 40, table)
+	_expect_true("Com caminhadas diferentes, a próxima mudança é o primeiro ponto às 10:10, daqui a 30 min",
+		decision.next_entry.waypoint == &"a" and decision.minutes_until_next == 30
+		and decision.next_entry.format_clock() == "10:10")
+
+	# Quantos pontos a faixa dá tempo de visitar: a caminhada tira tempo dela.
+	var short: NPCPatrol = _patrol(8, 9, 30, [&"a", &"b", &"c"], 0, 20)
+	_expect_true("Faixa de 80 min, sem contar a caminhada, passa pelos 3 pontos",
+		short.count_visited_points(null) == 3)
+	_expect_true("...contando 10 min de caminhada por parada (40 cada), o terceiro ponto não dá tempo",
+		short.count_visited_points(flat.with_origin(SCENE, &"quartel")) == 2)
+
+
+# As duas respostas do contrato (onde ele está, e quando muda) têm que concordar sobre onde cada parada
+# começa e termina, em todos os minutos da faixa. Se divergissem, o menu de debug mentiria sobre a próxima
+# mudança, e a agenda teria buracos que ninguém vê. É a conferência que pega erro de índice na conta das
+# voltas, que o teste de um instante só não pega.
+func _test_travel_consistency() -> void:
+	var patrol: NPCPatrol = _patrol(8, 17, 30, [&"a", &"b", &"c", &"b"])
+	var length: int = patrol.get_length_minutes()
+	var travels: Array = [
+		null, _flat_travel(10), _flat_travel(20),
+		_table_travel({"a>b": 10, "b>c": 20, "c>b": 30, "b>a": 20, "quartel>a": 10}).with_origin(SCENE, &"quartel")]
+	var problems: Array[String] = []
+
+	for travel_index: int in travels.size():
+		var travel: NPCRoutineException.TravelTimes = travels[travel_index] as NPCRoutineException.TravelTimes
+		for elapsed: int in length:
+			var until: int = patrol.get_minutes_until_stop_change(elapsed, travel)
+			var here: NPCRoutineEntry = patrol.get_stop(elapsed, travel)
+			if until <= 0 or here == null:
+				problems.append("travel %d, minuto %d: until=%d" % [travel_index, elapsed, until])
+				continue
+			# Constante até o fim da parada...
+			var last: NPCRoutineEntry = patrol.get_stop(elapsed + until - 1, travel)
+			if not (last.is_same_place(here) and last.get_clock_minutes() == here.get_clock_minutes()):
+				problems.append("travel %d, minuto %d: a parada muda antes do fim" % [travel_index, elapsed])
+			# ...e outra parada (que começa exatamente aí) logo depois.
+			var next: NPCRoutineEntry = patrol.get_stop(elapsed + until, travel)
+			if next.get_clock_minutes() == here.get_clock_minutes():
+				problems.append("travel %d, minuto %d: a parada não muda no fim" % [travel_index, elapsed])
+
+	_record("get_stop e get_minutes_until_stop_change concordam em todos os minutos da faixa, com 4 caminhadas",
+		problems.is_empty(), "; ".join(PackedStringArray(problems.slice(0, 3))))
+
+
+# A conta do tempo de caminhada é a do movimento (Isometric.screen_velocity): mais lenta quanto mais vertical.
+func _test_walk_seconds() -> void:
+	_expect_true("Horizontal: 300 px a 200 px/s levam 1,5 s",
+		is_equal_approx(Isometric.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(300, 0)]), 200.0, 0.5, 0.75), 1.5))
+	_expect_true("Vertical: 100 px a 200 px/s x 0,75 levam 0,667 s",
+		absf(Isometric.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(0, 100)]), 200.0, 0.5, 0.75) - 100.0 / 150.0) < 0.0001)
+	_expect_true("Um caminho de dois trechos soma os dois",
+		absf(Isometric.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(300, 0), Vector2(300, 100)]), 200.0, 0.5, 0.75)
+			- (1.5 + 100.0 / 150.0)) < 0.0001)
+	_expect_true("Caminho vazio leva zero", Isometric.walk_seconds(Vector2.ZERO, PackedVector2Array(), 200.0, 0.5, 0.75) == 0.0)
+
+	var nothing: NPCRoutineException.TravelTimes = NPCRoutineException.TravelTimes.new()
+	_expect_true("TravelTimes sem lookup responde zero (não sabe, então não anda)", nothing.minutes(&"a", &"b") == 0)
+	_expect_true("Mesmo ponto: zero", _flat_travel(10).minutes(&"a", &"a") == 0)
+	_expect_true("Sem origem, a primeira parada não caminha", _flat_travel(10).minutes_from_origin(SCENE, &"a") == 0)
 
 
 # Formas de faixa: a que atravessa a meia-noite, a que atravessa a hora de acordar, a que vale o dia todo.
@@ -320,6 +473,28 @@ func _definition(entries: Array, exceptions: Array) -> NPCDefinition:
 	return definition
 
 
+# Um TravelTimes de teste em que toda caminhada entre pontos diferentes leva `minutes` minutos.
+func _flat_travel(minutes: int) -> NPCRoutineException.TravelTimes:
+	return NPCRoutineException.TravelTimes.new(func(_from_id: StringName, _to_id: StringName) -> int:
+		return minutes)
+
+
+# Um TravelTimes de teste com a caminhada de cada trecho numa tabela "de>para" -> minutos (o que não
+# está na tabela é zero).
+func _table_travel(table: Dictionary) -> NPCRoutineException.TravelTimes:
+	return NPCRoutineException.TravelTimes.new(func(from_id: StringName, to_id: StringName) -> int:
+		return int(table.get("%s>%s" % [from_id, to_id], 0)))
+
+
+# A decisão com o tempo de caminhada. Sem `travel` é um _decide igual ao de sempre. Usa os mesmos
+# horários de relógio de parede; a origem da ronda o resolver descobre sozinho, da rotina padrão.
+func _decide_travel(definition: NPCDefinition, hour: int, minute: int,
+		travel: NPCRoutineException.TravelTimes = null) -> NPCRoutineResolver.Decision:
+	var minutes_into_day: int = posmod(hour * 60 + minute - WAKE_HOUR * 60, NPCRoutineEntry.MINUTES_PER_DAY)
+	return NPCRoutineResolver.resolve(
+		definition, NPCDefinition.EmotionSlot.NEUTRAL, 0, minutes_into_day, WAKE_HOUR, travel)
+
+
 # A rotina neutro/trabalho de um NPC de teste.
 func _routine_of(definition: NPCDefinition) -> NPCRoutine:
 	return definition.routine_neutral_workday
@@ -356,6 +531,11 @@ func _expect_issue(label: String, issues: PackedStringArray, fragment: String) -
 			found = true
 			break
 	_record(label, found, "nenhum problema contém \"%s\" (veio: %s)" % [fragment, issues])
+
+
+# Registra um caso que não pôde rodar. Não conta como falha nem como acerto.
+func _skip(label: String, reason: String) -> void:
+	_lines.append("  - %s (pulado: %s)" % [label, reason])
 
 
 # Registra o resultado de um caso no relatório.
