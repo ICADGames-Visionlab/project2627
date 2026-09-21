@@ -30,6 +30,7 @@ WEEKDAY_SAT,Saturday,Sábado
 WEEKDAY_SUN,Sunday,Domingo
 NPC_NAME_ZE,Joe,Zé
 NPC_NAME_ANA,Ana,Ana
+NPC_NAME_POLICIAL,Officer,Policial
 EMOTION_ANGER,Anger,Raiva
 EMOTION_SADNESS,Sadness,Tristeza
 EMOTION_FEAR,Fear,Medo

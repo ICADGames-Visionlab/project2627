@@ -230,7 +230,9 @@ func collect_issues() -> PackedStringArray:
 			if routine == null:
 				issues.append("Sem rotina %s/%s: vai cair no fallback." % [
 					SLOT_NAMES[slot], DAY_TYPE_NAMES[day_type]])
-			elif routine.count_valid_entries() == 0:
+			# Uma rotina só de exceção (um guarda que só circula) não está vazia: o que ela deixa de
+			# cobrir é apontado pela própria rotina (NPCRoutine.collect_issues).
+			elif routine.count_valid_entries() == 0 and routine.count_valid_exceptions() == 0:
 				issues.append("Rotina %s/%s está vazia ou incompleta." % [
 					SLOT_NAMES[slot], DAY_TYPE_NAMES[day_type]])
 
@@ -249,6 +251,9 @@ func _refresh_summary() -> void:
 			var status: String = "FALTANDO (cai no fallback)"
 			if routine != null:
 				status = "%d entradas" % routine.count_valid_entries()
+				if not routine.exceptions.is_empty():
+					status += " + %d %s" % [routine.count_valid_exceptions(),
+						"exceção" if routine.count_valid_exceptions() == 1 else "exceções"]
 			lines.append("%-22s %s" % ["%s / %s" % [SLOT_NAMES[slot], DAY_TYPE_NAMES[day_type]], status])
 
 	var issues: PackedStringArray = collect_issues()
