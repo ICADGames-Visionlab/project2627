@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="NPCDefinition" format=3 uid="uid://j1gf18af5qqs"]
+
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_tristeza.tres" id="1_rn71n"]
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_raiva.tres" id="2_1engy"]
+[ext_resource type="Resource" uid="uid://cm67xakva4eok" path="res://resources/npcs/rotinas/rotina_policial_tristeza_folga.tres" id="3_j1tg8"]
+[ext_resource type="Resource" uid="uid://vlra43f0h4k" path="res://resources/npcs/rotinas/rotina_policial_tristeza_trabalho.tres" id="4_tlos3"]
+[ext_resource type="Resource" uid="uid://bd0075adp3epj" path="res://resources/npcs/rotinas/rotina_policial_folga.tres" id="5_k4jvk"]
+[ext_resource type="Resource" uid="uid://d1qp086mn35rr" path="res://resources/npcs/rotinas/rotina_policial_trabalho.tres" id="6_xgmx4"]
+[ext_resource type="Resource" uid="uid://g54h0hacpnx" path="res://resources/npcs/rotinas/rotina_policial_raiva_folga.tres" id="7_ku6yi"]
+[ext_resource type="Resource" uid="uid://cwujcllobikr8" path="res://resources/npcs/rotinas/rotina_policial_raiva_trabalho.tres" id="8_hpvjt"]
+[ext_resource type="Script" uid="uid://bm7w16uuu8ll5" path="res://scripts/npc/NPCDefinition.gd" id="9_7ypmh"]
+
+[resource]
+script = ExtResource("9_7ypmh")
+id = &"policial"
+name_key = &"NPC_NAME_POLICIAL"
+tint = Color(0.6, 0.55, 1, 1)
+walk_speed = 210.0
+emotion_first = ExtResource("1_rn71n")
+emotion_second = ExtResource("2_1engy")
+routine_neutral_workday = ExtResource("6_xgmx4")
+routine_neutral_day_off = ExtResource("5_k4jvk")
+routine_first_workday = ExtResource("4_tlos3")
+routine_first_day_off = ExtResource("3_j1tg8")
+routine_second_workday = ExtResource("8_hpvjt")
+routine_second_day_off = ExtResource("7_ku6yi")
+resumo = "NPC \"policial\" · emoção inicial: neutro
+Trabalha: seg, ter, qua, qui, sex
+
+neutro / trabalho      3 entradas + 1 exceção
+neutro / folga         4 entradas
+emoção 1 / trabalho    4 entradas + 1 exceção
+emoção 1 / folga       3 entradas
+emoção 2 / trabalho    4 entradas + 1 exceção
+emoção 2 / folga       3 entradas"

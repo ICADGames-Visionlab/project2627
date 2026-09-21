@@ -78,6 +78,44 @@ func format_clock() -> String:
 
 # Uma linha legível da entrada, usada no resumo do Inspector e no menu de debug.
 func describe() -> String:
-	var scene_name: String = scene_path.get_file().get_basename() if scene_path != "" else "(sem cena)"
+	var scene_name: String = to_scene_path(scene_path).get_file().get_basename() if scene_path != "" else "(sem cena)"
 	var point: String = String(waypoint) if waypoint != &"" else "(sem waypoint)"
 	return "%s  %s / %s" % [format_clock(), scene_name, point]
+
+
+# Diz se duas entradas mandam o NPC pro mesmo lugar (mesma cena, mesmo waypoint), ainda que valham
+# em horários diferentes. É o que o NPCDirector compara pra saber se o NPC precisa ANDAR: as paradas
+# de uma exceção (ver NPCRoutineException) são entradas avulsas, criadas de novo a cada resolução, e
+# comparadas por identidade pareceriam sempre "diferentes".
+func is_same_place(other: NPCRoutineEntry) -> bool:
+	return other != null and scene_path == other.scene_path and waypoint == other.waypoint
+
+
+# Cria uma entrada avulsa, que não pertence a nenhuma rotina. É a moeda em que uma exceção (ex.: a
+# ronda) diz ao resto do sistema "ele está aqui, desde este horário": assim o resolver, o diretor e o
+# menu de debug tratam a parada de uma ronda exatamente como uma linha da rotina padrão.
+static func from_clock_minutes(clock_minutes: int, p_scene_path: String, p_waypoint: StringName) -> NPCRoutineEntry:
+	var wrapped: int = posmod(clock_minutes, MINUTES_PER_DAY)
+	var entry: NPCRoutineEntry = NPCRoutineEntry.new()
+	@warning_ignore("integer_division")
+	entry.hour = wrapped / MINUTES_PER_HOUR
+	entry.minute = wrapped % MINUTES_PER_HOUR
+	entry.scene_path = p_scene_path
+	entry.waypoint = p_waypoint
+	return entry
+
+
+# O caminho de cena como o jogo compara: "res://...". Desde o Godot 4.4 o Inspector grava um campo
+# @export_file como "uid://..." quando o arquivo tem UID (é o que faz a referência sobreviver a mover ou
+# renomear a cena), mas o NPCDirector compara com current_scene.scene_file_path, que é sempre "res://".
+# Sem esta conversão, escolher a cena pelo seletor do Inspector fazia o NPC sumir de cena, sem nenhum
+# aviso. Caminho comum passa direto; UID que não existe mais (cena apagada) também, e nunca vai bater
+# com nenhuma cena em jogo.
+static func to_scene_path(path: String) -> String:
+	if not path.begins_with("uid://"):
+		return path
+
+	var id: int = ResourceUID.text_to_id(path)
+	if id == ResourceUID.INVALID_ID or not ResourceUID.has_id(id):
+		return path
+	return ResourceUID.get_id_path(id)
