@@ -73,8 +73,14 @@ func _on_inventory_changed(_item: ItemData, _amount: int) -> void:
 # Reconstrói a lista de slots do zero a partir do estado atual do inventário. Simples e barato o
 # bastante para o tamanho esperado do inventário do jogo — ver docs/Inventory.md, "Limitações
 # atuais", se isso um dia precisar de diffing em vez de reconstrução total.
+#
+# remove_child() antes do queue_free(): queue_free() só remove o nó no FIM do frame, então sem o
+# remove_child() os slots antigos continuam filhos de _slots_grid no mesmo frame em que os novos
+# são adicionados abaixo — um frame com as duas versões visíveis (flicker) e os botões antigos
+# ainda com pressed conectado.
 func _rebuild_slots() -> void:
 	for child: Node in _slots_grid.get_children():
+		_slots_grid.remove_child(child)
 		child.queue_free()
 
 	var stacks: Array[ItemStack] = _inventory.get_stacks() if _inventory != null else []
@@ -93,6 +99,11 @@ func _build_slot(stack: ItemStack) -> Control:
 	var panel: PanelContainer = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(160, 0)
 
+	# description_key vira o tooltip do slot — é o único lugar em que ela é exibida hoje (ver
+	# ItemData.gd). Sem isso, description_key era só um campo preenchido e traduzido à toa.
+	if item.description_key != &"":
+		panel.tooltip_text = tr(item.description_key)
+
 	var layout: VBoxContainer = VBoxContainer.new()
 	panel.add_child(layout)
 
@@ -105,7 +116,13 @@ func _build_slot(stack: ItemStack) -> Control:
 		layout.add_child(icon_rect)
 
 	var name_label: Label = Label.new()
-	name_label.text = "%s x%d" % [tr(item.display_name_key), stack.amount]
+	# Placeholder nomeado (ver docs/localizacao_Godot.md, "Placeholders / textos dinâmicos") em vez
+	# de string hardcoded: "5x" em inglês costuma virar "(5)" ou "x5" em pt_BR, então a ordem/forma
+	# não pode ficar fixa no código.
+	name_label.text = tr(&"INVENTORY_SLOT_LABEL").format({
+		"name": tr(item.display_name_key),
+		"amount": stack.amount,
+	})
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	layout.add_child(name_label)
 

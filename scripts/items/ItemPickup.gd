@@ -46,6 +46,14 @@ func _ready() -> void:
 	await get_tree().create_timer(pickup_delay).timeout
 	_collectible = true
 
+	# body_entered só dispara na TRANSIÇÃO de entrada. Um corpo que já estava dentro da área
+	# quando o cooldown terminou — jogador parado em cima do pickup, ou que entrou durante os
+	# pickup_delay segundos "surdos" — nunca dispara o sinal de novo, e o item ficava ali pra
+	# sempre até o jogador sair da área e voltar a entrar (sem nenhum aviso do motivo). Revarrer os
+	# corpos já sobrepostos assim que o cooldown acaba resolve.
+	for body: Node2D in get_overlapping_bodies():
+		_on_body_entered(body)
+
 ## Espaço para funções personalizadas
 
 # Coleta o item para o Inventory do corpo que entrou na área, se for o Player e o cooldown de

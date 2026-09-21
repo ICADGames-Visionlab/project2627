@@ -17,8 +17,9 @@ extends Node
 
 ## Espaço para sinais
 
-# Emitido quando uma quantidade de um item entra no inventário (pickup ou comando de debug).
-# Ouvinte: InventoryUI, para redesenhar o slot.
+# Emitido quando uma quantidade de um item entra no inventário (pickup ou comando de debug). O
+# "amount" é a quantidade REALMENTE adicionada, não a pedida — se a pilha satura em
+# item.max_stack, o excedente não é contado aqui. Ouvinte: InventoryUI, para redesenhar o slot.
 signal item_added(item: ItemData, amount: int)
 
 # Emitido quando o jogador larga um item no mundo (ele deixa de estar no inventário e vira um
@@ -45,10 +46,13 @@ const GROUP_NAME: StringName = &"inventory"
 const PICKUP_SCENE_PATH: String = "res://scenes/items/ItemPickup.tscn"
 
 # Distância, em pixels, entre o dono deste inventário e o ItemPickup instanciado por drop_item().
-# Precisa ser maior que a soma dos dois raios de colisão (CapsuleShape2D do Player, radius 14, +
-# CircleShape2D do ItemPickup, radius 24 — ver Player.tscn e ItemPickup.tscn). Sem essa folga, o
-# pickup nasce sobrepondo o colisor do próprio dono e a Area2D dele dispara o pickup de volta no
-# mesmo frame em que foi largado.
+# O colisor do Player (CapsuleShape2D, radius 14, height 56 — ver Player.tscn) está rotacionado 90°
+# (rotation = 1.5707964), então a meia-extensão HORIZONTAL do Player é height / 2 = 28px, e não o
+# radius. Largando de lado — o caso comum, já que _get_drop_position() usa a direção da
+# velocidade — a folga mínima real é 28 (Player) + 24 (raio do CircleShape2D do ItemPickup) = 52px.
+# 56 dá só 4px de margem sobre esse mínimo. NÃO reduza este valor achando que o piso é
+# radius + radius = 38: esse número ignora a rotação do colisor e reabre o bug de o item voltar
+# pro inventário sozinho assim que é largado.
 const DROP_OFFSET_DISTANCE: float = 56.0
 
 # Cena instanciada no chão quando um item é largado. Exportado para poder trocar por uma variante
@@ -63,6 +67,10 @@ const DROP_OFFSET_DISTANCE: float = 56.0
 # encontrar item nenhum. Já vem com o item de exemplo do projeto pra dar pra testar sem precisar
 # abrir o Inspector. ItemData.gd não referencia Inventory nem ItemPickup, então preload() aqui não
 # tem o problema de ciclo do pickup_scene acima.
+#
+# Pode conter entradas null: um clique em "Add Element" no Inspector cria uma entrada vazia antes
+# de alguém arrastar o .tres pra ela. Todo código que itera este array (_on_debug_give_item,
+# _debug_item_ids) precisa pular entradas null.
 @export var debug_item_catalog: Array[ItemData] = [preload("res://items/EvidenciaExemplo.tres")]
 
 # Pilhas atuais, indexadas pelo id do item. Uma pilha só por item — ver "Limitações atuais" em
@@ -84,8 +92,10 @@ func _ready() -> void:
 
 # Adiciona amount unidades de item ao inventário, criando a pilha se for a primeira unidade do
 # item. A quantidade satura em item.max_stack (excedente é descartado — inventário sem conceito
-# de "cheio" ainda, ver docs/Inventory.md). Público: chamado pelo ItemPickup ao ser coletado, e
-# pelo comando de debug "dar_evidencia".
+# de "cheio" ainda, ver docs/Inventory.md). Emite item_added só com o que REALMENTE entrou — se a
+# pilha já estava no máximo, nada entra e o sinal não é emitido (quem escuta, como a UI ou um
+# futuro sistema de missões, não pode contar uma adição que não aconteceu). Público: chamado pelo
+# ItemPickup ao ser coletado, e pelo comando de debug "dar_evidencia".
 func add_item(item: ItemData, amount: int = 1) -> void:
 	if item == null or amount <= 0:
 		return
@@ -95,9 +105,14 @@ func add_item(item: ItemData, amount: int = 1) -> void:
 		stack = ItemStack.new(item, 0)
 		_stacks[item.id] = stack
 
+	var previous_amount: int = stack.amount
 	stack.amount = mini(stack.amount + amount, item.max_stack)
-	item_added.emit(item, amount)
-	print("[Inventory] - Item \"%s\" adicionado (x%d, total %d)" % [item.id, amount, stack.amount])
+	var added: int = stack.amount - previous_amount
+	if added <= 0:
+		return
+
+	item_added.emit(item, added)
+	print("[Inventory] - Item \"%s\" adicionado (x%d, total %d)" % [item.id, added, stack.amount])
 
 
 # Diz se o inventário tem ao menos amount unidades do item indicado.
@@ -122,24 +137,20 @@ func get_stacks() -> Array[ItemStack]:
 
 
 # Remove amount unidades do item e instancia um ItemPickup no mundo, na posição do dono deste
-# inventário. Devolve false (sem efeito nenhum) se não houver unidades suficientes.
+# inventário. Devolve false (sem efeito nenhum, item continua no inventário) se não houver
+# unidades suficientes OU se o ItemPickup não puder ser criado (cena não carrega, raiz errada, sem
+# container pra receber o nó). A pilha só é decrementada DEPOIS que o pickup já existe e está na
+# árvore, nunca antes — largar não pode fazer o item desaparecer do jogo inteiro.
 func drop_item(item_id: StringName, amount: int = 1) -> bool:
 	var stack: ItemStack = _stacks.get(item_id)
 	if stack == null or amount <= 0 or stack.amount < amount:
 		return false
 
 	var item: ItemData = stack.item
+	if not _spawn_pickup(item, amount):
+		return false
+
 	_remove_from_stack(stack, amount)
-
-	var scene: PackedScene = pickup_scene
-	if scene == null:
-		scene = load(PICKUP_SCENE_PATH) as PackedScene
-	var pickup: ItemPickup = scene.instantiate() as ItemPickup
-	pickup.item = item
-	pickup.amount = amount
-	pickup.global_position = _get_drop_position()
-	get_tree().current_scene.add_child(pickup)
-
 	item_dropped.emit(item, amount)
 	print("[Inventory] - Item \"%s\" largado (x%d)" % [item_id, amount])
 	return true
@@ -173,6 +184,52 @@ func _remove_from_stack(stack: ItemStack, amount: int) -> void:
 		_stacks.erase(stack.item.id)
 
 
+# Instancia um ItemPickup para (item, amount) e o adiciona ao container correto da árvore
+# (ver _get_drop_container), sem tocar no inventário. Devolve false sem criar nada se a cena de
+# pickup não carregar, se a raiz dela não for um ItemPickup (ex: pickup_scene preenchido no
+# Inspector com uma cena diferente), ou se não houver um container válido pra receber o nó (ex:
+# durante o fade de troca de cena do GameManager). Chamado só por drop_item(), sempre ANTES de
+# decrementar a pilha.
+func _spawn_pickup(item: ItemData, amount: int) -> bool:
+	var scene: PackedScene = pickup_scene
+	if scene == null:
+		scene = load(PICKUP_SCENE_PATH) as PackedScene
+	if scene == null:
+		push_warning("[Inventory] - drop_item: não foi possível carregar \"%s\"; item mantido no inventário" % PICKUP_SCENE_PATH)
+		return false
+
+	var pickup: ItemPickup = scene.instantiate() as ItemPickup
+	if pickup == null:
+		push_warning("[Inventory] - drop_item: a raiz da cena de pickup não é um ItemPickup; item mantido no inventário")
+		return false
+
+	var container: Node = _get_drop_container()
+	if container == null or not container.is_inside_tree():
+		push_warning("[Inventory] - drop_item: sem container válido para o pickup (troca de cena em andamento?); item mantido no inventário")
+		pickup.queue_free()
+		return false
+
+	pickup.item = item
+	pickup.amount = amount
+	pickup.global_position = _get_drop_position()
+	container.add_child(pickup)
+	return true
+
+
+# Nó onde um ItemPickup largado deve entrar: o mesmo pai do dono deste inventário — hoje, o YSort
+# de main.tscn (ver main.tscn e Structure.gd) — e NÃO get_tree().current_scene. Tudo que participa
+# do Y-sort (Player, Structure) vive DENTRO do YSort, não como filho direto da cena; um pickup
+# adicionado fora dele nasce depois do YSort na ordem de filhos e desenha por cima de tudo,
+# independente da posição no mundo. Cai em current_scene se o dono não tiver um pai — só evita
+# crash, não deveria acontecer hoje (Inventory só existe dentro de Player.tscn, sempre instanciado
+# dentro do YSort).
+func _get_drop_container() -> Node:
+	var owner_node: Node = get_parent()
+	if owner_node != null and owner_node.get_parent() != null:
+		return owner_node.get_parent()
+	return get_tree().current_scene
+
+
 # Posição onde um item largado deve aparecer: um pouco afastada do dono deste inventário (ver
 # DROP_OFFSET_DISTANCE), na direção pra onde ele está se movendo — ou "pra baixo" (Vector2.DOWN)
 # se estiver parado. NUNCA em cima do próprio dono: ver o comentário de DROP_OFFSET_DISTANCE para
@@ -203,17 +260,24 @@ func _register_debug_commands() -> void:
 
 
 # Callable do comando de debug acima: procura o item por id em debug_item_catalog e adiciona.
+# Pula entradas null (ver comentário de debug_item_catalog) — sem essa checagem, item.id numa
+# entrada vazia derruba o Debug Console inteiro assim que ele é aberto.
 func _on_debug_give_item(item_id: String, amount: int) -> void:
 	for item: ItemData in debug_item_catalog:
+		if item == null:
+			continue
 		if String(item.id) == item_id:
 			add_item(item, amount)
 			return
 	push_warning("[Inventory] - Comando de debug: item \"%s\" não está em debug_item_catalog" % item_id)
 
 
-# Lista de ids sugeridos pro comando de debug, a partir de debug_item_catalog.
+# Lista de ids sugeridos pro comando de debug, a partir de debug_item_catalog. Pula entradas null
+# pelo mesmo motivo de _on_debug_give_item.
 func _debug_item_ids() -> PackedStringArray:
 	var ids: PackedStringArray = PackedStringArray()
 	for item: ItemData in debug_item_catalog:
+		if item == null:
+			continue
 		ids.append(String(item.id))
 	return ids

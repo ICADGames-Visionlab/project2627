@@ -20,7 +20,8 @@ extends Resource
 # texto solto aqui: o guideline de idioma proíbe string hardcoded exibida na UI.
 @export var display_name_key: StringName = &""
 
-# Chave de tradução para a descrição do item, exibida no detalhe do slot.
+# Chave de tradução para a descrição do item, exibida como tooltip do slot na InventoryUI (ver
+# InventoryUI.gd, _build_slot).
 @export var description_key: StringName = &""
 
 # Ícone mostrado no slot do inventário e no ItemPickup no mundo. Pode ficar vazio durante o

@@ -64,15 +64,24 @@ encontrou.
 
 | Membro | Descrição |
 |---|---|
-| `add_item(item: ItemData, amount: int = 1)` | Adiciona `amount` unidades. Cria a pilha se for a primeira unidade do item. Usado pelo `ItemPickup` e pelo comando de debug. |
+| `add_item(item: ItemData, amount: int = 1)` | Adiciona `amount` unidades. Cria a pilha se for a primeira unidade do item. Emite `item_added` só com o que **realmente** entrou (o delta, não o pedido) — se a pilha já estiver em `item.max_stack`, nada entra e o sinal não dispara. Usado pelo `ItemPickup` e pelo comando de debug. |
 | `has_item(item_id: StringName, amount: int = 1) -> bool` | Se o inventário tem ao menos `amount` unidades do item. |
 | `get_amount(item_id: StringName) -> int` | Quantidade atual (0 se não tiver). |
 | `get_stacks() -> Array[ItemStack]` | Todas as pilhas não vazias — o que a UI usa para desenhar os slots. |
-| `drop_item(item_id: StringName, amount: int = 1) -> bool` | Remove do inventário e instancia um `ItemPickup` na posição do dono. `false` se não houver unidades suficientes. |
+| `drop_item(item_id: StringName, amount: int = 1) -> bool` | Remove do inventário e instancia um `ItemPickup` na posição do dono, dentro do mesmo container y-sorted do dono (ver "Y-sort" abaixo). `false` (item mantido no inventário) se não houver unidades suficientes ou se o `ItemPickup` não puder ser criado. |
 | `destroy_item(item_id: StringName, amount: int = 1) -> bool` | Remove sem devolver ao mundo. `false` se não houver unidades suficientes ou se `item.destructible` for `false`. |
 
 Sinais: `item_added(item, amount)`, `item_dropped(item, amount)`, `item_destroyed(item, amount)` — a
 `InventoryUI` escuta os três para saber quando redesenhar o painel.
+
+### Y-sort
+
+`drop_item()` instancia o `ItemPickup` como filho do **pai do dono deste inventário** (ver
+`Inventory._get_drop_container()`), não de `get_tree().current_scene`. Hoje isso significa o `YSort` de
+`main.tscn` — o mesmo nó onde o `Player` e as `Structure` vivem (ver `scripts/world/Structure.gd`). Um
+pickup fora do `YSort` desenharia por cima de tudo, independente da posição no mundo, porque entraria
+depois dele na ordem de filhos do root. Se o dono do inventário não tiver um pai (não deveria acontecer
+hoje), cai em `current_scene` só para evitar crash.
 
 ---
 
@@ -82,7 +91,7 @@ Sinais: `item_added(item, amount)`, `item_dropped(item, amount)`, `item_destroye
 2. Preencha no Inspector: `id` (único, nunca muda depois — ver comentário no script), `display_name_key`
    e `description_key` (chaves de tradução — crie as linhas correspondentes em
    `translations/translations.csv`, ver `docs/localizacao_Godot.md`), `icon`, `max_stack` e
-   `destructible`.
+   `destructible`. `description_key` aparece como tooltip do slot na `InventoryUI`.
 3. Salve como `.tres` dentro de `res://items/`.
 4. Para o item aparecer largado no mundo: instancie `scenes/items/ItemPickup.tscn`, preencha `item` e
    `amount` no Inspector. Para o jogador testar sem precisar posicionar nada no mapa, arraste o `.tres`
@@ -90,14 +99,19 @@ Sinais: `item_added(item, amount)`, `item_dropped(item, amount)`, `item_destroye
 
 ## Testando
 
-- **Console de debug (F4)**: `inventario.dar_evidencia <id> <quantidade>` (ou só `dar_evidencia` — o
-  console aceita o sufixo mais curto que for único, ver `docs/debug_menu.md`). Só lista/aceita itens que
-  estiverem em `debug_item_catalog` do nó `Inventory` do `Player`; o projeto já vem com
-  `items/EvidenciaExemplo.tres` (`mysterious_note`) cadastrado lá para esse fim.
+- **Console de debug (F1)** ou **Debug Menu visual (F4)**: `inventario.dar_evidencia <id> <quantidade>`
+  (ou só `dar_evidencia` — o console aceita o sufixo mais curto que for único, ver `docs/debug_menu.md`).
+  Só lista/aceita itens que estiverem em `debug_item_catalog` do nó `Inventory` do `Player` (entradas
+  vazias nesse array são ignoradas); o projeto já vem com `items/EvidenciaExemplo.tres`
+  (`mysterious_note`) cadastrado lá para esse fim.
 - **Tecla I**: abre/fecha o painel "Evidências". Cada slot tem os botões **Largar** e **Destruir** (o
-  botão Destruir some para itens com `destructible = false`).
+  botão Destruir some para itens com `destructible = false`), e mostra a descrição do item como tooltip
+  ao passar o mouse.
 - **No mundo**: encostar num `ItemPickup` coleta automaticamente (via `Area2D.body_entered`, igual ao
-  detector de jogador que `Structure.gd` já usa).
+  detector de jogador que `Structure.gd` já usa). Durante os `pickup_delay` segundos após ser largado
+  (padrão 0.5s — ajustável no Inspector do `ItemPickup`), o mesmo corpo que largou o item não consegue
+  recolhê-lo de volta; passado esse tempo, o pickup revarre quem já estiver parado em cima dele (não
+  depende só do jogador se mover para dentro da área de novo).
 
 ---
 
