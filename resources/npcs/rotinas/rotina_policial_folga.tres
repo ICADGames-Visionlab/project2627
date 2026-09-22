@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="NPCRoutine" format=3 uid="uid://bd0075adp3epj"]
+
+[ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_ofmed"]
+[ext_resource type="Script" uid="uid://c8uw224es2o8w" path="res://scripts/npc/NPCRoutineException.gd" id="2_dt5ls"]
+[ext_resource type="Script" uid="uid://dnf7l0o4aeaw2" path="res://scripts/npc/NPCRoutine.gd" id="3_78tc1"]
+
+[sub_resource type="Resource" id="Resource_o3k4c"]
+script = ExtResource("1_ofmed")
+hour = 6
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_policial"
+
+[sub_resource type="Resource" id="Resource_w3qsv"]
+script = ExtResource("1_ofmed")
+hour = 11
+scene_path = "res://scenes/City.tscn"
+waypoint = &"banco_da_praca"
+
+[sub_resource type="Resource" id="Resource_vq2po"]
+script = ExtResource("1_ofmed")
+hour = 15
+scene_path = "res://scenes/City.tscn"
+waypoint = &"feira"
+
+[sub_resource type="Resource" id="Resource_37fss"]
+script = ExtResource("1_ofmed")
+hour = 18
+minute = 30
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_policial"
+
+[resource]
+script = ExtResource("3_78tc1")
+entries = Array[ExtResource("1_ofmed")]([SubResource("Resource_o3k4c"), SubResource("Resource_w3qsv"), SubResource("Resource_vq2po"), SubResource("Resource_37fss")])
+resumo = "4 entradas (ordem de relógio):
+  06:00  City / casa_do_policial
+  11:00  City / banco_da_praca
+  15:00  City / feira
+  18:30  City / casa_do_policial"

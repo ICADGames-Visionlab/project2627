@@ -30,6 +30,7 @@ WEEKDAY_SAT,Saturday,Sábado
 WEEKDAY_SUN,Sunday,Domingo
 NPC_NAME_ZE,Joe,Zé
 NPC_NAME_ANA,Ana,Ana
+NPC_NAME_POLICIAL,Officer,Policial
 NPC_NAME_ZE_ALCUNHA,The Baker,O Padeiro
 NPC_NAME_ANA_ALCUNHA,The Market Vendor,A Feirante
 EMOTION_ANGER,Anger,Raiva

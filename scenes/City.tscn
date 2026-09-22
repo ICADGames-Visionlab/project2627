@@ -129,6 +129,11 @@ position = Vector2(780, -120)
 script = ExtResource("11_waypt")
 waypoint_id = &"quartel_porta"
 
+[node name="CasaDoPolicial" type="Marker2D" parent="Waypoints" unique_id=798576024]
+position = Vector2(-300, 520)
+script = ExtResource("11_waypt")
+waypoint_id = &"casa_do_policial"
+
 [node name="NPCDirector" type="Node2D" parent="." unique_id=1692339754 node_paths=PackedStringArray("agents_parent")]
 script = ExtResource("12_ndir")
 roster = ExtResource("14_roster")
