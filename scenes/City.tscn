@@ -30,9 +30,9 @@
 [ext_resource type="PackedScene" uid="uid://ccctarlfxibdl" path="res://scenes/world/Bed.tscn" id="20_bed"]
 [ext_resource type="PackedScene" uid="uid://bm77g7wpn6avw" path="res://scenes/ui/ActionPrompt.tscn" id="21_prompt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DreamTransition.tscn" id="22_dream"]
-[ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingScreen.tscn" id="23_profiling"]
+[ext_resource type="PackedScene" uid="uid://dkf8okr741w41" path="res://scenes/profiling/ProfilingScreen.tscn" id="23_profiling"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/DreamHud.tscn" id="24_dream_hud"]
-[ext_resource type="PackedScene" path="res://scenes/profiling/WordDiscoveryToast.tscn" id="25_word_toast"]
+[ext_resource type="PackedScene" uid="uid://d1io3majq41f6" path="res://scenes/profiling/WordDiscoveryToast.tscn" id="25_word_toast"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -126,6 +126,11 @@ waypoint_id = &"sonho_ze"
 position = Vector2(121, -507)
 script = ExtResource("11_waypt")
 waypoint_id = &"sonho_ana"
+
+[node name="SonhoPolicial" type="Marker2D" parent="Waypoints" unique_id=1588218685]
+position = Vector2(371, -389)
+script = ExtResource("11_waypt")
+waypoint_id = &"sonho_policial"
 
 [node name="Praca" type="Marker2D" parent="Waypoints" unique_id=243516341]
 position = Vector2(0, 250)

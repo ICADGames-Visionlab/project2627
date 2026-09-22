@@ -15,18 +15,19 @@ protagonista*) está fora de escopo por decisão da tarefa.
 1. [A ideia](#a-ideia)
 2. [O ciclo, inteiro](#o-ciclo-inteiro)
 3. [As duas telas](#as-duas-telas)
-4. [Criar conteúdo (sem tocar em código)](#criar-conteúdo-sem-tocar-em-código)
-5. [Os recursos](#os-recursos)
-6. [As palavras e o glossário](#as-palavras-e-o-glossário)
-7. [A correção da página](#a-correção-da-página)
-8. [A emoção do NPC](#a-emoção-do-npc)
-9. [Os eventos](#os-eventos)
-10. [O estado: diário e save](#o-estado-diário-e-save)
-11. [Ferramentas de debug](#ferramentas-de-debug)
-12. [O que ainda não existe](#o-que-ainda-não-existe)
-13. [Placeholders](#placeholders)
-14. [Erros comuns](#erros-comuns)
-15. [Antes de abrir PR](#antes-de-abrir-pr)
+4. [As cenas: onde se mexe na UI](#as-cenas-onde-se-mexe-na-ui)
+5. [Criar conteúdo (sem tocar em código)](#criar-conteúdo-sem-tocar-em-código)
+6. [Os recursos](#os-recursos)
+7. [As palavras e o glossário](#as-palavras-e-o-glossário)
+8. [A correção da página](#a-correção-da-página)
+9. [A emoção do NPC](#a-emoção-do-npc)
+10. [Os eventos](#os-eventos)
+11. [O estado: diário e save](#o-estado-diário-e-save)
+12. [Ferramentas de debug](#ferramentas-de-debug)
+13. [O que ainda não existe](#o-que-ainda-não-existe)
+14. [Placeholders](#placeholders)
+15. [Erros comuns](#erros-comuns)
+16. [Antes de abrir PR](#antes-de-abrir-pr)
 
 ---
 
@@ -76,7 +77,8 @@ sonho (`ProfilingScreen.wake_delay` dá alguns segundos pra ele ler a última hi
 - uma opção por emoção do NPC (`ProfilingEmotionOption`), com o nome na cor da emoção;
 - **segurar** o botão esquerdo: a tela treme, o nome cresce, o retângulo em volta enche e a tela
   ganha um filtro na cor da emoção. Quando enche, a emoção é agendada. Soltar antes, ou arrastar o
-  mouse pra fora, cancela;
+  mouse pra fora, **cancela** — e o cancelamento devolve a tela ao repouso: sem tremor e com o filtro
+  de volta na cor da emoção que realmente vale (a agendada, se houver, senão a de hoje);
 - **hover**: aparece o **INVESTIGAR** logo embaixo da emoção;
 - checkmark (`✓`) na emoção cuja história já foi resolvida, e um rótulo dizendo qual emoção vale
   *hoje* e qual vale *amanhã*;
@@ -92,10 +94,49 @@ sonho (`ProfilingScreen.wake_delay` dá alguns segundos pra ele ler a última hi
   resolvida, ela **pisca**;
 - `ESC` volta um passo: da história pras emoções, das emoções pro sonho.
 
+**O aviso do rodapé** (`SpiritInteraction` + `ActionPrompt`) — *"Aperte F para investigar o
+espírito"* aparece ao chegar perto de um NPC no sonho, **sai de cena enquanto o espírito está
+aberto** (a tela cobre tudo; o aviso ficaria escrito por baixo) e volta quando o jogador fecha o
+espírito ainda do lado dele. Acordar não devolve o aviso: sem sonho não há espírito.
+
 **HUD do sonho** (`DreamHud`) — o "acordar" que o GDD pede sempre presente na tela do sonho, no canto
 inferior esquerdo, com a pergunta *"Deseja sair do mundo dos sonhos?"*. A cama continua funcionando
 (`Bed.gd`); os dois caminhos terminam na mesma chamada, `GameClock.start_next_day()` atrás de uma
 `DreamTransition`.
+
+---
+
+## As cenas: onde se mexe na UI
+
+**Nenhuma peça da interface é montada em código.** Cada coisa que aparece na tela é uma cena, e o
+script só põe o dado no lugar: o que é repetido (uma palavra do glossário, uma lacuna, uma emoção)
+é uma cena que o script INSTANCIA, apontada no Inspector de quem instancia. Quem quiser trocar
+fonte, cor de moldura, cantos, margens ou posição abre a cena e mexe — sem tocar em `.gd`.
+
+| Cena | O que é | Quem a instancia |
+| --- | --- | --- |
+| `ProfilingScreen.tscn` | A tela inteira: espírito, história, filtro de cor, botões | está na `City.tscn` |
+| `ProfilingPage.tscn` | A moldura do papel, a mensagem de resultado e o texto resolvido | a tela (é um nó dela) |
+| `ProfilingPageLine.tscn` | Um parágrafo do texto (embrulha sozinho) | a página, um por parágrafo |
+| `ProfilingPageWord.tscn` | Uma palavra do texto da história | a página, uma por palavra |
+| `ProfilingBlank.tscn` | Uma lacuna | a página, uma por lacuna |
+| `GlossaryPanel.tscn` | Título, contagem, os cinco filtros, a pesquisa e a área das palavras | a tela (e, no futuro, o diário) |
+| `GlossaryWordChip.tscn` | O retângulo de uma palavra | o glossário, um por palavra descoberta |
+| `GlossaryMarkMenu.tscn` | O retângulo de lixo/estrela que abre acima da palavra | está na tela |
+| `ProfilingEmotionOption.tscn` | Uma emoção do espírito, com moldura, barra e INVESTIGAR | a tela, uma por emoção do NPC |
+| `WordDiscoveryToast.tscn` | O aviso de palavra nova e o canto do diário | está na `City.tscn` |
+| `FlyingWord.tscn` | A palavra que desce pro canto | o aviso, uma por descoberta |
+| `DreamHud.tscn` | O "Acordar" e a pergunta de sair do sonho | está na `City.tscn` |
+
+**As cores que o código mexe são as que vêm do conteúdo** — a cor da categoria da palavra e a cor da
+emoção. Elas são aplicadas por `self_modulate`/`modulate` POR CIMA do estilo da cena, e não criando
+`StyleBox` em código: a borda, o raio do canto e as margens continuam sendo as que estão na cena.
+É por isso que o fundo do chip e da lacuna é branco no arquivo — branco é o que aceita tingimento.
+
+> **Menu de marcas:** o retângulo de lixo/estrela é um `Control` comum dentro da tela, e não um
+> `PopupMenu`. Um `PopupMenu` é uma *janela*, e janela aberta engole o clique de fora pra se fechar —
+> o que fazia o clique direito na palavra do lado não abrir menu nenhum. Sendo um nó da tela, o
+> clique chega ao outro chip e o menu só muda de lugar.
 
 ---
 
@@ -143,6 +184,10 @@ O perfil **não** mora dentro do `NPCDefinition`: o NPC existe no mundo acordado
 profiling, e um NPC novo entra na cidade sem obrigar ninguém a escrever história nenhuma. NPC sem
 perfil simplesmente não tem espírito no sonho.
 
+**Cada NPC tem o pool dele**, e os pools não precisam ser iguais: hoje o Zé tem 17 palavras, a Ana 16
+e o policial 20, com algumas palavras aparecendo em mais de um pool (`VINHO` está no da Ana e no do
+policial). O glossário é por NPC — descobrir uma palavra para o Zé não a põe no glossário da Ana.
+
 **As emoções vêm do NPC, não de uma lista fixa.** O GDD fala de três emoções por NPC; o projeto usa
 emoções modulares em slots (`emotion_first`, `emotion_second`), então a tela mostra as que aquele
 NPC tiver. No dia em que existir um terceiro slot, nada no profiling muda.
@@ -181,6 +226,11 @@ Quem desenha isso é o `ClickableWordText`, e quem liga o par são as `paired_wo
 resolvido nos dois sentidos em código (`ProfilingCatalog.find_pair_group`), justamente pra não
 precisar de duas referências cruzadas entre dois `.tres`.
 
+O par vale **só na descoberta**: clicar em uma das duas no texto adiciona as duas ao glossário, e
+para aí. No preenchimento cada metade é arrastada por conta, e em que lacuna cada uma entra é
+escolha do jogador — a página não preenche o par sozinha (e não poderia adivinhar a ordem sem olhar
+a solução, o que entregaria a resposta).
+
 **A porta de entrada de qualquer descoberta é uma função só:**
 
 ```gdscript
@@ -195,9 +245,47 @@ posição; eles se combinam. O clique direito numa palavra abre o retângulo de 
 estrela), e escolher a marca que já está posta a remove.
 
 Uma palavra que já está numa lacuna continua na lista, apagada — o jogador conta as palavras que
-descobriu, e uma palavra que desaparece ao ser usada parece perdida. Clicar nela a devolve pro
-glossário; clicar numa palavra livre a põe na primeira lacuna vazia (é o atalho de quem joga de
-teclado ou controle, que não tem como arrastar).
+descobriu, e uma palavra que desaparece ao ser usada parece perdida.
+
+**Os três gestos de uma palavra** (`GlossaryWordChip`), que são de propósito distintos:
+
+| Gesto | O que faz |
+| --- | --- |
+| Arrastar | Leva a palavra para uma lacuna. O preview sai centrado no cursor. |
+| Clique curto | Atalho: põe a palavra na primeira lacuna vazia, ou a devolve ao glossário se já estiver numa. É o caminho de quem joga de teclado/controle. |
+| Clique direito | Abre o retângulo de marcas acima da palavra. |
+
+**Os gestos de uma palavra que já está numa lacuna** (`ProfilingBlank`) são os mesmos, espelhados:
+
+| Gesto | O que faz |
+| --- | --- |
+| Arrastar para outra lacuna | Move a palavra. |
+| Arrastar e soltar no glossário | Devolve a palavra: a lacuna esvazia. |
+| Arrastar e soltar em qualquer outro lugar | Idem: devolve a palavra. |
+| Clique curto | Devolve a palavra direto. |
+
+**Arraste que não termina em lacuna devolve a palavra ao glossário**, e isso vale nos dois sentidos:
+puxando da lacuna ou puxando do próprio glossário uma palavra que está em uso. Quem detecta é
+`NOTIFICATION_DRAG_END` + `Viewport.gui_is_drag_successful()` — a pergunta "alguém aceitou o drop?".
+Quando alguém aceitou (uma lacuna, ou o glossário recebendo palavra vinda de lacuna), quem resolve é
+o `_drop_data` de lá; quando ninguém aceitou, o nó que COMEÇOU o arraste devolve a palavra. Sem isso,
+soltar no meio do nada deixava a palavra presa na lacuna e o gesto sem desfecho.
+
+Nos dois casos o atalho do clique dispara **ao soltar** o botão, e só se o arraste não tiver começado
+no meio. Se ele disparasse na pressão, pegar a palavra para arrastar já a mandaria para a lacuna (ou
+já a devolveria ao glossário) — e o arraste ficaria impossível. É o `_press_pending` dos dois
+scripts: a pressão só marca a intenção, e `_get_drag_data` ser chamada cancela o clique.
+
+Com o mouse em cima, a palavra clareia e faz um lerp pequeno de escala e rotação (`Hover Scale`,
+`Hover Rotation Degrees` e `Hover Lerp Speed`, no Inspector do chip). O `_process` do chip liga no
+hover e **desliga sozinho** quando a animação assenta, para o glossário não pagar um quadro por
+palavra parada.
+
+> **A margem do glossário não é decoração.** A lista de palavras rola dentro de um `ScrollContainer`,
+> e `ScrollContainer` **recorta** o que passa das bordas dele. Sem folga, a palavra da ponta era
+> cortada justamente ao crescer no hover. Por isso existe o `Margin` entre o `Scroll` e o `Words`, na
+> `GlossaryPanel.tscn`: é o espaço que a escala e a rotação ocupam. Ao aumentar `Hover Scale`,
+> aumente a margem junto.
 
 ---
 
@@ -372,9 +460,14 @@ com a tag "Substituição de Placeholder"** antes do PR.
   *Placeholder - Tela de profiling* fica no canto superior esquerdo.
 - **O espírito**: no sonho, o NPC continua com o corpo e o sprite do mundo acordado. O que muda hoje
   é a posição fixa (`NPCDefinition.dream_entry`) e o fato de ele poder ser investigado.
-- **A história de exemplo**: as seis histórias em `resources/profiling/historias/` usam o exemplo do
-  GDD (que, como o próprio documento avisa, não tem nada a ver com a temática do jogo), aplicado a
-  todas as emoções. É conteúdo de teste: dá pra jogar o laço inteiro hoje, e trocar é editar o CSV.
+- **As histórias**: são seis, uma por emoção dos três NPCs, e **todas são conteúdo provisório de
+  programação** — escritas para o sistema ter o que rodar, não pela equipe de GD. A do GDD (a do vinho
+  envenenado, que o próprio documento avisa não ter relação com a temática) ficou em **uma só**: a
+  TRISTEZA do policial. As outras cinco são inventadas em cima do que a cidade já sugere nos insights
+  (o quebra-mar, a maré, as janelas do beco): a raiva do Zé é a obra assinada com o nome de outro, a
+  tristeza dele é o barco emprestado com a rede rasgada, o medo da Ana são as batidas na janela, a
+  euforia dela são os três dias de festa, e a raiva do policial é o revólver trocado antes da ronda.
+  Trocar qualquer uma é editar o CSV e a lista `solution` do `.tres` — nenhum código.
 
 ---
 

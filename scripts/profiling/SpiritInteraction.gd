@@ -48,6 +48,10 @@ func _ready() -> void:
 	# então o aviso precisa reagir à passagem, e não só ao movimento.
 	EventBus.dream_started.connect(_on_dream_changed)
 	EventBus.day_changed.connect(_on_day_changed)
+	# A tela de profiling ocupa a tela inteira: o aviso do rodapé sai de cena enquanto ela está
+	# aberta, e volta quando o jogador fecha o espírito e continua no sonho, do lado do NPC.
+	EventBus.profiling_opened.connect(_on_profiling_opened)
+	EventBus.profiling_closed.connect(_on_profiling_closed)
 	# Só escuta teclado enquanto o jogador está do lado (ver _on_body_entered/_on_body_exited).
 	set_process_unhandled_input(false)
 
@@ -116,6 +120,18 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func _on_dream_changed(_day: int) -> void:
+	_update_prompt()
+
+
+# O espírito abriu: o aviso não tem mais o que avisar, e ficaria escrito por baixo da tela.
+func _on_profiling_opened(_npc_id: StringName) -> void:
+	if _player_near:
+		EventBus.action_prompt_changed.emit("")
+
+
+# O espírito fechou. O aviso volta se ainda houver espírito pra investigar — o que é falso quando o
+# jogador acordou (acertar o NPC inteiro acorda), e aí _update_prompt() apaga em vez de reescrever.
+func _on_profiling_closed(_npc_id: StringName) -> void:
 	_update_prompt()
 
 

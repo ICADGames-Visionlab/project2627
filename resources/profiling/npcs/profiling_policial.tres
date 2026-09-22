@@ -14,16 +14,17 @@
 [ext_resource type="Resource" path="res://resources/profiling/palavras/brian.tres" id="16_brian"]
 [ext_resource type="Resource" path="res://resources/profiling/palavras/walker.tres" id="17_walker"]
 [ext_resource type="Resource" path="res://resources/profiling/palavras/vinho.tres" id="18_vinho"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/agua.tres" id="19_agua"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/tonico.tres" id="20_tonico"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/estatua.tres" id="21_estatua"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/vaso.tres" id="22_vaso"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/bolsa.tres" id="23_bolsa"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/aquario.tres" id="24_aquario"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/faca.tres" id="25_faca"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/tesoura.tres" id="26_tesoura"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/queimou.tres" id="27_queimou"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/correu.tres" id="28_correu"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/estatua.tres" id="19_estatua"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/bento.tres" id="20_bento"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/furtado.tres" id="21_furtado"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/revolver.tres" id="22_revolver"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/atirou.tres" id="23_atirou"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/gaveta.tres" id="24_gaveta"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/umidade.tres" id="25_umidade"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/faca.tres" id="26_faca"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/vaso.tres" id="27_vaso"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/tonico.tres" id="28_tonico"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/agua.tres" id="29_agua"]
 
 [resource]
 script = ExtResource("1_script")
@@ -31,7 +32,7 @@ npc_id = &"policial"
 stories = Array[ExtResource("2_story_type")]([ExtResource("4_historia_policial_tristeza"), ExtResource("5_historia_policial_raiva")])
 glossary_words = Array[ExtResource("3_word_type")]([ExtResource("10_marcos"), ExtResource("11_castro"), ExtResource("12_roberta"), ExtResource("13_smith"),
 ExtResource("14_maria"), ExtResource("15_baker"), ExtResource("16_brian"), ExtResource("17_walker"),
-ExtResource("18_vinho"), ExtResource("19_agua"), ExtResource("20_tonico"), ExtResource("21_estatua"),
-ExtResource("22_vaso"), ExtResource("23_bolsa"), ExtResource("24_aquario"), ExtResource("25_faca"),
-ExtResource("26_tesoura"), ExtResource("27_queimou"), ExtResource("28_correu")])
+ExtResource("18_vinho"), ExtResource("19_estatua"), ExtResource("20_bento"), ExtResource("21_furtado"),
+ExtResource("22_revolver"), ExtResource("23_atirou"), ExtResource("24_gaveta"), ExtResource("25_umidade"),
+ExtResource("26_faca"), ExtResource("27_vaso"), ExtResource("28_tonico"), ExtResource("29_agua")])
 requires_real_world_meeting = true

@@ -44,6 +44,10 @@ const GROUP: StringName = &"profiling_screen"
 
 ## Espaço para variáveis exportadas
 
+## A cena de uma emoção na tela do espírito (ProfilingEmotionOption.tscn). A tela instancia uma por
+## emoção do NPC — a aparência delas se mexe na cena, não aqui.
+@export var emotion_option_scene: PackedScene
+
 ## Quanto tempo a mensagem "Tudo foi preenchido corretamente" fica na tela antes de a página ser
 ## trocada pela história completa, em segundos.
 @export var reveal_delay: float = 2.5
@@ -97,6 +101,9 @@ var _blink_time: float = 0.0
 @onready var _story_portrait: TextureRect = $Root/Shake/StoryView/Columns/Right/Portrait/Content/Image
 @onready var _story_caption: Label = $Root/Shake/StoryView/Columns/Right/Portrait/Content/Caption
 @onready var _back_button: Button = $Root/Shake/StoryView/BackButton
+# O retângulo de marcas fica FORA do "Shake" e por cima de tudo: ele se posiciona em coordenadas de
+# tela (acima da palavra clicada), e tremer com a tela o descolaria da palavra.
+@onready var _mark_menu: GlossaryMarkMenu = $Root/MarkMenu
 
 ## Espaço para funções nativas
 
@@ -116,6 +123,13 @@ func _ready() -> void:
 	_back_button.pressed.connect(show_spirit_view)
 	_page.evaluated.connect(_on_page_evaluated)
 	_glossary.word_activated.connect(_on_glossary_word_activated)
+	_glossary.mark_menu_requested.connect(_on_glossary_mark_menu_requested)
+	_glossary.word_returned.connect(_on_glossary_word_returned)
+	_mark_menu.mark_chosen.connect(_on_mark_chosen)
+
+	if emotion_option_scene == null:
+		push_error("[Profiling] - Tela sem \"Emotion Option Scene\" apontada; "
+			+ "nenhuma emoção vai aparecer no espírito")
 
 	_root.hide()
 	set_process(false)
@@ -176,6 +190,7 @@ func close() -> void:
 		return
 
 	var closed_id: StringName = _npc_id
+	_mark_menu.close()
 	_root.hide()
 	set_process(false)
 	get_tree().paused = false
@@ -187,6 +202,7 @@ func close() -> void:
 
 # Mostra a tela de escolher emoção, montando uma opção por emoção do NPC.
 func show_spirit_view() -> void:
+	_mark_menu.close()
 	_view = View.SPIRIT
 	_story = null
 	_is_revealing = false
@@ -247,7 +263,13 @@ func _refresh_spirit_view() -> void:
 			continue
 
 		var story: ProfilingStory = _profile.find_story_for_emotion(emotion)
-		var option: ProfilingEmotionOption = ProfilingEmotionOption.new()
+		if emotion_option_scene == null:
+			continue
+		var option: ProfilingEmotionOption = emotion_option_scene.instantiate() as ProfilingEmotionOption
+		if option == null:
+			push_error("[Profiling] - A cena de emoção apontada na tela não é um "
+				+ "ProfilingEmotionOption")
+			break
 		_emotions.add_child(option)
 		option.configure(emotion, slot, slot == current_slot, slot == scheduled_slot,
 			story != null and ProfilingJournal.is_story_solved(story.id), story != null)
@@ -255,7 +277,7 @@ func _refresh_spirit_view() -> void:
 		option.hold_completed.connect(_on_option_hold_completed)
 		option.investigate_requested.connect(show_story_view)
 
-	_apply_filter(_get_emotion(scheduled_slot if scheduled_slot >= 0 else current_slot), 0.0)
+	_apply_base_filter()
 
 
 # A revelação do acerto, na ordem do GDD: a mensagem fica alguns segundos, a página some e dá lugar à
@@ -319,6 +341,15 @@ func _wake_up() -> void:
 		GameClock.start_next_day()
 		return
 	await transition.play(GameClock.start_next_day)
+
+
+# Põe o filtro na cor da emoção que vale: a que o jogador já escolheu neste sonho, se houver,
+# senão a que o NPC está sentindo hoje. É o estado de repouso da tela do espírito, e é onde ela
+# volta quando um gesto de segurar é cancelado.
+func _apply_base_filter() -> void:
+	var scheduled_slot: int = ProfilingJournal.get_scheduled_slot(_npc_id)
+	var slot: int = scheduled_slot if scheduled_slot >= 0 else _get_current_slot()
+	_apply_filter(_get_emotion(slot), 0.0)
 
 
 # Pinta o filtro de cor da tela com a cor da emoção. É o "filtro relacionado a emoção" do GDD, e a
@@ -386,8 +417,17 @@ func _on_profiling_requested(npc_id: StringName) -> void:
 # Segurando uma emoção: a tela treme e o filtro vai ganhando a cor dela — os dois proporcionais ao
 # quanto falta, que é o que o GDD descreve.
 func _on_option_hold_changed(slot: int, progress: float) -> void:
-	_shake.position = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) \
-		* shake_strength * progress
+	# PROGRESSO ZERO É CANCELAMENTO (o jogador soltou no meio, ou arrastou o mouse pra fora), e
+	# aí a tela volta ao estado de antes: sem tremor e com o filtro da emoção que REALMENTE vale.
+	# Sem isto o filtro ficava na cor da emoção que ele desistiu de escolher, dizendo uma coisa
+	# que não aconteceu.
+	if progress <= 0.0:
+		_shake.position = Vector2.ZERO
+		_apply_base_filter()
+		return
+
+	var jitter: Vector2 = Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0))
+	_shake.position = jitter * shake_strength * progress
 	_apply_filter(_get_emotion(slot), progress)
 
 
@@ -409,7 +449,28 @@ func _on_page_evaluated(evaluation: ProfilingEvaluation) -> void:
 
 
 func _on_glossary_word_activated(word_id: StringName) -> void:
+	# Clicar numa palavra também fecha o retângulo de marcas: o jogador mudou de assunto.
+	_mark_menu.close()
 	_page.activate_word(word_id)
+
+
+# A palavra volta pro glossário: o jogador a arrastou de uma lacuna e soltou no glossário, ou soltou
+# um arraste em cima de nada. Nos dois casos, se ela estava numa lacuna, a lacuna esvazia.
+func _on_glossary_word_returned(word_id: StringName) -> void:
+	_page.return_word(word_id)
+
+
+# Clique direito numa palavra: o retângulo de marcas aparece acima dela. Pedir ao MESMO nó a cada
+# clique é o que faz o menu simplesmente MUDAR DE LUGAR quando o jogador clica em outra palavra com
+# um já aberto — antes eram menus separados por chip, e o segundo não abria.
+func _on_glossary_mark_menu_requested(word_id: StringName, chip_rect: Rect2) -> void:
+	_mark_menu.toggle_for(word_id, chip_rect, ProfilingJournal.get_mark(_npc_id, word_id))
+
+
+# A marca é organização pessoal do jogador: não muda lacuna nem história. Quem grava é a tela, e não
+# o painel, porque o painel é reaproveitado pelo diário (que vai ter o retângulo dele).
+func _on_mark_chosen(word_id: StringName, kind: GlossaryMark.Kind) -> void:
+	ProfilingJournal.set_mark(_npc_id, word_id, kind)
 
 
 # O diário mudou (palavra nova, lacuna preenchida, marca posta): a tela aberta se redesenha.

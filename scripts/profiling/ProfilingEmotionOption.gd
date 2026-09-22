@@ -1,8 +1,10 @@
 ## ProfilingEmotionOption - uma das emoções na tela do espírito: o nome da emoção, o retângulo que
 ## enche enquanto o jogador segura, o checkmark de história resolvida e o botão INVESTIGAR.
 ##
-## COMO USAR: ninguém instancia isto à mão. A ProfilingScreen cria uma opção por emoção do NPC e
-## chama configure(). A opção não muda emoção nem abre história: ela avisa por signal.
+## COMO USAR: o layout está em scenes/profiling/ProfilingEmotionOption.tscn — moldura, moldura de
+## destaque, barra que enche, posição do INVESTIGAR e fontes. A ProfilingScreen instancia essa cena
+## (apontada no Inspector dela) uma vez por emoção do NPC e chama configure(). A opção não muda
+## emoção nem abre história: ela avisa por signal.
 ##
 ## OS DOIS GESTOS, como o GDD pede:
 ##
@@ -14,6 +16,9 @@
 ## Segurar é gesto de mudar o mundo, e clicar é gesto de investigar: são intenções diferentes, e é
 ## por isso que o GDD separa uma no tempo de pressão e a outra num botão. Um clique curto em cima da
 ## emoção, por isso, não faz nada — e não deve fazer.
+##
+## AS CORES SÃO DA EMOÇÃO: o que este script faz é tingir (self_modulate) as peças da cena com
+## EmotionDefinition.tint. Não há cor de emoção escrita em lugar nenhum do código.
 ##
 ## O TREMOR DA TELA e o filtro de cor não estão aqui: eles são da tela inteira, e quem os faz é a
 ## ProfilingScreen, escutando hold_changed.
@@ -48,8 +53,8 @@ const SOLVED_GLYPH: String = "✓"
 ## Quanto o nome da emoção cresce no fim do gesto (1.0 = não cresce).
 @export var hold_max_scale: float = 1.35
 
-## Tamanho da fonte do nome da emoção.
-@export var emotion_font_size: int = 34
+## Opacidade da moldura da emoção que não é a vigente nem a escolhida.
+@export_range(0.0, 1.0, 0.01) var idle_frame_opacity: float = 0.45
 
 ## Espaço para variáveis
 
@@ -59,19 +64,21 @@ var _emotion: EmotionDefinition
 var _is_holding: bool = false
 var _hold_time: float = 0.0
 
-var _frame: Panel
-var _fill: ColorRect
-var _label: Label
-var _status: Label
-var _investigate: Button
+## Espaço para variáveis onready
+
+@onready var _frame: Panel = $Frame
+@onready var _frame_highlight: Panel = $FrameHighlight
+@onready var _fill: ColorRect = $Fill
+@onready var _label: Label = $EmotionName
+@onready var _status: Label = $Status
+@onready var _investigate: Button = $InvestigateButton
 
 ## Espaço para funções nativas
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	custom_minimum_size = Vector2(260.0, 110.0)
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	_build()
+	_investigate.pressed.connect(_on_investigate_pressed)
+	_investigate.hide()
 
 
 # O processo fica sempre ligado por dois motivos: o gesto de segurar precisa contar tempo, e a
@@ -130,7 +137,7 @@ func configure(emotion: EmotionDefinition, p_slot: int, is_current: bool, is_sch
 	slot = p_slot
 
 	_label.text = emotion.get_display_name() if emotion != null else ""
-	_label.add_theme_color_override("font_color", _get_tint())
+	_label.modulate = _get_tint()
 
 	# O estado vira texto, e não só cor: "a emoção de hoje" e "a emoção de amanhã" são a informação
 	# que o jogador precisa pra decidir, e cor sozinha não conta isso (nem resolve daltonismo).
@@ -148,14 +155,14 @@ func configure(emotion: EmotionDefinition, p_slot: int, is_current: bool, is_sch
 		else:
 			_status.text = "%s %s" % [SOLVED_GLYPH, _status.text]
 
-	_investigate.visible = false
+	_investigate.hide()
 	_investigate.disabled = not has_story
 	# Emoção sem história escrita continua podendo ser escolhida (mudar a emoção do NPC muda a
 	# cidade, o que é útil por si), então o aviso é no botão, não na opção inteira.
 	_investigate.text = "PROFILING_INVESTIGATE" if has_story else "PROFILING_NO_STORY"
 
+	_apply_tint(is_current or is_scheduled)
 	_apply_progress(0.0)
-	_refresh_frame(is_current or is_scheduled)
 
 
 # A emoção desta opção. A tela usa pra pintar o filtro de cor com o tint dela.
@@ -191,62 +198,22 @@ func _apply_progress(progress: float) -> void:
 	_label.scale = Vector2(scale_value, scale_value)
 
 
-# A moldura da opção. Emoção vigente (ou escolhida) ganha borda cheia; as outras ficam vazadas — é a
-# mesma linguagem dos filtros do glossário, onde o retângulo preenchido é o que está ligado.
-func _refresh_frame(highlighted: bool) -> void:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
+# Tinge as peças da cena com a cor da emoção. A moldura de destaque (mais grossa, também da cena) é
+# a que marca a emoção vigente ou escolhida — é a mesma linguagem dos filtros do glossário, onde o
+# retângulo preenchido é o que está ligado.
+func _apply_tint(highlighted: bool) -> void:
 	var tint: Color = _get_tint()
-	style.bg_color = Color(tint.r, tint.g, tint.b, 0.16 if highlighted else 0.05)
-	style.border_color = Color(tint.r, tint.g, tint.b, 0.95 if highlighted else 0.45)
-	style.set_border_width_all(3 if highlighted else 2)
-	style.set_corner_radius_all(8)
-	_frame.add_theme_stylebox_override("panel", style)
+	_frame.self_modulate = Color(tint.r, tint.g, tint.b, idle_frame_opacity)
+	_frame_highlight.self_modulate = tint
+	_frame_highlight.visible = highlighted
+	_fill.color = Color(tint.r, tint.g, tint.b, _fill.color.a)
 
 
-# A cor da emoção, do recurso dela. É por isso que a tela não tem "vermelho pra raiva, azul pra
-# tristeza" escrito em lugar nenhum: a cor é conteúdo, e mora em EmotionDefinition.tint.
+# A cor da emoção, do recurso dela.
 func _get_tint() -> Color:
 	if _emotion == null:
 		return Color.WHITE
 	return _emotion.tint
-
-
-func _build() -> void:
-	_frame = Panel.new()
-	_frame.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_frame)
-
-	_fill = ColorRect.new()
-	_fill.color = Color(1.0, 1.0, 1.0, 0.22)
-	_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_fill)
-
-	_label = Label.new()
-	_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	# O nome da emoção já vem traduzido de EmotionDefinition.get_display_name().
-	_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_label.add_theme_font_size_override("font_size", emotion_font_size)
-	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_label)
-
-	_status = Label.new()
-	_status.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_status.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_status.modulate = Color(1.0, 1.0, 1.0, 0.8)
-	_status.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_status)
-
-	_investigate = Button.new()
-	# Ancorado embaixo da opção, e não dentro dela: o GDD pede o botão "logo embaixo" da emoção.
-	_investigate.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	_investigate.offset_top = 8.0
-	_investigate.offset_bottom = 48.0
-	_investigate.pressed.connect(_on_investigate_pressed)
-	add_child(_investigate)
 
 
 func _on_investigate_pressed() -> void:

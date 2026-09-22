@@ -1,6 +1,88 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/profiling/GlossaryPanel.gd" id="1_glossary"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/GlossaryWordChip.tscn" id="2_chip"]
 
 [node name="GlossaryPanel" type="VBoxContainer"]
+theme_override_constants/separation = 8
 script = ExtResource("1_glossary")
+chip_scene = ExtResource("2_chip")
+
+[node name="Header" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Header"]
+layout_mode = 2
+text = "GLOSSARY_TITLE"
+
+[node name="Count" type="Label" parent="Header"]
+auto_translate_mode = 2
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Filters" type="HBoxContainer" parent="Header"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="TrashFilter" type="Button" parent="Header/Filters"]
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+text = "GLOSSARY_FILTER_TRASH"
+
+[node name="StarFilter" type="Button" parent="Header/Filters"]
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+text = "GLOSSARY_FILTER_STAR"
+
+[node name="AlphabeticalFilter" type="Button" parent="Header/Filters"]
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+text = "GLOSSARY_FILTER_ALPHABETICAL"
+
+[node name="CategoryFilter" type="Button" parent="Header/Filters"]
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+text = "GLOSSARY_FILTER_CATEGORY"
+
+[node name="SearchFilter" type="Button" parent="Header/Filters"]
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+text = "GLOSSARY_FILTER_SEARCH"
+
+[node name="SearchField" type="LineEdit" parent="."]
+visible = false
+layout_mode = 2
+placeholder_text = "GLOSSARY_SEARCH_PLACEHOLDER"
+clear_button_enabled = true
+
+[node name="Scroll" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(0, 190)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Margin" type="MarginContainer" parent="Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="Words" type="HFlowContainer" parent="Scroll/Margin"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8

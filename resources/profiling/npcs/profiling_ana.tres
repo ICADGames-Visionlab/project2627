@@ -1,41 +1,38 @@
-[gd_resource type="Resource" script_class="NPCProfile" format=3 uid="uid://bp8tqlqxbycjj"]
+[gd_resource type="Resource" script_class="NPCProfile" format=3 uid="uid://dtxndhlnfsjo4"]
 
 [ext_resource type="Script" uid="uid://bxmb1o1xncai6" path="res://scripts/profiling/NPCProfile.gd" id="1_script"]
 [ext_resource type="Script" uid="uid://cx2leifm7wfkq" path="res://scripts/profiling/ProfilingStory.gd" id="2_story_type"]
 [ext_resource type="Script" uid="uid://x0wnpu274mwe" path="res://scripts/profiling/GlossaryWord.gd" id="3_word_type"]
-[ext_resource type="Resource" path="res://resources/profiling/historias/historia_ana_medo.tres" id="4_historia_ana_medo"]
-[ext_resource type="Resource" uid="uid://clvv4yeaydmn8" path="res://resources/profiling/historias/historia_ana_euforia.tres" id="5_historia_ana_euforia"]
-[ext_resource type="Resource" uid="uid://d3be4lfbsqvy4" path="res://resources/profiling/palavras/marcos.tres" id="10_marcos"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/castro.tres" id="11_castro"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/roberta.tres" id="12_roberta"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/smith.tres" id="13_smith"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/maria.tres" id="14_maria"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/baker.tres" id="15_baker"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/brian.tres" id="16_brian"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/walker.tres" id="17_walker"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/vinho.tres" id="18_vinho"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/agua.tres" id="19_agua"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/tonico.tres" id="20_tonico"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/estatua.tres" id="21_estatua"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/vaso.tres" id="22_vaso"]
+[ext_resource type="Resource" uid="uid://dm2g6g21qtmqj" path="res://resources/profiling/historias/historia_ana_medo.tres" id="4_historia_ana_medo"]
+[ext_resource type="Resource" uid="uid://cr8oil5g27l75" path="res://resources/profiling/historias/historia_ana_euforia.tres" id="5_historia_ana_euforia"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/janela.tres" id="10_janela"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/luva.tres" id="11_luva"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/dalva.tres" id="12_dalva"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/prado.tres" id="13_prado"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/facao.tres" id="14_facao"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/sumiu.tres" id="15_sumiu"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/romeu.tres" id="16_romeu"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/vidal.tres" id="17_vidal"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/envelope.tres" id="18_envelope"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/assoalho.tres" id="19_assoalho"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/gastou.tres" id="20_gastou"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/vinho.tres" id="21_vinho"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/tesoura.tres" id="22_tesoura"]
 [ext_resource type="Resource" path="res://resources/profiling/palavras/bolsa.tres" id="23_bolsa"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/aquario.tres" id="24_aquario"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/faca.tres" id="25_faca"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/tesoura.tres" id="26_tesoura"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/queimou.tres" id="27_queimou"]
-[ext_resource type="Resource" path="res://resources/profiling/palavras/correu.tres" id="28_correu"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/agua.tres" id="24_agua"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/aquario.tres" id="25_aquario"]
 
 [resource]
 script = ExtResource("1_script")
 npc_id = &"ana"
 stories = Array[ExtResource("2_story_type")]([ExtResource("4_historia_ana_medo"), ExtResource("5_historia_ana_euforia")])
-glossary_words = Array[ExtResource("3_word_type")]([ExtResource("10_marcos"), ExtResource("11_castro"), ExtResource("12_roberta"), ExtResource("13_smith"), ExtResource("14_maria"), ExtResource("15_baker"), ExtResource("16_brian"), ExtResource("17_walker"), ExtResource("18_vinho"), ExtResource("19_agua"), ExtResource("20_tonico"), ExtResource("21_estatua"), ExtResource("22_vaso"), ExtResource("23_bolsa"), ExtResource("24_aquario"), ExtResource("25_faca"), ExtResource("26_tesoura"), ExtResource("27_queimou"), ExtResource("28_correu")])
-resumo = "Perfil de \"ana\" · 2 história(s) · 19 palavra(s) no glossário
+glossary_words = Array[ExtResource("3_word_type")]([ExtResource("10_janela"), ExtResource("11_luva"), ExtResource("12_dalva"), ExtResource("13_prado"), ExtResource("14_facao"), ExtResource("15_sumiu"), ExtResource("16_romeu"), ExtResource("17_vidal"), ExtResource("18_envelope"), ExtResource("19_assoalho"), ExtResource("20_gastou"), ExtResource("21_vinho"), ExtResource("22_tesoura"), ExtResource("23_bolsa"), ExtResource("24_agua"), ExtResource("25_aquario")])
+resumo = "Perfil de \"ana\" · 2 história(s) · 16 palavra(s) no glossário
 
-  historia_ana_medo        emoção: medo         10 lacuna(s)
-  historia_ana_euforia     emoção: euforia      10 lacuna(s)
+  historia_ana_medo        emoção: medo         6 lacuna(s)
+  historia_ana_euforia     emoção: euforia      6 lacuna(s)
 
   acao             2 palavra(s)
   arma             2 palavra(s)
-  nome             8 palavra(s)
-  objeto           7 palavra(s)"
+  nome             4 palavra(s)
+  objeto           8 palavra(s)"

@@ -1,8 +1,12 @@
 ## GlossaryPanel - o glossário de um NPC: as palavras que o jogador já descobriu, com contagem,
 ## filtros e pesquisa.
 ##
-## COMO USAR: instancie GlossaryPanel.tscn e chame configure(). Ele aparece em dois lugares (um
-## deles ainda não existe):
+## COMO USAR: instancie scenes/profiling/GlossaryPanel.tscn e chame configure(). TODO o layout está
+## na cena — título, contagem, os cinco botões de filtro, o campo de pesquisa e a área das palavras.
+## Este script só liga os nós, filtra a lista e instancia um chip (a cena apontada em "Chip Scene")
+## por palavra descoberta.
+##
+## Ele aparece em dois lugares (um deles ainda não existe):
 ##
 ##   - dentro da página do profiling, no sonho, com a história aberta — e aí ele sabe quais palavras
 ##     já estão em lacunas e apaga essas;
@@ -11,16 +15,16 @@
 ##     "story" é opcional em configure(): sem história, o painel é só a lista de palavras, que é
 ##     exatamente o que o diário vai pedir.
 ##
-## OS FILTROS, como o GDD pede: Lixo, Estrela, A-Z, Categoria e Lupa. Eles aparecem como retângulos
-## vazados no canto superior direito e, ao serem ligados, ficam preenchidos e VÃO PRA PRIMEIRA
-## POSIÇÃO. Podem ser combinados: lixo + estrela mostra as palavras marcadas de qualquer jeito, e
-## A-Z + Categoria agrupa por categoria e ordena dentro de cada grupo.
+## OS FILTROS, como o GDD pede: Lixo, Estrela, A-Z, Categoria e Lupa, no canto superior direito. Ao
+## serem ligados eles ficam preenchidos e VÃO PRA PRIMEIRA POSIÇÃO. Podem ser combinados: lixo +
+## estrela mostra as palavras marcadas de qualquer jeito, e A-Z + Categoria agrupa por categoria e
+## ordena dentro de cada grupo.
 ##
 ## A CONTAGEM ("23/36") é palavras descobertas sobre o total do pool do NPC (NPCProfile).
 ##
-## O painel não escreve no diário: ele avisa por signal, e a página (ou o diário) decide. A única
-## exceção é a marca de lixo/estrela, que é organização pessoal do jogador e não mexe em nada do
-## profiling — essa ele grava direto, pra não obrigar cada tela a repassar o recado.
+## O painel não escreve nada no diário: ele avisa por signal, e a tela decide. Isso inclui a marca de
+## lixo/estrela — o retângulo de marcas é um nó da tela (ver GlossaryMarkMenu), e não deste painel,
+## justamente pra ele poder aparecer POR CIMA da lista sem ser empurrado pelo contêiner.
 ##
 ## O guia completo está em docs/sistema_de_profiling.md.
 class_name GlossaryPanel
@@ -32,49 +36,76 @@ extends VBoxContainer
 ## glossário se já estiver numa lacuna. Quem resolve isso é a página.
 signal word_activated(word_id: StringName)
 
+## Emitido no clique direito numa palavra, com o retângulo dela na tela: é o pedido de abrir o
+## retângulo de marcas ali.
+signal mark_menu_requested(word_id: StringName, chip_rect: Rect2)
+
+## Emitido quando uma palavra deve voltar pro glossário: o jogador a arrastou de uma lacuna e soltou
+## aqui, ou soltou um arraste em cima de nada. Quem mexe na página é a tela.
+signal word_returned(word_id: StringName)
+
 ## Espaço para enums
 
-# Os cinco filtros do GDD. LIXO e ESTRELA escondem o que não está marcado; ALPHABETICAL e CATEGORY
+# Os cinco filtros do GDD. TRASH e STAR escondem o que não está marcado; ALPHABETICAL e CATEGORY
 # ordenam; SEARCH abre o campo de pesquisa.
 enum Filter { TRASH, STAR, ALPHABETICAL, CATEGORY, SEARCH }
 
-## Espaço para constantes
-
-# Chave de localização de cada filtro, na ordem do enum.
-const FILTER_KEYS: Array[String] = [
-	"GLOSSARY_FILTER_TRASH",
-	"GLOSSARY_FILTER_STAR",
-	"GLOSSARY_FILTER_ALPHABETICAL",
-	"GLOSSARY_FILTER_CATEGORY",
-	"GLOSSARY_FILTER_SEARCH",
-]
-
 ## Espaço para variáveis exportadas
 
-## Espaço entre os retângulos das palavras, em pixels.
-@export var word_separation: int = 8
-
-## Altura máxima da lista de palavras, em pixels. Acima disso a lista rola — um glossário de 36
-## palavras não cabe embaixo da página sem empurrar a história pra fora da tela.
-@export var words_max_height: float = 190.0
+## A cena de um retângulo de palavra (GlossaryWordChip.tscn).
+@export var chip_scene: PackedScene
 
 ## Espaço para variáveis
 
 var _npc_id: StringName = &""
 var _story: ProfilingStory
 
-var _count_label: Label
-var _filter_bar: HBoxContainer
-var _filter_buttons: Dictionary = {}    # Filter -> Button
+# Filter -> Button, montado a partir dos nós da cena. Existe pra o filtro ser tratado por valor de
+# enum, e não por nome de nó espalhado pelo script.
+var _filter_buttons: Dictionary = {}
 var _active_filters: Dictionary = {}    # Filter -> true
-var _search_field: LineEdit
-var _words_container: HFlowContainer
+
+## Espaço para variáveis onready
+
+@onready var _count_label: Label = $Header/Count
+@onready var _filter_bar: HBoxContainer = $Header/Filters
+@onready var _search_field: LineEdit = $SearchField
+@onready var _words_container: HFlowContainer = $Scroll/Margin/Words
 
 ## Espaço para funções nativas
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_build()
+	if chip_scene == null:
+		push_error("[Profiling] - Glossário sem \"Chip Scene\" apontada; nenhuma palavra vai aparecer")
+
+	_filter_buttons = {
+		Filter.TRASH: $Header/Filters/TrashFilter,
+		Filter.STAR: $Header/Filters/StarFilter,
+		Filter.ALPHABETICAL: $Header/Filters/AlphabeticalFilter,
+		Filter.CATEGORY: $Header/Filters/CategoryFilter,
+		Filter.SEARCH: $Header/Filters/SearchFilter,
+	}
+	for filter: int in _filter_buttons.keys():
+		var button: Button = _filter_buttons[filter] as Button
+		button.toggled.connect(_on_filter_toggled.bind(filter))
+
+	_search_field.text_changed.connect(_on_search_text_changed)
+	_search_field.hide()
+
+# Aceita palavra que está VINDO DE UMA LACUNA: arrastar pra cima do glossário é o gesto de devolver.
+# Palavra arrastada de dentro do próprio glossário não tem "from_blank" e é recusada — soltá-la de
+# volta na lista não deveria fazer nada.
+func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
+	var payload: Dictionary = data as Dictionary
+	return payload != null and payload.has("from_blank")
+
+
+func _drop_data(_at_position: Vector2, data: Variant) -> void:
+	var payload: Dictionary = data as Dictionary
+	if payload == null or not payload.has("from_blank"):
+		return
+	word_returned.emit(StringName(payload["word_id"]))
 
 ## Espaço para funções personalizadas
 
@@ -101,13 +132,18 @@ func refresh() -> void:
 		_count_label.text = ""
 		return
 
-	var words: Array[GlossaryWord] = _collect_words(profile)
-	for word: GlossaryWord in words:
-		var chip: GlossaryWordChip = GlossaryWordChip.new()
-		_words_container.add_child(chip)
-		chip.configure(word, ProfilingJournal.get_mark(_npc_id, word.id), _is_in_use(word))
-		chip.word_activated.connect(_on_chip_word_activated)
-		chip.mark_chosen.connect(_on_chip_mark_chosen)
+	if chip_scene != null:
+		for word: GlossaryWord in _collect_words(profile):
+			var chip: GlossaryWordChip = chip_scene.instantiate() as GlossaryWordChip
+			if chip == null:
+				push_error("[Profiling] - A cena de chip apontada no glossário não é um "
+					+ "GlossaryWordChip")
+				break
+			_words_container.add_child(chip)
+			chip.configure(word, ProfilingJournal.get_mark(_npc_id, word.id), _is_in_use(word))
+			chip.word_activated.connect(_on_chip_word_activated)
+			chip.mark_menu_requested.connect(_on_chip_mark_menu_requested)
+			chip.word_returned.connect(_on_chip_word_returned)
 
 	# A contagem é do POOL, não da lista filtrada: o jogador quer saber quanto falta descobrir, e
 	# não quantas palavras o filtro dele deixou passar.
@@ -175,67 +211,6 @@ func _compare_by_text(left: GlossaryWord, right: GlossaryWord) -> bool:
 	return left.get_display_text().naturalnocasecmp_to(right.get_display_text()) < 0
 
 
-# Monta o painel: cabeçalho com contagem e filtros, campo de pesquisa e a lista de palavras.
-#
-# Tudo em código, e não na .tscn, porque o conteúdo é dado: são N palavras descobertas, com cor de
-# categoria e marca, e uma .tscn com chips soltos ficaria desatualizada no primeiro filtro novo.
-func _build() -> void:
-	add_theme_constant_override("separation", 8)
-
-	var header: HBoxContainer = HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	add_child(header)
-
-	var title: Label = Label.new()
-	title.text = "GLOSSARY_TITLE"
-	header.add_child(title)
-
-	_count_label = Label.new()
-	_count_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_count_label.modulate = Color(1.0, 1.0, 1.0, 0.75)
-	header.add_child(_count_label)
-
-	var spacer: Control = Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(spacer)
-
-	_filter_bar = HBoxContainer.new()
-	_filter_bar.add_theme_constant_override("separation", 6)
-	header.add_child(_filter_bar)
-	for filter: int in Filter.values():
-		_build_filter_button(filter)
-
-	_search_field = LineEdit.new()
-	_search_field.placeholder_text = "GLOSSARY_SEARCH_PLACEHOLDER"
-	_search_field.clear_button_enabled = true
-	_search_field.hide()
-	_search_field.text_changed.connect(_on_search_text_changed)
-	add_child(_search_field)
-
-	var scroll: ScrollContainer = ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(0.0, words_max_height)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	add_child(scroll)
-
-	_words_container = HFlowContainer.new()
-	_words_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_words_container.add_theme_constant_override("h_separation", word_separation)
-	_words_container.add_theme_constant_override("v_separation", word_separation)
-	scroll.add_child(_words_container)
-
-
-# Um retângulo de filtro: vazado quando desligado, preenchido quando ligado.
-func _build_filter_button(filter: int) -> void:
-	var button: Button = Button.new()
-	button.toggle_mode = true
-	button.text = FILTER_KEYS[filter]
-	button.focus_mode = Control.FOCUS_NONE
-	button.toggled.connect(_on_filter_toggled.bind(filter))
-	_filter_bar.add_child(button)
-	_filter_buttons[filter] = button
-
-
 func _on_filter_toggled(pressed: bool, filter: int) -> void:
 	if pressed:
 		_active_filters[filter] = true
@@ -253,8 +228,7 @@ func _on_filter_toggled(pressed: bool, filter: int) -> void:
 			# lista misteriosamente incompleta.
 			_search_field.clear()
 
-	print("[Profiling] - Filtro do glossário \"%s\": %s" % [
-		FILTER_KEYS[filter], "ligado" if pressed else "desligado"])
+	print("[Profiling] - Filtro do glossário %d: %s" % [filter, "ligado" if pressed else "desligado"])
 	refresh()
 
 
@@ -266,8 +240,9 @@ func _on_chip_word_activated(word_id: StringName) -> void:
 	word_activated.emit(word_id)
 
 
-# A marca é organização pessoal do jogador: não muda lacuna, não muda história, então o painel grava
-# direto em vez de fazer a página repassar o recado. O refresh vem do journal_changed, como todo o
-# resto.
-func _on_chip_mark_chosen(word_id: StringName, kind: GlossaryMark.Kind) -> void:
-	ProfilingJournal.set_mark(_npc_id, word_id, kind)
+func _on_chip_mark_menu_requested(word_id: StringName, chip_rect: Rect2) -> void:
+	mark_menu_requested.emit(word_id, chip_rect)
+
+
+func _on_chip_word_returned(word_id: StringName) -> void:
+	word_returned.emit(word_id)

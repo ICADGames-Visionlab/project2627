@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://d1io3majq41f6"]
 
 [ext_resource type="Script" uid="uid://da2bpeus4cayg" path="res://scripts/profiling/WordDiscoveryToast.gd" id="1_toast"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/FlyingWord.tscn" id="2_flying_word"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_diary"]
 bg_color = Color(0.16, 0.13, 0.1, 0.95)
@@ -17,6 +18,7 @@ corner_radius_bottom_left = 4
 [node name="WordDiscoveryToast" type="CanvasLayer" unique_id=74559894]
 layer = 95
 script = ExtResource("1_toast")
+flying_word_scene = ExtResource("2_flying_word")
 
 [node name="Root" type="Control" parent="." unique_id=451822039]
 layout_mode = 3

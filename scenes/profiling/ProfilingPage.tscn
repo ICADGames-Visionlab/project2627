@@ -1,0 +1,60 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/ProfilingPage.gd" id="1_page"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingBlank.tscn" id="2_blank"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingPageLine.tscn" id="3_line"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingPageWord.tscn" id="4_word"]
+[ext_resource type="Script" path="res://scripts/profiling/ClickableWordText.gd" id="5_clickable"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_page"]
+bg_color = Color(0.08, 0.08, 0.11, 0.96)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.95, 0.85, 0.25)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="ProfilingPage" type="VBoxContainer"]
+theme_override_constants/separation = 12
+script = ExtResource("1_page")
+blank_scene = ExtResource("2_blank")
+line_scene = ExtResource("3_line")
+word_scene = ExtResource("4_word")
+
+[node name="Message" type="Label" parent="."]
+auto_translate_mode = 2
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+horizontal_alignment = 1
+
+[node name="PagePanel" type="PanelContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_page")
+
+[node name="Margin" type="MarginContainer" parent="PagePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="Content" type="VBoxContainer" parent="PagePanel/Margin"]
+layout_mode = 2
+
+[node name="Lines" type="VBoxContainer" parent="PagePanel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="ResolvedText" type="RichTextLabel" parent="PagePanel/Margin/Content"]
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+fit_content = true
+theme_override_font_sizes/normal_font_size = 24
+script = ExtResource("5_clickable")

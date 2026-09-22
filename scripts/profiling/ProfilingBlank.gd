@@ -1,12 +1,19 @@
 ## ProfilingBlank - uma lacuna da página do profiling: o buraco onde uma palavra do glossário cai.
 ##
-## COMO USAR: ninguém instancia isto à mão. A ProfilingPage cria uma lacuna por índice do texto e
-## chama configure(). A lacuna não conhece o diário: ela avisa por signal, e a página escreve.
+## COMO USAR: o layout está em scenes/profiling/ProfilingBlank.tscn (moldura, linha de baixo, fonte,
+## largura mínima). Quem instancia é a ProfilingPage, uma por lacuna do texto, pela cena apontada no
+## Inspector dela. Este script só põe o dado no lugar e avisa por signal — ele não conhece o diário.
 ##
-## O QUE ELE FAZ:
+## OS GESTOS SÃO OS MESMOS DA PALAVRA NO GLOSSÁRIO (ver GlossaryWordChip), e pelo mesmo motivo:
 ##
-##   soltar palavra em cima -> word_dropped(index, word_id)
-##   clique esquerdo cheia  -> cleared(index), e a palavra volta pro glossário
+##   soltar palavra em cima   -> word_dropped(index, word_id)
+##   arrastar a palavra fora  -> tira a palavra desta lacuna e leva pra outra (ou de volta pro
+##                               glossário, se o jogador soltar em cima dele)
+##   clique curto na cheia    -> cleared(index), e a palavra volta pro glossário
+##
+## O clique só conta ao SOLTAR o botão, e só se o arraste não tiver começado no meio: se ele contasse
+## na pressão, pegar a palavra pra tirar da lacuna já a devolveria ao glossário antes de o jogador
+## conseguir arrastá-la pra outro lugar.
 ##
 ## A LACUNA NUNCA DIZ QUE ESTÁ ERRADA. O GDD é específico: a mensagem acima da página conta QUANTAS
 ## palavras estão erradas, nunca QUAIS. Marcar a lacuna errada em vermelho transformaria o quebra-
@@ -19,61 +26,83 @@ extends PanelContainer
 
 ## Espaço para sinais
 
-## Emitido quando o jogador solta uma palavra do glossário nesta lacuna.
+## Emitido quando o jogador solta uma palavra do glossário (ou de outra lacuna) nesta lacuna.
 signal word_dropped(index: int, word_id: StringName)
 
-## Emitido quando o jogador clica numa lacuna preenchida: ela esvazia.
+## Emitido no clique curto numa lacuna preenchida: ela esvazia.
 signal cleared(index: int)
-
-## Espaço para constantes
-
-# PLACEHOLDER: o desenho da lacuna vazia e o checkmark da lacuna certa, até existir arte. Texto de
-# tela, não frase de jogador — não passam por tr().
-const EMPTY_TEXT: String = "_______"
-const CORRECT_GLYPH: String = " ✓"
-
-const CORRECT_COLOR: Color = Color(0.45, 0.9, 0.5)
 
 ## Espaço para variáveis exportadas
 
-## Largura mínima da lacuna, em pixels. É balanceamento de leitura: lacuna estreita demais faz o
-## texto "pular" quando a palavra entra, e larga demais desmancha a frase.
-@export var minimum_blank_width: float = 150.0
+## PLACEHOLDER: o que a lacuna vazia mostra, até existir arte de linha pontilhada.
+@export var empty_text: String = "_______"
+
+## PLACEHOLDER: o que entra ao lado da palavra quando a página inteira está correta.
+@export var correct_glyph: String = " ✓"
+
+## Cor da lacuna vazia.
+@export var empty_tint: Color = Color(1.0, 1.0, 1.0, 0.1)
+
+## Cor da lacuna certa (o verde do acerto).
+@export var correct_tint: Color = Color(0.45, 0.9, 0.5)
+
+## Opacidade do fundo da lacuna preenchida. Ela é tingida com a cor da CATEGORIA da palavra, e
+## opacidade cheia roubaria a atenção da frase.
+@export_range(0.0, 1.0, 0.01) var filled_opacity: float = 0.35
 
 ## Espaço para variáveis
 
 var index: int = -1
 
 var _word: GlossaryWord
-# Guardado, e não passado adiante, porque configure() pode ser chamado antes de o nó estar pronto
-# (a página monta a fileira inteira e só então configura cada lacuna): sem isto, o checkmark do
-# acerto se perderia no _ready.
+# Guardado, e não passado adiante, porque configure() pode ser chamado antes de o nó estar pronto:
+# sem isto, o checkmark do acerto se perderia no _ready.
 var _is_correct: bool = false
-var _label: Label
+# O botão esquerdo está pressionado nesta lacuna e o arraste ainda não começou: é o "clique curto"
+# em potencial. O arraste (ou o mouse saindo) cancela.
+var _press_pending: bool = false
+# O arraste em curso saiu DESTA lacuna. NOTIFICATION_DRAG_END chega a todos os Controls da tela, e é
+# isto que separa "o meu arraste acabou" de "acabou o arraste de alguém".
+var _is_dragging: bool = false
+
+## Espaço para variáveis onready
+
+@onready var _label: Label = $WordLabel
 
 ## Espaço para funções nativas
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	custom_minimum_size = Vector2(minimum_blank_width, 0.0)
-
-	_label = Label.new()
-	# O texto da palavra já vem traduzido; traduzir de novo faria o Godot procurar a palavra no CSV.
-	_label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_label)
-
+	mouse_exited.connect(_on_mouse_exited)
 	_refresh()
+
+
+# Arraste que termina sem ninguém aceitar esvazia a lacuna: a palavra volta pro glossário. É o mesmo
+# desfecho de soltá-la em cima do glossário — soltar "no nada" não pode deixar o gesto pela metade.
+func _notification(what: int) -> void:
+	if what != NOTIFICATION_DRAG_END or not _is_dragging:
+		return
+	_is_dragging = false
+	if not is_inside_tree() or _word == null:
+		return
+	if not get_viewport().gui_is_drag_successful():
+		print("[Profiling] - Palavra da lacuna %d solta fora: devolvida ao glossário" % index)
+		cleared.emit(index)
 
 
 func _gui_input(event: InputEvent) -> void:
 	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
-	if mouse_button == null or not mouse_button.pressed:
+	if mouse_button == null or mouse_button.button_index != MOUSE_BUTTON_LEFT or _word == null:
 		return
-	if mouse_button.button_index == MOUSE_BUTTON_LEFT and _word != null:
+
+	if mouse_button.pressed:
+		# Sem accept_event() aqui: é o Viewport que começa o arraste quando o mouse se move com o
+		# botão pressionado, e consumir a pressão mataria o arraste.
+		_press_pending = true
+		return
+
+	if _press_pending:
+		_press_pending = false
 		accept_event()
 		cleared.emit(index)
 
@@ -91,6 +120,33 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 		return
 	word_dropped.emit(index, StringName(payload["word_id"]))
 
+
+# Arrastar a palavra PRA FORA da lacuna. O payload leva de onde ela saiu ("from_blank"), que é o que
+# permite ao glossário aceitar a palavra de volta ao receber o soltar.
+#
+# Ser chamada já é a resposta de que o gesto é arraste, e não clique: o clique curto pendente morre
+# aqui. O preview é a própria lacuna duplicada, deslocada meio tamanho pra ficar centrada no cursor
+# (set_drag_preview põe o canto no mouse).
+func _get_drag_data(_at_position: Vector2) -> Variant:
+	if _word == null:
+		return null
+	_press_pending = false
+	_is_dragging = true
+
+	# DUPLICATE_SCRIPTS sozinho: o padrão de duplicate() também copia as CONEXÕES de sinal, e o
+	# preview não deve responder por esta palavra — ele é só um desenho seguindo o cursor.
+	var preview: ProfilingBlank = duplicate(Node.DUPLICATE_SCRIPTS) as ProfilingBlank
+	preview.custom_minimum_size = size
+	preview.modulate = Color(1.0, 1.0, 1.0, 0.85)
+
+	var holder: Control = Control.new()
+	holder.add_child(preview)
+	preview.position = -0.5 * size
+	set_drag_preview(holder)
+
+	preview.configure(index, _word, _is_correct)
+	return { "word_id": _word.id, "from_blank": index }
+
 ## Espaço para funções personalizadas
 
 # Põe (ou tira) a palavra da lacuna. is_correct só vem true quando a página inteira está certa —
@@ -107,40 +163,33 @@ func get_word() -> GlossaryWord:
 	return _word
 
 
+# Redesenha a lacuna. Nada de StyleBox criado aqui: a moldura é a da cena, e o que muda é o
+# tingimento (self_modulate) e o texto.
 func _refresh() -> void:
 	if _label == null:
 		return
 
 	if _word == null:
-		_label.text = EMPTY_TEXT
-		_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.45))
-		add_theme_stylebox_override("panel", _build_style(Color(1.0, 1.0, 1.0, 0.08)))
+		_label.text = empty_text
+		_label.modulate = Color(1.0, 1.0, 1.0, 0.5)
+		self_modulate = empty_tint
 		return
 
-	_label.text = _word.get_display_text() + (CORRECT_GLYPH if _is_correct else "")
+	_label.text = _word.get_display_text() + (correct_glyph if _is_correct else "")
 	if _is_correct:
-		_label.add_theme_color_override("font_color", CORRECT_COLOR)
-		add_theme_stylebox_override("panel", _build_style(Color(CORRECT_COLOR.r, CORRECT_COLOR.g,
-			CORRECT_COLOR.b, 0.18)))
+		_label.modulate = correct_tint
+		self_modulate = Color(correct_tint.r, correct_tint.g, correct_tint.b, filled_opacity)
 		return
 
-	# Palavra na lacuna aparece na cor da categoria dela: é o que deixa o jogador reler a frase
+	# A palavra na lacuna aparece na cor da categoria dela: é o que deixa o jogador reler a frase
 	# preenchida e ver de longe que pôs um nome onde a frase pedia um objeto.
-	_label.add_theme_color_override("font_color", Color.WHITE)
+	_label.modulate = Color.WHITE
 	var tint: Color = _word.get_color()
-	tint.a = 0.35
-	add_theme_stylebox_override("panel", _build_style(tint))
+	tint.a = filled_opacity
+	self_modulate = tint
 
 
-# O fundo da lacuna. A borda de baixo mais grossa é o que faz a lacuna vazia parecer uma linha pra
-# preencher, e não um botão.
-func _build_style(background: Color) -> StyleBoxFlat:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = background
-	style.border_width_bottom = 2
-	style.border_color = Color(1.0, 1.0, 1.0, 0.5)
-	style.set_corner_radius_all(4)
-	style.set_content_margin_all(4.0)
-	style.content_margin_left = 8.0
-	style.content_margin_right = 8.0
-	return style
+# O mouse saindo cancela o clique curto: o botão vai ser solto em outro lugar, e aquilo não é mais
+# um clique nesta lacuna.
+func _on_mouse_exited() -> void:
+	_press_pending = false

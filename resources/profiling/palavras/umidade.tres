@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="GlossaryWord" format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/GlossaryWord.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/profiling/categorias/objeto.tres" id="2_category"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"umidade"
+text_key = "GLOSSARY_WORD_UMIDADE"
+category = ExtResource("2_category")

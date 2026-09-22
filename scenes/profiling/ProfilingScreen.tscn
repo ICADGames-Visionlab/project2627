@@ -1,8 +1,10 @@
 [gd_scene format=3 uid="uid://dkf8okr741w41"]
 
 [ext_resource type="Script" uid="uid://dnl4x2ste4hte" path="res://scripts/profiling/ProfilingScreen.gd" id="1_screen"]
-[ext_resource type="Script" uid="uid://b77x735koby2s" path="res://scripts/profiling/ProfilingPage.gd" id="2_page"]
-[ext_resource type="Script" uid="uid://dslb3niqbu6gc" path="res://scripts/profiling/GlossaryPanel.gd" id="3_glossary"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingPage.tscn" id="2_page"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/GlossaryPanel.tscn" id="3_glossary"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingEmotionOption.tscn" id="4_emotion_option"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/GlossaryMarkMenu.tscn" id="5_mark_menu"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_portrait"]
 bg_color = Color(0.13, 0.13, 0.17, 0.95)
@@ -31,6 +33,7 @@ corner_radius_bottom_left = 8
 [node name="ProfilingScreen" type="CanvasLayer" unique_id=1122286895]
 layer = 90
 script = ExtResource("1_screen")
+emotion_option_scene = ExtResource("4_emotion_option")
 
 [node name="Root" type="Control" parent="." unique_id=706637177]
 layout_mode = 3
@@ -99,7 +102,7 @@ offset_right = 560.0
 offset_bottom = 340.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 24
+theme_override_constants/separation = 50
 alignment = 1
 
 [node name="NpcName" type="Label" parent="Root/Shake/SpiritView/Center" unique_id=1016245450]
@@ -187,14 +190,12 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 20
 
-[node name="Page" type="VBoxContainer" parent="Root/Shake/StoryView/Columns/Left" unique_id=1317648071]
+[node name="Page" parent="Root/Shake/StoryView/Columns/Left" instance=ExtResource("2_page")]
 layout_mode = 2
 size_flags_vertical = 3
-script = ExtResource("2_page")
 
-[node name="Glossary" type="VBoxContainer" parent="Root/Shake/StoryView/Columns/Left" unique_id=391803185]
+[node name="Glossary" parent="Root/Shake/StoryView/Columns/Left" instance=ExtResource("3_glossary")]
 layout_mode = 2
-script = ExtResource("3_glossary")
 
 [node name="Right" type="VBoxContainer" parent="Root/Shake/StoryView/Columns" unique_id=82776095]
 custom_minimum_size = Vector2(300, 0)
@@ -242,3 +243,7 @@ offset_bottom = -48.0
 grow_vertical = 0
 theme_override_font_sizes/font_size = 24
 text = "PROFILING_BACK"
+
+[node name="MarkMenu" parent="Root" instance=ExtResource("5_mark_menu")]
+visible = false
+layout_mode = 0

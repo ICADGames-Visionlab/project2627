@@ -1,0 +1,99 @@
+[gd_scene format=3 uid="uid://cpo6wd2gb8gkv"]
+
+[ext_resource type="Script" uid="uid://dvjfl2vkukgoa" path="res://scripts/profiling/ProfilingEmotionOption.gd" id="1_option"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_frame"]
+bg_color = Color(1, 1, 1, 0.08)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_highlight"]
+bg_color = Color(1, 1, 1, 0.16)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="ProfilingEmotionOption" type="Control" unique_id=407263207]
+custom_minimum_size = Vector2(260, 110)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 260.0
+offset_bottom = 110.0
+script = ExtResource("1_option")
+
+[node name="Frame" type="Panel" parent="." unique_id=675637418]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_frame")
+
+[node name="FrameHighlight" type="Panel" parent="." unique_id=1299537013]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_highlight")
+
+[node name="Fill" type="ColorRect" parent="." unique_id=402323606]
+layout_mode = 0
+offset_right = 260.0
+offset_bottom = 110.0
+mouse_filter = 2
+color = Color(1, 1, 1, 0.22)
+
+[node name="EmotionName" type="Label" parent="." unique_id=50118016]
+auto_translate_mode = 2
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Status" type="Label" parent="." unique_id=53730237]
+auto_translate_mode = 2
+modulate = Color(1, 1, 1, 0.8)
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = -29.0
+offset_bottom = -3.0
+grow_horizontal = 2
+horizontal_alignment = 1
+
+[node name="InvestigateButton" type="Button" parent="." unique_id=1869965523]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 8.0
+offset_bottom = 48.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "PROFILING_INVESTIGATE"

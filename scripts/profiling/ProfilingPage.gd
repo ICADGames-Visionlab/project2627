@@ -1,20 +1,23 @@
 ## ProfilingPage - a página do profiling: o texto da história com as lacunas, a mensagem de acerto e,
 ## depois de resolvida, a história contada por inteiro.
 ##
-## COMO USAR: a ProfilingScreen instancia isto e chama configure(). A página não abre nem fecha nada
-## e não decide nada sobre o sonho: ela desenha o estado que está no ProfilingJournal, escreve nele
-## quando o jogador mexe numa lacuna, e anuncia o resultado da correção por signal.
+## COMO USAR: o layout está em scenes/profiling/ProfilingPage.tscn (moldura do papel, margens, fonte
+## da mensagem, espaçamento entre parágrafos). A ProfilingScreen instancia essa cena e chama
+## configure(). A página não abre nem fecha nada e não decide nada sobre o sonho: ela desenha o
+## estado que está no ProfilingJournal, escreve nele quando o jogador mexe numa lacuna, e anuncia o
+## resultado da correção por signal.
 ##
 ## COMO O TEXTO É MONTADO: o texto vem do CSV com as lacunas escritas como {0}, {1}... (ver
-## ProfilingStory). Cada parágrafo é uma fileira que embrulha sozinha (HFlowContainer) e cada palavra
-## do texto é um Label dentro dela — é isso que deixa uma lacuna cheia empurrar o resto da frase sem
-## sair da página, em vez de o texto virar uma linha só que estoura pra fora da tela.
+## ProfilingStory). Cada parágrafo é uma cena de LINHA que embrulha sozinha, e cada palavra do texto
+## é uma cena de PALAVRA dentro dela — as três cenas (linha, palavra, lacuna) estão apontadas no
+## Inspector, então mexer na aparência do texto é abrir a cena, e não este script. É isso que deixa
+## uma lacuna cheia empurrar o resto da frase sem sair da página.
 ##
 ## O jogador pode preencher parte das lacunas e sair: o que está preenchido fica no diário, e a
 ## página reabre exatamente como ele deixou, mesmo que ele tenha acordado no meio.
 ##
-## A CORREÇÃO SÓ ACONTECE COM A PÁGINA CHEIA, e ela nunca aponta QUAL lacuna está errada — só quantas
-## (ver ProfilingEvaluation e o topo de ProfilingBlank.gd).
+## A CORREÇÃO SÓ ACONTECE COM A PÁGINA CHEIA, e ela nunca aponta QUAL lacuna está errada (ver
+## ProfilingEvaluation e o topo de ProfilingBlank.gd).
 ##
 ## O guia completo está em docs/sistema_de_profiling.md.
 class_name ProfilingPage
@@ -27,26 +30,35 @@ extends VBoxContainer
 ## estava resolvida antes (reabrir uma história resolvida não toca música de novo).
 signal evaluated(evaluation: ProfilingEvaluation)
 
-## Espaço para constantes
-
-# Cor de cada mensagem de resultado, na ordem do GDD: verde no acerto, amarelo em duas ou menos
-# erradas, vermelho em três ou mais.
-const COLOR_ALL_CORRECT: Color = Color(0.45, 0.9, 0.5)
-const COLOR_FEW_WRONG: Color = Color(1.0, 0.85, 0.3)
-const COLOR_MANY_WRONG: Color = Color(1.0, 0.4, 0.35)
-
 ## Espaço para variáveis exportadas
+
+@export_group("Peças")
+
+## A cena de uma lacuna (ProfilingBlank.tscn).
+@export var blank_scene: PackedScene
+
+## A cena de um parágrafo do texto: um contêiner que embrulha (ProfilingPageLine.tscn).
+@export var line_scene: PackedScene
+
+## A cena de uma palavra do texto da história (ProfilingPageWord.tscn).
+@export var word_scene: PackedScene
+
+@export_group("Regras")
 
 ## Até quantas palavras erradas contam como "duas ou menos" na mensagem amarela. É a variável de
 ## balanceamento da dificuldade da correção; o GDD pede 2.
 @export var few_wrong_limit: int = ProfilingEvaluation.FEW_WRONG_LIMIT
 
-## Tamanho da fonte do texto da história.
-@export var text_font_size: int = 24
+@export_group("Cores da mensagem")
 
-## Espaço entre as palavras do texto, em pixels. Some ao espaço natural da fonte, então valores
-## grandes soltam a frase.
-@export var word_separation: int = 6
+## Cor da mensagem de acerto total.
+@export var color_all_correct: Color = Color(0.45, 0.9, 0.5)
+
+## Cor da mensagem de "duas ou menos erradas".
+@export var color_few_wrong: Color = Color(1.0, 0.85, 0.3)
+
+## Cor da mensagem de "várias incorretas".
+@export var color_many_wrong: Color = Color(1.0, 0.4, 0.35)
 
 ## Espaço para variáveis
 
@@ -56,16 +68,21 @@ var _story: ProfilingStory
 # tela pede, porque o GDD manda mostrar a mensagem de acerto por alguns segundos antes.
 var _show_resolved: bool = false
 
-var _message: Label
-var _panel: PanelContainer
-var _lines: VBoxContainer
-var _resolved_text: ClickableWordText
+## Espaço para variáveis onready
+
+@onready var _message: Label = $Message
+@onready var _lines: VBoxContainer = $PagePanel/Margin/Content/Lines
+@onready var _resolved_text: ClickableWordText = $PagePanel/Margin/Content/ResolvedText
 
 ## Espaço para funções nativas
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_build()
+	if blank_scene == null or line_scene == null or word_scene == null:
+		push_error("[Profiling] - Página sem as cenas de lacuna/linha/palavra apontadas; "
+			+ "o texto da história não vai ser montado")
+	_message.hide()
+	_resolved_text.hide()
 
 ## Espaço para funções personalizadas
 
@@ -121,10 +138,35 @@ func activate_word(word_id: StringName) -> void:
 	var fills: PackedStringArray = ProfilingJournal.get_fills(_story.id, blank_count)
 	for index: int in blank_count:
 		if fills[index].is_empty():
-			ProfilingJournal.set_blank(_story.id, index, word_id, blank_count)
+			_fill_blank(index, word_id)
 			return
 
 	print("[Profiling] - Página cheia: a palavra \"%s\" não tem lacuna vazia pra entrar" % word_id)
+
+
+# Devolve uma palavra ao glossário: acha a lacuna em que ela está e esvazia.
+#
+# Público porque este gesto TERMINA fora da página — o jogador solta a palavra em cima do glossário,
+# ou solta em cima de nada. Recebe o ID da palavra, e não o índice da lacuna, porque nos dois casos
+# quem sobrou na mão de quem avisa é a palavra. Palavra que não está em lacuna nenhuma não faz nada.
+func return_word(word_id: StringName) -> void:
+	if _story == null:
+		return
+	var blank_count: int = _story.get_blank_count()
+	var index: int = ProfilingJournal.find_blank_with_word(_story.id, word_id, blank_count)
+	if index < 0:
+		return
+	ProfilingJournal.clear_blank(_story.id, index, blank_count)
+
+
+# Põe uma palavra numa lacuna.
+#
+# PALAVRA EM CONJUNTO NÃO PREENCHE JUNTO: "[MARCOS]/[CASTRO]" vem junto na DESCOBERTA (clicar
+# em uma delas no texto traz as duas pro glossário), e para aí. Em que lacuna cada metade entra é
+# escolha do jogador — inclusive porque a página não pode olhar a solução pra adivinhar a ordem
+# sem entregar a resposta.
+func _fill_blank(index: int, word_id: StringName) -> void:
+	ProfilingJournal.set_blank(_story.id, index, word_id, _story.get_blank_count())
 
 
 # Desenha o texto com as lacunas.
@@ -132,8 +174,12 @@ func _draw_template(fills: PackedStringArray, evaluation: ProfilingEvaluation) -
 	_clear_lines()
 	_resolved_text.hide()
 	_lines.show()
+	if line_scene == null or word_scene == null or blank_scene == null:
+		return
 
 	var row: HFlowContainer = _add_row()
+	if row == null:
+		return
 	# O CSV guarda a quebra de parágrafo como "\n". Dependendo de como o texto foi escrito, ela chega
 	# aqui já como quebra de linha ou ainda como os dois caracteres — normalizar cobre os dois casos.
 	var source: String = _story.get_template_text().replace("\\n", "\n")
@@ -148,8 +194,8 @@ func _draw_template(fills: PackedStringArray, evaluation: ProfilingEvaluation) -
 		for paragraph_index: int in paragraphs.size():
 			if paragraph_index > 0:
 				row = _add_row()
-			for word: String in paragraphs[paragraph_index].split(" ", false):
-				row.add_child(_build_word_label(word))
+			for word_text: String in paragraphs[paragraph_index].split(" ", false):
+				_add_word(row, word_text)
 
 
 # Desenha o texto completo da história, que substitui o texto com lacunas quando o jogador acerta.
@@ -161,8 +207,7 @@ func _draw_resolved() -> void:
 	_clear_lines()
 	_lines.hide()
 	_resolved_text.show()
-	var owner_id: StringName = _profile.npc_id if _profile != null else &""
-	_resolved_text.set_marked_text(_story.get_resolved_text().replace("\\n", "\n"), owner_id)
+	_resolved_text.set_marked_text(_story.get_resolved_text().replace("\\n", "\n"), _get_owner_id())
 
 
 # Põe uma lacuna na fileira, já com a palavra que está nela (se estiver).
@@ -171,7 +216,10 @@ func _draw_resolved() -> void:
 # checkmark verde ao seu lado" do GDD, que acontece no acerto, e não lacuna por lacuna.
 func _add_blank(row: HFlowContainer, index: int, fills: PackedStringArray,
 		evaluation: ProfilingEvaluation) -> void:
-	var blank: ProfilingBlank = ProfilingBlank.new()
+	var blank: ProfilingBlank = blank_scene.instantiate() as ProfilingBlank
+	if blank == null:
+		push_error("[Profiling] - A cena de lacuna apontada na página não é um ProfilingBlank")
+		return
 	blank.word_dropped.connect(_on_blank_word_dropped)
 	blank.cleared.connect(_on_blank_cleared)
 	row.add_child(blank)
@@ -182,16 +230,25 @@ func _add_blank(row: HFlowContainer, index: int, fills: PackedStringArray,
 	blank.configure(index, word, evaluation.is_solved())
 
 
-# Uma palavra do texto da história. Não é clicável: o texto com lacunas é o enunciado, e as palavras
-# que o jogador junta vêm do glossário.
-func _build_word_label(text_value: String) -> Label:
-	var label: Label = Label.new()
+# Põe uma palavra do texto da história na fileira. Ela não é clicável: o texto com lacunas é o
+# enunciado, e as palavras que o jogador junta vêm do glossário.
+func _add_word(row: HFlowContainer, text_value: String) -> void:
+	var label: Label = word_scene.instantiate() as Label
+	if label == null:
+		push_error("[Profiling] - A cena de palavra apontada na página não é um Label")
+		return
 	label.text = text_value
-	# O texto já veio traduzido do CSV; traduzir de novo faria o Godot procurar cada palavra da frase
-	# como se fosse uma chave.
-	label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	label.add_theme_font_size_override("font_size", text_font_size)
-	return label
+	row.add_child(label)
+
+
+# Uma fileira de texto: embrulha sozinha quando a frase não cabe na largura da página.
+func _add_row() -> HFlowContainer:
+	var row: HFlowContainer = line_scene.instantiate() as HFlowContainer
+	if row == null:
+		push_error("[Profiling] - A cena de linha apontada na página não é um HFlowContainer")
+		return null
+	_lines.add_child(row)
+	return row
 
 
 # Escreve a mensagem acima da página, na cor do resultado. Página incompleta não tem mensagem: o GDD
@@ -205,57 +262,12 @@ func _update_message(evaluation: ProfilingEvaluation) -> void:
 	_message.text = tr(key)
 	match evaluation.result:
 		ProfilingEvaluation.Result.ALL_CORRECT:
-			_message.add_theme_color_override("font_color", COLOR_ALL_CORRECT)
+			_message.modulate = color_all_correct
 		ProfilingEvaluation.Result.FEW_WRONG:
-			_message.add_theme_color_override("font_color", COLOR_FEW_WRONG)
+			_message.modulate = color_few_wrong
 		_:
-			_message.add_theme_color_override("font_color", COLOR_MANY_WRONG)
+			_message.modulate = color_many_wrong
 	_message.show()
-
-
-# Monta a moldura da página: mensagem em cima, painel com o texto embaixo.
-func _build() -> void:
-	add_theme_constant_override("separation", 12)
-
-	_message = Label.new()
-	_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_message.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	_message.add_theme_font_size_override("font_size", 26)
-	_message.hide()
-	add_child(_message)
-
-	_panel = PanelContainer.new()
-	_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_panel.add_theme_stylebox_override("panel", _build_page_style())
-	add_child(_panel)
-
-	var margin: MarginContainer = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 28)
-	margin.add_theme_constant_override("margin_top", 24)
-	margin.add_theme_constant_override("margin_right", 28)
-	margin.add_theme_constant_override("margin_bottom", 24)
-	_panel.add_child(margin)
-
-	var content: VBoxContainer = VBoxContainer.new()
-	margin.add_child(content)
-
-	_lines = VBoxContainer.new()
-	_lines.add_theme_constant_override("separation", 18)
-	content.add_child(_lines)
-
-	_resolved_text = ClickableWordText.new()
-	_resolved_text.add_theme_font_size_override("normal_font_size", text_font_size)
-	_resolved_text.hide()
-	content.add_child(_resolved_text)
-
-
-# Uma fileira de texto: embrulha sozinha quando a frase não cabe na largura da página.
-func _add_row() -> HFlowContainer:
-	var row: HFlowContainer = HFlowContainer.new()
-	row.add_theme_constant_override("h_separation", word_separation)
-	row.add_theme_constant_override("v_separation", 10)
-	_lines.add_child(row)
-	return row
 
 
 func _clear_lines() -> void:
@@ -263,19 +275,17 @@ func _clear_lines() -> void:
 		child.queue_free()
 
 
-# O fundo da página. PLACEHOLDER: papel resolvido em StyleBox, sem arte.
-func _build_page_style() -> StyleBoxFlat:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.08, 0.11, 0.96)
-	style.border_color = Color(1.0, 0.95, 0.85, 0.25)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(10)
-	return style
+# De quem é o glossário desta página. A página precisa disso pra saber se a palavra em conjunto já
+# foi descoberta, e pra mandar as palavras do texto resolvido pro glossário certo.
+func _get_owner_id() -> StringName:
+	if _profile == null:
+		return &""
+	return _profile.npc_id
 
 
 func _on_blank_word_dropped(index: int, word_id: StringName) -> void:
 	if _story != null:
-		ProfilingJournal.set_blank(_story.id, index, word_id, _story.get_blank_count())
+		_fill_blank(index, word_id)
 
 
 func _on_blank_cleared(index: int) -> void:

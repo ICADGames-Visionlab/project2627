@@ -5,6 +5,9 @@
 ## escuta EventBus.glossary_word_discovered e se cuida. Quem descobre a palavra (o texto clicável, o
 ## inventário quando existir, o menu de debug) não conhece esta cena.
 ##
+## O layout está na cena: o canto, a mensagem e o retângulo do diário. A palavra que voa é a cena
+## apontada em "Flying Word Scene" (FlyingWord.tscn) — fonte e contorno dela se mexem lá, não aqui.
+##
 ## PLACEHOLDER: o "asset pequeno do diário" que o GDD pede no canto inferior direito é um retângulo
 ## identificado. O DIÁRIO NÃO EXISTE AINDA (ver docs/sistema_de_profiling.md, "O que ainda não
 ## existe"): quando existir, o retângulo daqui vira o ícone dele, e o destino da animação continua
@@ -25,8 +28,8 @@ extends CanvasLayer
 ## Quanto tempo a mensagem fica na tela depois de a palavra chegar, em segundos.
 @export var message_seconds: float = 1.8
 
-## Tamanho da fonte da palavra que voa.
-@export var word_font_size: int = 26
+## A cena da palavra que desce pro canto (FlyingWord.tscn).
+@export var flying_word_scene: PackedScene
 
 ## Espaço para variáveis onready
 
@@ -65,13 +68,18 @@ func show_word(npc_id: StringName, word_id: StringName) -> void:
 # A palavra descendo pra o canto do diário. Ela nasce onde o mouse está: é lá que o jogador acabou de
 # clicar, então a animação sai da própria palavra que ele colheu.
 func _fly_word(word: GlossaryWord) -> void:
-	var flying: Label = Label.new()
+	if flying_word_scene == null:
+		push_error("[Profiling] - Aviso de palavra sem \"Flying Word Scene\" apontada")
+		return
+
+	var flying: Label = flying_word_scene.instantiate() as Label
+	if flying == null:
+		push_error("[Profiling] - A cena da palavra que voa não é um Label")
+		return
 	flying.text = word.get_display_text()
-	flying.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-	flying.add_theme_font_size_override("font_size", word_font_size)
-	flying.add_theme_color_override("font_color", word.get_color())
-	flying.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
-	flying.add_theme_constant_override("outline_size", 6)
+	# modulate, e não override de fonte: a cor é a da CATEGORIA da palavra (dado), e a fonte e o
+	# contorno continuam sendo os da cena.
+	flying.modulate = word.get_color()
 	_root.add_child(flying)
 	# reset_size() antes de ler o tamanho: o Label só ganha tamanho no próximo layout, e sem isto o
 	# destino sairia deslocado meio retângulo.
