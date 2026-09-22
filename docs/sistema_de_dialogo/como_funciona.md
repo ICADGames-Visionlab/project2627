@@ -21,19 +21,29 @@ O sistema não usa o addon Godot Dialogue Manager, e não vai usar. O formato é
 ```
 clique no NPC
   -> NPCInteraction (Area2D filha do NPC)
+  -> EventBus.conversation_approach_started(conversation_id, npc_id)
+       trava o Player e os orbes de insight; NPCDirector segura o NPC no lugar
+  -> Player.start_conversation_approach() anda até perto do NPC (Pathfinder)
+       await player.conversation_approach_arrived
+  -> DialogueCamera.engage() aproxima a câmera do Player e do NPC
+       await camera.tween_completed
   -> EventBus.conversation_requested(conversation_id, npc_id)
   -> DialogueScreen.open()
   -> DialogueCatalog.create_runner(conversation_id)
   -> o runner emite um DialogueStep por vez
   -> a tela mostra falas e opções; o jogador escolhe
   -> EventBus.conversation_ended
+       DialogueCamera devolve a câmera pra PlayerCamera; Player e NPC destravam
 ```
+
+`NPCInteraction._start_conversation()` é quem conduz a abordagem inteira, com `await` em cada etapa — sem Player ou `DialogueCamera` na cena (cena de teste, por exemplo), ela pula a etapa que faltar e pede a conversa direto, sem travar nada.
 
 Cada peça tem um trabalho só:
 
 | Peça | O que faz |
 | --- | --- |
-| `NPCInteraction` | Recebe o clique no NPC (só picking, sem colisão física) e pede a conversa pelo `EventBus`. Só age se o `conversation_id` do NPC não estiver vazio. |
+| `NPCInteraction` | Recebe o clique no NPC (só picking, sem colisão física) e conduz a abordagem: aproximação, zoom e só então o pedido de conversa pelo `EventBus`. Só age se o `conversation_id` do NPC não estiver vazio. |
+| `DialogueCamera` | `PhantomCamera2D` parada (priority 0) até `engage()` subir a prioridade acima da `PlayerCamera` (10, em `Player.tscn`) e enquadrar os dois personagens (`FollowMode.GROUP`); o `PhantomCameraHost` (`City.tscn`) faz o tween sozinho a cada troca de prioridade. Devolve a câmera em `conversation_ended`. |
 | `DialogueCatalog` | Descobre o runner certo para o id: conversa sintética de debug (`__stress_*`) ou `res://dialogue/<id>.dlg`. |
 | `DialogueScriptParser` | Lê o texto do `.dlg` e devolve um `Dictionary` no formato que o `MemoryRunner` consome, ou a lista de erros com o número da linha. É estático: não toca em cena nem em save. |
 | `MemoryRunner` | Anda pelo `Dictionary` nó a nó e emite um `DialogueStep` (falas, opções, modo de avanço). Concede flags quando uma opção com `grant:` é escolhida. |
@@ -75,18 +85,18 @@ O Passeio automático usa um modo sandbox do `DialogueGameState`: as flags vão 
 
 ## Integração com NPCs
 
-Um NPC conversa quando `NPCDefinition.conversation_id` não está vazio. Enquanto a conversa está aberta:
+Um NPC conversa quando `NPCDefinition.conversation_id` não está vazio. O `Player` e o `InsightInteractor` já travam em `conversation_approach_started` (clique no NPC, antes de a tela abrir — ver [Do clique à tela](#do-clique-à-tela)); o `NPCDirector` segura o NPC parado nesse mesmo momento, mas só o vira para o jogador em `conversation_started`, quando o jogador de fato chegou perto. Enquanto a conversa está aberta:
 
-- O `NPCDirector` segura o NPC parado e o vira para o jogador.
-- O `Player` trava o movimento.
-- O `InsightInteractor` desliga os orbes.
+- O `NPCDirector` mantém o NPC segurado e virado para o jogador.
+- O `Player` mantém o movimento travado.
+- O `InsightInteractor` mantém os orbes desligados.
 - O `GameClock` fica congelado, para o tempo do jogo não correr durante a conversa.
 
-Tudo destrava quando `conversation_ended` chega. A `DialogueScreen` emite `conversation_started` e `conversation_ended`, e o `NPCDirector`, o `Player` e o `InsightInteractor` ouvem os dois.
+Tudo destrava quando `conversation_ended` chega. A `DialogueScreen` emite `conversation_started` e `conversation_ended`; o `NPCDirector`, o `Player`, o `InsightInteractor` e a `DialogueCamera` ouvem `conversation_ended`, e os três primeiros também ouvem `conversation_approach_started`.
 
 O `NPCDefinition` também avisa no Inspector (`collect_issues()`) quando `dialogue_color` não passa no contraste mínimo contra o fundo da coluna de diálogo.
 
-O retrato segue o NPC da conversa. Ao abrir, a `DialogueScreen` pede ao resolvedor o NPC do `initiator_id` e mostra o retrato dele. A cada fala, se o falante resolve para um NPC, o retrato passa a ser o dele. A posição vem de `DialoguePortraitLayout`, que só faz conta (slot, espaço à esquerda da coluna, encolhimento em tela pequena) e por isso é coberta pelo autoteste.
+O retrato segue o NPC da conversa. Ao abrir, a `DialogueScreen` pede ao resolvedor o NPC do `initiator_id` e mostra o retrato dele. A cada fala, se o falante resolve para um NPC, o retrato passa a ser o dele. A posição vem de `DialoguePortraitLayout`, que só faz conta (slot, espaço à esquerda da coluna, encolhimento em tela pequena) — sem nó, sem estado.
 
 A ordem dos cliques está resolvida: o `_input_event` do `NPCInteraction` roda antes do `_unhandled_input` do `Player`, então clicar no NPC não faz o jogador andar até ele. É o mesmo esquema do `InsightInteractor`.
 
@@ -121,9 +131,9 @@ Tudo fica em `scripts/dialogue/`.
 | `runners/` | `DialogueRunner` (base), `MemoryRunner`, `SingleLineRunner`. |
 | `format/` | O `DialogueScriptParser`. |
 | `logic/` | Lógica pura, sem nó: layout das opções, posição do retrato, contraste WCAG, rastreio de trocas, trava de entrada, política de rolagem, cronograma da revelação. |
-| `debug/` | O validador de conversas e de estilo, o passeio automático, os dados de teste e o autoteste. |
+| `debug/` | O validador de conversas e de estilo, o passeio automático e os dados de teste. |
 
-A lógica de `logic/` é pura de propósito: o autoteste a cobre sem abrir cena nem depender de vídeo.
+A lógica de `logic/` é pura de propósito: dá pra chamar de qualquer lugar sem abrir cena nem depender de vídeo. O projeto não usa testes automatizados unitários — a verificação de conteúdo (chaves, contraste, becos sem saída) é o que os validadores e o passeio automático em `debug/` cobrem.
 
 ---
 
@@ -143,7 +153,7 @@ A lógica de `logic/` é pura de propósito: o autoteste a cobre sem abrir cena 
 | 1. Protótipo visual | Modelo de dados, `DialogueStyle`, lógica pura, `MemoryRunner`, a coluna de diálogo. | Pronta. |
 | 2. Runner e dados | Catálogo, `DialogueSpeaker` e resolvedor, `SingleLineRunner`, congelamento do relógio. | Pronta. |
 | 3. Integração | Insights na tela real, clique no NPC, trava de Player e orbes, `DialogueState` e save, preferências do jogador. | Pronta. |
-| 4. Ferramentas | Seção Diálogo no menu de debug, validadores, passeio automático, autoteste. | Pronta, já validando roteiros reais. |
+| 4. Ferramentas | Seção Diálogo no menu de debug, validadores, passeio automático. | Pronta, já validando roteiros reais. |
 | 5. Polimento | Sons placeholder, revelação progressiva, repetição de analógico e D-pad, rolagem em 200%, blur opcional. | Pronta, exceto os sons finais e o teste em 21:9. |
 
 O layout do painel é ancorado à direita com largura própria, então em tela 21:9 deveria só sobrar mais fundo à esquerda. Ninguém conferiu isso numa tela ultrawide de verdade.

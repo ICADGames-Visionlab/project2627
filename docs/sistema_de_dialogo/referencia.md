@@ -162,13 +162,8 @@ Ficam na seção **Diálogo** do menu (**F4**). No console (**F1**) o comando é
 | Teste de estresse de texto | Escala 2.0 temporária, com a fala mais longa do CSV e o nome de falante mais longo. |
 | Passeio automático | Roda a conversa sozinha, escolhendo ao acaso, `N` vezes. Acusa beco sem saída e loop. Não mexe no save. |
 | Resetar escolhas | Zera as marcas de "já escolhida" e os nós visitados. Pede confirmação. |
-| Autoteste do diálogo | Roda os testes do sistema e imprime o relatório. |
 
-O autoteste também roda pela linha de comando e sai com código 1 se algum caso falhar:
-
-```bash
-godot --headless --path . --script res://tests/run_dialogue_self_test.gd
-```
+O projeto não usa testes automatizados unitários. A verificação de conteúdo é Validar conversas/Validar estilo (rodam também pelo console, `dialogo.validar_conversas` e `dialogo.validar_estilo`) e o Passeio automático, acima.
 
 ---
 

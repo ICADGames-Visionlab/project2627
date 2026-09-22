@@ -231,6 +231,11 @@ locale/translations=PackedStringArray("res://translations/translations.en.transl
 
 [layer_names]
 
+; Camada 1 (world): o cenário que bloqueia passagem (Structure e afins). É a máscara que o
+; Pathfinder usa para montar o grafo de visibilidade — só o que está aqui é obstáculo.
+; Camada 2 (Agentes): quem anda (Player e NPCs). Fica FORA da máscara de obstáculo de propósito:
+; agente não é parede, e um agente parado em cima de uma aresta do grafo não pode derrubar essa
+; aresta no rebuild.
 2d_physics/layer_1="world"
 2d_physics/layer_2="Agentes"
 2d_physics/layer_16="insight_orbs"

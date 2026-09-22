@@ -19,7 +19,7 @@ signal dialogue_preferences_changed
 enum MovementScheme { KEYBOARD, CLICK }
 
 # Modo de revelação do texto de diálogo (SPEC §14): instantâneo mostra a fala inteira de uma vez;
-# progressivo é o typewriter (efeito ainda não ligado na tela — ver Fase 5 do SPEC, §16).
+# progressivo é o typewriter (DialogueScreen._await_entry_then_continue).
 enum TextReveal { INSTANT, PROGRESSIVE }
 
 # Preferências de diálogo (SPEC §14.1). Mude sempre por set_dialogue_preference(): é o setter que

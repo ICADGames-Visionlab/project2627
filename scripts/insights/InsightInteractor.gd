@@ -51,6 +51,7 @@ var _is_input_locked: bool = false
 
 func _ready() -> void:
 	set_process(false)
+	EventBus.conversation_approach_started.connect(_on_conversation_started)
 	EventBus.conversation_started.connect(_on_conversation_started)
 	EventBus.conversation_ended.connect(_on_conversation_ended)
 

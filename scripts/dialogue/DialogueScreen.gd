@@ -73,6 +73,7 @@ func _ready() -> void:
 	EventBus.day_ended.connect(_on_day_ended)
 	GameManager.dialogue_preferences_changed.connect(_apply_preferences)
 	_warn_placeholder_sfx()
+	# [DEBUG] Seção "Diálogo" do menu (F4/F1): não existe em build de release.
 	if OS.has_feature("editor") or OS.is_debug_build():
 		_register_debug_entries()
 
@@ -661,7 +662,6 @@ func _register_debug_entries() -> void:
 		DebugParam.int_value("runs", 50, 1, 500),
 	])
 	DebugMenu.register_action(DEBUG_SECTION, "Resetar escolhas", _debug_reset_choices, true)
-	DebugMenu.register_action(DEBUG_SECTION, "Autoteste do diálogo", _debug_run_self_test)
 
 
 func _debug_conversation_suggestions() -> PackedStringArray:
@@ -731,9 +731,3 @@ func _debug_auto_walk(conversation_id: String, runs: int) -> void:
 func _debug_reset_choices() -> void:
 	DialogueState.reset_choices()
 	print("[Dialogue] - Escolhas e nós visitados resetados")
-
-
-func _debug_run_self_test() -> void:
-	var test := DialogueSelfTest.new()
-	await test.run()
-	print(test.report())

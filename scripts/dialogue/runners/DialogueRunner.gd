@@ -5,6 +5,9 @@ class_name DialogueRunner
 extends RefCounted
 
 signal step_ready(step: DialogueStep)
+# Só o MemoryRunner emite hoje (nó inexistente); a base declara porque é parte do contrato de
+# qualquer DialogueRunner, não só de quem já usa.
+@warning_ignore("unused_signal")
 signal failed(reason: String)
 
 # Debug "Ignorar condições" (SPEC §15.1): força toda escolha a ficar disponível.

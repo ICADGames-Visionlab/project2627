@@ -185,8 +185,12 @@ func hold() -> void:
 	_clear_path()
 
 
+# Larga o NPC: _target sobrevive ao hold() (só _has_target foi zerado), então retoma o caminho até
+# lá. Sem isto, um NPC clicado no meio do trajeto ficaria parado no ponto onde foi segurado até a
+# próxima mudança de rotina, minutos de jogo depois.
 func release() -> void:
 	_is_held = false
+	walk_to(_target)
 
 
 # Liga/desliga o contorno branco de hover (mouse em cima, com conversa disponível). Quem decide

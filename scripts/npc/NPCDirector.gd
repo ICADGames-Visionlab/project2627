@@ -95,6 +95,7 @@ func _ready() -> void:
 
 	EventBus.time_changed.connect(_on_time_changed)
 	EventBus.day_changed.connect(_on_day_changed)
+	EventBus.conversation_approach_started.connect(_on_conversation_approach_started)
 	EventBus.conversation_started.connect(_on_conversation_started)
 	EventBus.conversation_ended.connect(_on_conversation_ended)
 
@@ -311,8 +312,18 @@ func _on_day_changed(day: int) -> void:
 	print("[NPCDirector] - Dia %d: rotinas reavaliadas" % day)
 
 
-# Segura o NPC que iniciou a conversa e vira ele para o jogador (SPEC §11.4). initiator_id vazio
-# (gatilho, cutscene, debug) não segura ninguém.
+# Segura o NPC assim que o jogador clica nele, antes mesmo de ele terminar de andar até lá — sem
+# isso a rotina poderia levar o NPC embora enquanto o jogador ainda está a caminho. Não vira ele
+# pro jogador ainda: isso só faz sentido quando o jogador de fato chegou (conversation_started).
+func _on_conversation_approach_started(_conversation_id: StringName, npc_id: StringName) -> void:
+	var body: NPC = _bodies.get(npc_id) as NPC
+	if body != null:
+		body.hold()
+
+
+# Confirma o NPC segurado e vira ele para o jogador (SPEC §11.4). initiator_id vazio (gatilho,
+# cutscene, debug) não segura ninguém — esses caminhos nunca passaram por
+# conversation_approach_started, então o hold() daqui também é o primeiro para eles.
 func _on_conversation_started(_conversation_id: StringName, initiator_id: StringName) -> void:
 	var body: NPC = _bodies.get(initiator_id) as NPC
 	if body == null:

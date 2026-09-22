@@ -105,6 +105,15 @@ extends Resource
 @export var close_duration: float = 0.2
 @export var open_slide_px: float = 48.0
 
+@export_group("Aproximação e câmera")
+# Distância mantida do NPC ao parar de andar até ele (NPCInteraction._approach_point): perto o
+# bastante pra ler como conversa, longe o bastante pra não empurrar o corpo dele.
+@export var approach_distance: float = 90.0
+# Zoom da DialogueCamera enquanto os dois conversam. 1.0 é o zoom normal de jogo (PlayerCamera).
+@export var camera_zoom: float = 1.6
+# Duração do tween de zoom, nos dois sentidos (PhantomCamera2D.tween_duration).
+@export var camera_zoom_duration: float = 0.5
+
 @export_group("Sons")
 @export var sfx_hover: AudioStream
 @export var sfx_confirm: AudioStream

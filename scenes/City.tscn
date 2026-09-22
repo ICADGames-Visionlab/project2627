@@ -24,6 +24,7 @@
 [ext_resource type="Resource" path="res://resources/insights/city_building3_warm_wall.tres" id="16_warm_wall"]
 [ext_resource type="Resource" path="res://resources/insights/city_building3_gutter.tres" id="17_gutter"]
 [ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueScreen.tscn" id="18_dialogue_screen"]
+[ext_resource type="Script" path="res://scripts/dialogue/DialogueCamera.gd" id="19_dialogue_camera"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -154,6 +155,11 @@ marker_offset = Vector2(0, -220)
 position = Vector2(1017, -334)
 insights = Array[ExtResource("16_ag1fd")]([ExtResource("15_windows")])
 marker_offset = Vector2(0, -230)
+
+[node name="DialogueCamera" type="Node2D" parent="." groups=["dialogue_camera"]]
+script = ExtResource("19_dialogue_camera")
+follow_mode = 3
+auto_zoom = false
 
 [node name="DialogueScreen" parent="." unique_id=824431202 instance=ExtResource("18_dialogue_screen")]
 
