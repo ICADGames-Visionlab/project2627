@@ -5,9 +5,9 @@
 # Todos os eventos do jogo ficam neste arquivo, agrupados por módulo, cada um com um comentário
 # acima dizendo quem emite e quem escuta. Abrir este arquivo é ver o jogo inteiro conversando.
 #
-# ESTADO ATUAL: os eventos de tempo (GameClock) e os do sistema de insights. Eventos nascem
-# junto com o sistema que produz os fatos — criar antes disso seria adivinhar features que o
-# conceito do jogo ainda não decidiu.
+# ESTADO ATUAL: os eventos de tempo (GameClock), os do sistema de insights e os do profiling.
+# Eventos nascem junto com o sistema que produz os fatos — criar antes disso seria adivinhar
+# features que o conceito do jogo ainda não decidiu.
 #
 # Para adicionar um evento, é uma edição só: declarar o sinal abaixo, tipado e comentado.
 #
@@ -89,6 +89,42 @@ signal insight_revealed(event: InsightRevealedEvent)
 # dia em que a tela real entrar vira erro visível em vez de duas telas abrindo juntas.
 # Emissor: InsightDirector. Ouvinte: a tela de diálogo (PlaceholderDialogueScreen por enquanto).
 signal dialogue_requested(head_id: StringName, text_key: String)
+
+# ------------------------------------------------------------------------------------
+# Profiling
+# ------------------------------------------------------------------------------------
+
+# Pede a abertura da tela de profiling do espírito de um NPC. Pedido: espera exatamente 1 ouvinte, e
+# o logger acusa no console quando a contagem não é essa.
+# Emissor: SpiritInteraction (e o menu de debug). Ouvinte: ProfilingScreen.
+signal profiling_requested(npc_id: StringName)
+
+# Emitido quando a tela de profiling abre.
+# Emissor: ProfilingScreen. Ouvintes: DreamHud (esconde o botão de acordar enquanto a tela está na
+# frente).
+signal profiling_opened(npc_id: StringName)
+
+# Emitido quando a tela de profiling fecha, pelo botão "Sair" ou por o jogador ter acordado.
+# Emissor: ProfilingScreen. Ouvintes: DreamHud.
+signal profiling_closed(npc_id: StringName)
+
+# Emitido quando uma palavra nova entra no glossário de um NPC. Releitura não emite: quem já tinha a
+# palavra não recebe o aviso de novo.
+# Emissor: ProfilingJournal. Ouvintes: WordDiscoveryToast (o aviso na tela) e, no futuro, o diário.
+signal glossary_word_discovered(npc_id: StringName, word_id: StringName)
+
+# Emitido quando TODAS as histórias de um NPC estão resolvidas — o jogador entendeu por que aquele
+# NPC está na cidade.
+# Emissor: ProfilingJournal. Ouvintes: ProfilingScreen (o jogador acorda) e, no futuro, o diálogo
+# que convence o NPC a sair da cidade.
+signal npc_profiling_completed(npc_id: StringName)
+
+# O QUE NÃO ESTÁ AQUI, de propósito: "história de emoção resolvida" e "emoção do NPC agendada". Os
+# dois são fatos de jogo, mas hoje ninguém escutaria nenhum dos dois — o diário, a música e o
+# diálogo, que são os interessados, ainda não existem. Evento sem ouvinte é o erro comum que
+# docs/event_bus.md manda evitar, e o logger acusa em tempo de execução. Quando o primeiro ouvinte
+# existir, declarar o sinal aqui e emitir em ProfilingJournal.mark_story_solved (ou em
+# schedule_emotion_slot) é uma linha em cada lugar; ver docs/sistema_de_profiling.md.
 
 var _logger: EventBusLogger
 

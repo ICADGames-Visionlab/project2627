@@ -3,6 +3,7 @@
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_raiva.tres" id="1_dd48x"]
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_tristeza.tres" id="2_5bjh8"]
 [ext_resource type="Resource" uid="uid://dy3n3cuiv1v6f" path="res://resources/npcs/rotinas/rotina_ze_raiva_folga.tres" id="3_kvoqe"]
+[ext_resource type="Texture2D" uid="uid://dbf8vbbawevf1" path="res://images/placeholder/portrait placeholder.png" id="4_kvoqe"]
 [ext_resource type="Resource" uid="uid://5ssbf5wg8ssg" path="res://resources/npcs/rotinas/rotina_ze_raiva_trabalho.tres" id="4_n0dhc"]
 [ext_resource type="Resource" uid="uid://7htp4q0fglr4" path="res://resources/npcs/rotinas/rotina_ze_folga.tres" id="5_u603k"]
 [ext_resource type="Resource" uid="uid://bovfft3x1ukh" path="res://resources/npcs/rotinas/rotina_ze_trabalho.tres" id="6_xrhdl"]
@@ -21,6 +22,7 @@ script = ExtResource("8_48vj3")
 id = &"ze"
 name_key = &"NPC_NAME_ZE"
 tint = Color(0.53, 0.74, 1, 1)
+portrait = ExtResource("4_kvoqe")
 walk_speed = 200.0
 emotion_first = ExtResource("1_dd48x")
 emotion_second = ExtResource("2_5bjh8")

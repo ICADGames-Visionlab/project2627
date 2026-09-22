@@ -30,6 +30,9 @@
 [ext_resource type="PackedScene" uid="uid://ccctarlfxibdl" path="res://scenes/world/Bed.tscn" id="20_bed"]
 [ext_resource type="PackedScene" uid="uid://bm77g7wpn6avw" path="res://scenes/ui/ActionPrompt.tscn" id="21_prompt"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DreamTransition.tscn" id="22_dream"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingScreen.tscn" id="23_profiling"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/DreamHud.tscn" id="24_dream_hud"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/WordDiscoveryToast.tscn" id="25_word_toast"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -200,3 +203,9 @@ marker_offset = Vector2(0, -230)
 [node name="ActionPrompt" parent="." unique_id=1074237785 instance=ExtResource("21_prompt")]
 
 [node name="DreamTransition" parent="." unique_id=560904957 instance=ExtResource("22_dream")]
+
+[node name="ProfilingScreen" parent="." unique_id=1300000001 instance=ExtResource("23_profiling")]
+
+[node name="DreamHud" parent="." unique_id=1300000008 instance=ExtResource("24_dream_hud")]
+
+[node name="WordDiscoveryToast" parent="." unique_id=1300000015 instance=ExtResource("25_word_toast")]

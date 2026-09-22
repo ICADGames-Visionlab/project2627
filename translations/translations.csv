@@ -51,3 +51,55 @@ PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pend
 PROMPT_SLEEP,Press SPACE to sleep,Aperte ESPAÇO para dormir
 PROMPT_SLEEP_TOO_EARLY,It is not time to sleep yet,Ainda não é hora de dormir
 PROMPT_WAKE,Press SPACE to wake up,Aperte ESPAÇO para acordar
+GLOSSARY_CATEGORY_NAME,Name,Nome
+GLOSSARY_CATEGORY_WEAPON,Weapon,Arma
+GLOSSARY_CATEGORY_ACTION,Action,Ação
+GLOSSARY_CATEGORY_OBJECT,Object,Objeto
+GLOSSARY_TITLE,Glossary,Glossário
+GLOSSARY_SEARCH_PLACEHOLDER,Search for a word...,Procurar uma palavra...
+GLOSSARY_FILTER_TRASH,Trash,Lixo
+GLOSSARY_FILTER_STAR,Star,Estrela
+GLOSSARY_FILTER_ALPHABETICAL,A-Z,A-Z
+GLOSSARY_FILTER_CATEGORY,Category,Categoria
+GLOSSARY_FILTER_SEARCH,Search,Lupa
+PROFILING_INVESTIGATE,INVESTIGATE,INVESTIGAR
+PROFILING_NO_STORY,No story yet,Sem história ainda
+PROFILING_EXIT,Leave,Sair
+PROFILING_BACK,Back,Voltar
+PROFILING_HINT_HOLD,Hold the left button on an emotion to change it. Hover to investigate.,Segure o botão esquerdo sobre uma emoção para mudá-la. Passe o mouse para investigar.
+PROFILING_EMOTION_TODAY,feeling this today,sente isso hoje
+PROFILING_EMOTION_TOMORROW,will feel this tomorrow,vai sentir isso amanhã
+PROFILING_WORD_ADDED,Word added to %s's Glossary,Palavra adicionada ao Glossário de %s
+PROFILING_RESULT_ALL_CORRECT,Everything was filled in correctly,Tudo foi preenchido corretamente
+PROFILING_RESULT_FEW_WRONG,Two or fewer words are wrong,Duas ou menos palavras estão erradas
+PROFILING_RESULT_MANY_WRONG,Several words are incorrect,Várias palavras estão incorretas
+DREAM_WAKE_UP,Wake up,Acordar
+DREAM_WAKE_CONFIRM,Do you want to leave the dream world?,Deseja sair do mundo dos sonhos?
+DREAM_WAKE_YES,Yes,Sim
+DREAM_WAKE_NO,No,Não
+PROMPT_INVESTIGATE_SPIRIT,Press F to investigate the spirit,Aperte F para investigar o espírito
+PLACEHOLDER_PROFILING_SCREEN,Placeholder - Profiling screen drawn in code (final art pending),Placeholder - Tela de profiling desenhada em código (arte final pendente)
+PLACEHOLDER_NPC_PORTRAIT,Placeholder - NPC portrait,Placeholder - Portrait do NPC
+PLACEHOLDER_DIARY_ICON,Placeholder - Diary,Placeholder - Diário
+GLOSSARY_WORD_MARCOS,Marcos,Marcos
+GLOSSARY_WORD_CASTRO,Castro,Castro
+GLOSSARY_WORD_ROBERTA,Roberta,Roberta
+GLOSSARY_WORD_SMITH,Smith,Smith
+GLOSSARY_WORD_MARIA,Maria,Maria
+GLOSSARY_WORD_BAKER,Baker,Baker
+GLOSSARY_WORD_BRIAN,Brian,Brian
+GLOSSARY_WORD_WALKER,Walker,Walker
+GLOSSARY_WORD_VINHO,Wine,Vinho
+GLOSSARY_WORD_AGUA,Water,Água
+GLOSSARY_WORD_TONICO,Tonic,Tônico
+GLOSSARY_WORD_ESTATUA,Statue,Estátua
+GLOSSARY_WORD_VASO,Vase,Vaso
+GLOSSARY_WORD_BOLSA,Purse,Bolsa
+GLOSSARY_WORD_AQUARIO,Fish tank,Aquário
+GLOSSARY_WORD_FACA,Knife,Faca
+GLOSSARY_WORD_TESOURA,Scissors,Tesoura
+GLOSSARY_WORD_QUEIMOU,Burned,Queimou
+GLOSSARY_WORD_CORREU,Ran,Correu
+PROFILING_EXAMPLE_TEMPLATE,"{0} {1} wanted {2} {3} dead, so {4} {5} poisoned the {6} and hid the key inside a {7}\n\nAt the party, {8} {9} drank the poison and died","{0} {1} queria {2} {3} morta, e então {4} {5} envenenou o {6} e escondeu a chave necessária numa {7}\n\nNa festa, {8} {9} ingeriu o veneno e morreu"
+PROFILING_EXAMPLE_RESOLVED,"Marcos Castro wanted Roberta Smith dead, and he was not the one who did it: Maria Baker poisoned the wine and hid the key inside a statue, so that nobody could reach the cellar before the party. At the party, it was Brian Walker who drank from the wrong glass and died.","Marcos Castro queria Roberta Smith morta, e não foi ele quem agiu: Maria Baker envenenou o vinho e escondeu a chave necessária numa estátua, para que ninguém chegasse ao porão antes da festa. Na festa, foi Brian Walker quem bebeu do copo errado e morreu."
+PROFILING_EXAMPLE_JOURNAL,"The poisoned wine at the party was meant for Roberta Smith, and it killed Brian Walker.","O vinho envenenado da festa era para Roberta Smith, e matou Brian Walker."

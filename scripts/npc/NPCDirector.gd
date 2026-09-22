@@ -6,9 +6,11 @@
 ##
 ## POR QUE UM NÓ DE CENA E NÃO UM AUTOLOAD: porque não existe estado de NPC a preservar entre cenas.
 ## A posição de cada NPC é DERIVADA do relógio (ver NPCRoutineResolver), e a emoção vigente é
-## decidida na virada de dia. Um Autoload existiria só pra guardar o que já dá pra recalcular — e o
-## guideline pede discussão com o Lead de Programação antes de criar Autoload novo. Quando a emoção
-## passar a mudar dentro do dia, aí sim vale essa conversa (ver docs/sistema_de_npc.md).
+## decidida na virada de dia — a partir da escolha que o jogador fez no sonho, que é guardada e
+## salva pelo ProfilingJournal, não aqui. Um Autoload existiria só pra guardar o que já dá pra
+## recalcular — e o guideline pede discussão com o Lead de Programação antes de criar Autoload novo.
+## Quando a emoção passar a mudar dentro do dia, aí sim vale essa conversa (ver
+## docs/sistema_de_npc.md).
 ##
 ## O CICLO, INTEIRO:
 ##
@@ -134,10 +136,12 @@ func _ready() -> void:
 
 ## Espaço para funções personalizadas
 
-# Troca a emoção vigente de um NPC e recoloca ele na rotina correspondente.
+# Troca a emoção vigente de um NPC AGORA e recoloca ele na rotina correspondente.
 #
-# É a fronteira inteira entre este sistema e o sistema de emoção que ainda não existe: quando o
-# appraisal ficar pronto, é esta função que ele chama (na virada de dia), e nada aqui precisa mudar.
+# É a troca imediata, usada pelo menu de debug pra revisar as seis rotinas de um NPC em dois minutos.
+# O caminho do JOGO é outro: o jogador escolhe a emoção no sonho (profiling), e ela entra em vigor na
+# virada de dia, por _refresh_emotion_slots() — que é onde o sistema de emoção mora. Forçar aqui não
+# grava escolha nenhuma, então a próxima virada de dia devolve a emoção que o profiling manda.
 func set_emotion_slot(id: StringName, slot: int) -> void:
 	var definition: NPCDefinition = roster.find(id)
 	if definition == null:
@@ -169,14 +173,18 @@ func get_body(id: StringName) -> NPC:
 
 # Escolhe a emoção vigente de cada NPC para o dia.
 #
-# ESTE É O PONTO DE EXTENSÃO DO SISTEMA DE EMOÇÃO. A emoção vigente muda na virada de dia, e é aqui
-# que ela é decidida — hoje, simplesmente pela emoção inicial que o design marcou no .tres. Quando o
-# appraisal existir, ele entra nesta função e em nenhum outro lugar: todo o resto do sistema só
-# consulta o slot já decidido, e por isso não precisa saber nada sobre o que causa emoção.
+# ESTE É O PONTO DE EXTENSÃO DO SISTEMA DE EMOÇÃO, e quem o ocupa hoje é o profiling: a emoção de um
+# NPC é a que o JOGADOR escolheu no espírito dele, dentro do sonho, e que passou a valer no dia
+# seguinte. Sem escolha nenhuma, vale a emoção inicial que o design marcou no .tres — e é por isso
+# que a cidade funciona igual antes de o jogador sonhar pela primeira vez.
+#
+# A conta de "qual escolha já venceu" é do ProfilingJournal (ele é o dono desse estado e o que o
+# grava no save); ver ProfilingJournal.resolve_emotion_slot e docs/sistema_de_profiling.md. O resto
+# deste sistema continua só consultando o slot já decidido, sem saber nada sobre o que causa emoção.
 func _refresh_emotion_slots() -> void:
 	for definition: NPCDefinition in roster.npcs:
 		if definition != null:
-			_slots[definition.id] = definition.starting_slot
+			_slots[definition.id] = ProfilingJournal.resolve_emotion_slot(definition)
 
 
 # Resolve a rotina de todos os NPCs e ajusta a cena.
