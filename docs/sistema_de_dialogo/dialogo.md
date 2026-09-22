@@ -7,6 +7,7 @@ Quando o jogador clica num NPC, o jogo abre uma conversa. O roteiro dela é um a
 | Você quer | Leia |
 | --- | --- |
 | Escrever sua primeira conversa, passo a passo | [primeiro_dialogo.md](primeiro_dialogo.md) |
+| Pôr dois NPCs na mesma conversa | [referencia.md](referencia.md#elenco-quem-está-na-conversa) |
 | Consultar a sintaxe do `.dlg`, os tipos de falante, as flags ou uma mensagem de erro | [referencia.md](referencia.md) |
 | Entender como o sistema funciona por dentro, ou mexer no código | [como_funciona.md](como_funciona.md) |
 
@@ -36,12 +37,18 @@ DIALOGUE_ZE_BOM_DIA_PAO,Here you go.,Toma aqui.
 
 Cada `== nome ==` é um nó da conversa. Uma linha `id: CHAVE` é uma fala, e uma linha `- CHAVE => destino` é uma opção que leva a outro nó, ou a `END` para encerrar.
 
+Uma conversa pode ter **dois NPCs** junto com o jogador. Nesse caso o roteiro começa declarando o elenco, e os dois ficam parados, virados para o jogador, enquadrados pela câmera e com retrato na tela:
+
+```
+participants: ze ana
+```
+
 ## O caminho de uma conversa nova
 
 1. Cadastre os textos no `translations.csv`, nas colunas `en` e `pt_BR`.
 2. Crie `dialogue/<id>.dlg` e escreva o roteiro com as chaves do passo 1.
 3. Rode `dialogo.validar_conversas` no console do jogo (**F1**) e corrija o que aparecer.
-4. Aponte o NPC para a conversa (campo `conversation_id` do `NPCDefinition`) ou abra pelo console com `dialogo.iniciar_conversa <id>`.
+4. Aponte o NPC para a conversa (campo `conversation_id` do `NPCDefinition`) ou abra pelo console com `dialogo.iniciar_conversa <id>`. Numa conversa de dois NPCs, aponte os dois para o mesmo id.
 
 ## Onde os iniciantes tropeçam
 

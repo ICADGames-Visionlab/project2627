@@ -32,6 +32,26 @@ static func get_script_path(conversation_id: StringName) -> String:
 	return "%s/%s.dlg" % [SCRIPTS_DIR, conversation_id]
 
 
+# O elenco declarado no roteiro (linha "participants:"), sem montar a conversa. Usado pela
+# NPCInteraction, que precisa saber quem mais entra na roda antes de a tela abrir. Conversa
+# sintética ou roteiro inexistente não têm elenco declarado.
+static func read_participants(conversation_id: StringName) -> Array[StringName]:
+	var path: String = get_script_path(conversation_id)
+	if not FileAccess.file_exists(path):
+		return []
+	return DialogueScriptParser.parse_participants(FileAccess.get_file_as_string(path))
+
+
+# O elenco de NPCs de uma conversa: os que o roteiro declara, mais quem a puxou quando ele não está
+# na lista. Os dois caminhos que precisam do elenco (a abordagem, que lê o arquivo, e a tela, que já
+# tem o roteiro parseado) passam por aqui para não divergirem nessa regra.
+static func cast_for(declared: Array[StringName], initiator_id: StringName) -> Array[StringName]:
+	var ids: Array[StringName] = declared.duplicate()
+	if initiator_id != &"" and not ids.has(initiator_id):
+		ids.append(initiator_id)
+	return ids
+
+
 static func _create_script_runner(conversation_id: StringName) -> DialogueRunner:
 	var path: String = get_script_path(conversation_id)
 	if not FileAccess.file_exists(path):

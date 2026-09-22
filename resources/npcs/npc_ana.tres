@@ -16,6 +16,7 @@ id = &"ana"
 name_key = &"NPC_NAME_ANA"
 tint = Color(1, 0.7, 0.5, 1)
 walk_speed = 240.0
+conversation_id = &"ze_ana_feira"
 emotion_first = ExtResource("1_r7ulg")
 emotion_second = ExtResource("2_pixw1")
 starting_slot = 2

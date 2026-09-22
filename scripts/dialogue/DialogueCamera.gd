@@ -1,8 +1,8 @@
-# DialogueCamera.gd — PhantomCamera2D dedicada ao zoom de conversa: enquadra o Player e o NPC
-# falando (FollowMode.GROUP centraliza sozinho no meio-termo dos dois) e assume a câmera do jogo
-# enquanto ativa, com prioridade maior que a PlayerCamera (Player.tscn, priority 10). O
-# PhantomCameraHost (City.tscn) faz o tween sozinho a cada troca de prioridade — nada aqui anima a
-# câmera na mão.
+# DialogueCamera.gd — PhantomCamera2D dedicada ao zoom de conversa: enquadra o Player e o NPC (ou
+# os dois NPCs) que estão na conversa — FollowMode.GROUP centraliza sozinho no meio-termo deles — e
+# assume a câmera do jogo enquanto ativa, com prioridade maior que a PlayerCamera (Player.tscn,
+# priority 10). O PhantomCameraHost (City.tscn) faz o tween sozinho a cada troca de prioridade —
+# nada aqui anima a câmera na mão.
 #
 # Vive parada (RESTING_PRIORITY) o jogo inteiro até NPCInteraction chamar engage(); devolve
 # a câmera sozinha em conversation_ended, então nada precisa lembrar de "desengatar" depois de uma
@@ -28,10 +28,10 @@ func _ready() -> void:
 	EventBus.conversation_ended.connect(_on_conversation_ended)
 
 
-# Enquadra os dois personagens e assume a câmera. Quem chama espera tween_completed (sinal do
-# próprio PhantomCamera2D) para saber quando o zoom terminou.
-func engage(first: Node2D, second: Node2D, target_zoom: float, duration: float) -> void:
-	follow_targets = [first, second]
+# Enquadra todo mundo que está na conversa (o jogador e um ou dois NPCs) e assume a câmera. Quem
+# chama espera tween_completed (sinal do próprio PhantomCamera2D) para saber quando o zoom terminou.
+func engage(targets: Array[Node2D], target_zoom: float, duration: float) -> void:
+	follow_targets = targets
 	zoom = Vector2.ONE * target_zoom
 	tween_duration = duration
 	priority = ENGAGED_PRIORITY

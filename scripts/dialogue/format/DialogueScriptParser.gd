@@ -7,6 +7,8 @@
 # Formato (ver docs/sistema_de_dialogo/referencia.md para a sintaxe completa). O parser lê uma linha
 # por vez: cada fala, opção e "=>" cabe numa linha só.
 #
+#   participants: ze ana
+#
 #   == n1 ==
 #   ze: ZE_BOM_DIA_01
 #
@@ -24,12 +26,25 @@
 #
 # Duas ou mais falas seguidas no mesmo nó viram uma corrente de nós sintéticos (n1, n1__2, n1__3...)
 # encadeados por "Continuar" — assim quem escreve não precisa inventar um nó pra cada troca de fala.
+#
+# A linha "participants:", antes do primeiro nó, declara o ELENCO: os NPCs que estão na roda de
+# conversa junto com o jogador. É o que permite os dois serem segurados, virarem pro jogador,
+# entrarem no enquadramento da câmera e terem retrato na tela — nada disso dá pra deduzir das falas,
+# porque um NPC pode estar presente e calado num galho inteiro da conversa.
 class_name DialogueScriptParser
 extends RefCounted
+
+# Quantos NPCs uma conversa aceita. O jogador mais dois: é o que a coluna de retratos mostra e o
+# que o enquadramento da câmera consegue manter legível. Subir este número é revisar os dois.
+const MAX_PARTICIPANTS: int = 2
+
+# Palavra-chave do elenco, no começo da linha e só antes do primeiro nó.
+const PARTICIPANTS_KEYWORD: String = "participants:"
 
 const _HEADER_REGEX_PATTERN: String = "^==\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*==$"
 const _SPEAKER_REGEX_PATTERN: String = "^([a-zA-Z_][a-zA-Z0-9_]*(?::[a-zA-Z_][a-zA-Z0-9_]*)?):\\s+(.+)$"
 const _KEY_REGEX_PATTERN: String = "^[A-Z][A-Z0-9_]*$"
+const _NPC_ID_REGEX_PATTERN: String = "^[a-zA-Z_][a-zA-Z0-9_]*$"
 
 
 class ParseError:
@@ -62,6 +77,8 @@ static func parse(source: String, conversation_id: StringName) -> Result:
 	var nodes: Dictionary = {}          # StringName -> Dictionary (formato do MemoryRunner)
 	var node_order: Array[StringName] = []
 	var seen_node_ids: Dictionary = {}  # StringName -> true
+	var participants: Array[StringName] = []
+	var participants_declared: bool = false
 
 	var current_node_id: StringName = &""
 	var current_header_line: int = 0
@@ -85,6 +102,18 @@ static func parse(source: String, conversation_id: StringName) -> Result:
 			current_speaker_lines = []
 			current_choices = []
 			current_goto = {}
+			continue
+
+		if trimmed.begins_with(PARTICIPANTS_KEYWORD):
+			if current_node_id != &"":
+				result.errors.append(ParseError.new(line_no,
+					"\"participants:\" só vale antes do primeiro \"== nó ==\""))
+			elif participants_declared:
+				result.errors.append(ParseError.new(line_no,
+					"\"participants:\" repetido — declare o elenco inteiro numa linha só"))
+			else:
+				participants_declared = true
+				participants = _parse_participants(trimmed, line_no, result)
 			continue
 
 		if current_node_id == &"":
@@ -128,8 +157,51 @@ static func parse(source: String, conversation_id: StringName) -> Result:
 
 	_validate_targets(nodes, result)
 	if result.ok():
-		result.content = { "start": node_order[0], "nodes": nodes }
+		result.content = { "start": node_order[0], "nodes": nodes, "participants": participants }
 	return result
+
+
+# Só o elenco, sem montar a conversa inteira: quem clica num NPC precisa saber quem mais entra na
+# roda ANTES de a tela abrir, para segurar os dois e enquadrar a câmera neles (NPCInteraction).
+# Erros de sintaxe são ignorados aqui de propósito — quem reclama deles é o parse() completo, na
+# hora de abrir a conversa, e o "Validar conversas".
+static func parse_participants(source: String) -> Array[StringName]:
+	var discard := Result.new()
+	for line: String in source.split("\n"):
+		var trimmed: String = line.strip_edges()
+		if trimmed.begins_with("=="):
+			break
+		if trimmed.begins_with(PARTICIPANTS_KEYWORD):
+			return _parse_participants(trimmed, 0, discard)
+	return []
+
+
+# "participants: ze ana" (vírgula também separa) -> [&"ze", &"ana"]. Só valida a FORMA do id; se o
+# NPC existe no roster é o "Validar conversas" que confere, porque o parser não abre recurso nenhum.
+static func _parse_participants(trimmed: String, line_no: int, result: Result) -> Array[StringName]:
+	var participants: Array[StringName] = []
+	var body: String = trimmed.substr(PARTICIPANTS_KEYWORD.length()).replace(",", " ").strip_edges()
+	var id_regex := RegEx.new()
+	id_regex.compile(_NPC_ID_REGEX_PATTERN)
+
+	for raw_id: String in body.split(" ", false):
+		if id_regex.search(raw_id) == null:
+			result.errors.append(ParseError.new(line_no,
+				"\"%s\" não parece um id de NPC (esperado o id do NPCDefinition, ex.: ze)" % raw_id))
+			continue
+		var id := StringName(raw_id)
+		if participants.has(id):
+			result.errors.append(ParseError.new(line_no, "NPC \"%s\" repetido em \"participants:\"" % id))
+			continue
+		participants.append(id)
+
+	if participants.is_empty():
+		result.errors.append(ParseError.new(line_no,
+			"\"participants:\" sem nenhum id de NPC — escreva \"participants: ze ana\" ou apague a linha"))
+	elif participants.size() > MAX_PARTICIPANTS:
+		result.errors.append(ParseError.new(line_no, "%d NPCs na conversa, no máximo %d" % [
+			participants.size(), MAX_PARTICIPANTS]))
+	return participants
 
 
 static func _flush_node(node_id: StringName, header_line: int, speaker_lines: Array, choices: Array,

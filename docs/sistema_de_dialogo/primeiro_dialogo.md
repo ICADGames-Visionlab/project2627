@@ -162,6 +162,38 @@ A conversa abre igual à do passo 4. Se isso foi só treino, apague o `conversat
 
 ---
 
+## 9. Ponha um segundo NPC na conversa
+
+Uma conversa pode ter dois NPCs junto com o jogador. Declare o elenco na primeira linha do roteiro, antes de qualquer nó:
+
+```
+participants: ze ana
+
+# Zé, logo cedo, na padaria.
+== inicio ==
+ze: DIALOGUE_ZE_BOM_DIA_01
+ana: DIALOGUE_ZE_BOM_DIA_02
+...
+```
+
+(Para a Ana falar de verdade você precisa de chaves próprias no CSV; reaproveitar as do Zé serve só para ver o mecanismo funcionando.)
+
+Aponte também o `conversation_id` da Ana (`resources/npcs/npc_ana.tres`) para `ze_bom_dia`, para o jogador poder puxar a conversa por qualquer um dos dois.
+
+Rode o jogo e clique num deles. Agora:
+
+- os dois param onde estão e viram para o jogador, mesmo que a rotina fosse levar um deles embora;
+- a câmera enquadra os três;
+- a tela mostra dois retratos, na ordem do `participants:`, e o de quem está falando é o aceso.
+
+Rode `dialogo.validar_conversas` depois de mexer no elenco: ele avisa se um id não existe no roster, ou se um NPC fala na conversa sem estar declarado.
+
+Os dois precisam estar na mesma cena e perto um do outro no horário em que o jogador clica — quem decide isso são as rotinas deles (ver [sistema_de_npc.md](../sistema_de_npc.md)). O Zé e a Ana ficam os dois na feira das 19:00 às 21:00. Se um estiver longe demais, a conversa abre igual e ele fala normalmente, só fica fora do enquadramento.
+
+Uma conversa pronta com os dois já vem no projeto: `dialogue/ze_ana_feira.dlg`.
+
+---
+
 ## Onde ir agora
 
 - [referencia.md](referencia.md) tem a sintaxe completa do `.dlg`, os tipos de falante, `grant`, `[auto]` e a tabela de mensagens de erro.

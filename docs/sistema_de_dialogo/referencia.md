@@ -12,6 +12,7 @@ Consulta rápida. Para aprender do zero, comece pelo [tutorial](primeiro_dialogo
 | Texto de cada fala e opção | `translations/translations.csv` |
 | Falantes que não são NPC (ex.: narrador) | `resources/dialogue/speakers/<id>.tres` |
 | Qual NPC abre qual conversa | campo `conversation_id` do `NPCDefinition` |
+| Quem está na conversa (um ou dois NPCs) | linha `participants:` do `.dlg` |
 | Retrato do NPC na conversa | campo `portrait` do `NPCDefinition` |
 | Cores, tempos e limites da tela | `resources/dialogue/dialogue_style.tres` |
 
@@ -23,6 +24,8 @@ O nome do arquivo sem `.dlg` é o id da conversa. `dialogue/ze_bom_dia.dlg` é a
 
 ```
 # Comentário: a linha inteira é ignorada.
+participants: ze ana
+
 == inicio ==
 ze: DIALOGUE_ZE_BOM_DIA_01
 ze: DIALOGUE_ZE_BOM_DIA_02
@@ -35,6 +38,28 @@ ze: DIALOGUE_ZE_BOM_DIA_PAO
 ```
 
 O parser lê uma linha por vez, ignora linhas em branco e recuo, e não junta linhas. Cada fala, cada opção e cada `=>` cabe numa linha só.
+
+### Elenco: quem está na conversa
+
+```
+participants: ze ana
+```
+
+Uma conversa é sempre com o jogador, e com **um ou dois NPCs**. A linha `participants:` declara quais, pelo `id` do `NPCDefinition`, separados por espaço ou vírgula. Ela vem antes do primeiro `== nó ==` e aparece uma vez só no arquivo.
+
+Com dois NPCs declarados, ao abrir a conversa:
+
+- os dois ficam parados e viram para o jogador, mesmo que a rotina fosse levar um deles embora;
+- a câmera enquadra o jogador e os dois;
+- a tela mostra **dois retratos**, um por NPC, na ordem escrita aqui (ver [Retratos](#retratos-dos-npcs)).
+
+Numa conversa de um NPC só, a linha não é necessária: quem participa é o NPC em que o jogador clicou. Escrevê-la mesmo assim (`participants: ze`) não muda nada.
+
+O elenco não é deduzido das falas de propósito: um NPC pode estar na roda e calado num galho inteiro da conversa, e mesmo assim precisa estar parado, virado e enquadrado. O contrário — um NPC que fala sem estar declarado — é que atrapalha, e **Validar conversas** avisa quando acontece.
+
+Qualquer um dos dois pode puxar a conversa: basta os dois `NPCDefinition` apontarem o mesmo `conversation_id`. Quem o jogador clicou é quem ele aborda; o resto é igual.
+
+Se um dos dois estiver em outra cena, ou longe demais (`DialogueStyle.camera_group_max_distance`), a conversa abre do mesmo jeito e ele continua falando — só não é enquadrado. O Output registra os dois casos.
 
 ### Nós
 
@@ -133,17 +158,19 @@ Para testar, o console (**F1**) tem `insights.conceder_flag <flag>`. Para zerar,
 
 ---
 
-## Retrato do NPC
+## Retratos dos NPCs
 
-Enquanto um NPC conversa, a tela mostra o retrato dele numa moldura à esquerda da coluna de diálogo, alinhada ao topo dela. A imagem vem do campo `portrait` do `NPCDefinition` (grupo Diálogo).
+Enquanto a conversa está aberta, a tela mostra um retrato por NPC do elenco, numa coluna à esquerda da coluna de diálogo, alinhada ao topo dela. A imagem vem do campo `portrait` do `NPCDefinition` (grupo Diálogo).
 
 - A imagem deve ter proporção 3:4. O slot é de 180×240 px (`DialogueStyle.portrait_slot_size`), e uma imagem em outra proporção é cortada embaixo.
 - Sem imagem, a tela desenha uma silhueta na `dialogue_color` do NPC. O boot registra no log, uma vez por NPC, que está usando essa silhueta de placeholder.
-- O retrato é do NPC que abriu a conversa, ou seja, aquele em que o jogador clicou. Se outro NPC falar numa fala, o retrato troca para ele. Falas do jogador, da narração e de cabeças de insight não mudam o retrato.
-- Numa conversa aberta pelo console (`dialogo.iniciar_conversa`) não há NPC de origem, então o retrato aparece quando o primeiro NPC falar.
-- Em tela estreita ou baixa o retrato encolhe, mantendo a proporção, até 60% do slot. Abaixo disso ele some.
+- A ordem é a do `participants:`. Sem essa linha, há um retrato só: o do NPC em que o jogador clicou.
+- Com dois retratos, o de quem está falando fica cheio e o outro apaga para `DialogueStyle.portrait_inactive_alpha`. Falas do jogador, da narração e de cabeças de insight não mudam quem está aceso.
+- Um NPC que fala sem estar no elenco entra na coluna se ainda houver espaço; se não houver, ele assume o retrato de quem não está falando. Isso é rede de segurança para roteiro com `participants:` incompleto, não um jeito de escrever: **Validar conversas** avisa.
+- Numa conversa aberta pelo console (`dialogo.iniciar_conversa`) não há NPC de origem, mas o `participants:` do roteiro continua valendo, então os retratos aparecem do mesmo jeito.
+- Em tela estreita ou baixa os retratos encolhem juntos, mantendo a proporção, até 60% do slot. Abaixo disso eles somem.
 
-Espaço, cores e moldura são os campos `portrait_*` do `DialogueStyle`.
+Espaço, cores, moldura e o vão entre os dois são os campos `portrait_*` do `DialogueStyle`.
 
 ---
 
@@ -189,6 +216,12 @@ Aparecem no Output ao abrir a conversa e no relatório de **Validar conversas**,
 | `nó "x" avança para "y", que não existe` | O `=>` aponta para um nó que não existe. | Corrija o nome ou crie o nó `y`. |
 | `atributo precisa de um valor (ex.: tag:ALGO)` | `tag` ou `reason` sem valor. | Escreva `tag:CHAVE` ou `reason:CHAVE`. |
 | `nenhum nó ("== id ==") encontrado no roteiro` | O arquivo está vazio ou só tem comentários. | Escreva ao menos um nó. |
+| `"participants:" só vale antes do primeiro "== nó =="` | A linha do elenco ficou dentro de um nó. | Mova-a para o topo do arquivo. |
+| `"participants:" repetido` | Duas linhas de elenco no mesmo arquivo. | Declare o elenco inteiro numa linha só. |
+| `"participants:" sem nenhum id de NPC` | A linha está vazia. | Escreva `participants: ze ana`, ou apague a linha. |
+| `"x" não parece um id de NPC` | O id tem espaço, acento ou símbolo. | Use o `id` do `NPCDefinition` (ex.: `ze`). |
+| `NPC "x" repetido em "participants:"` | O mesmo id duas vezes. | Escreva cada NPC uma vez. |
+| `N NPCs na conversa, no máximo 2` | Mais de dois NPCs declarados. | Uma conversa é com o jogador e até dois NPCs. |
 
 ### Problemas de conteúdo (Validar conversas)
 
@@ -198,6 +231,8 @@ Aparecem no Output ao abrir a conversa e no relatório de **Validar conversas**,
 | `falante "x" desconhecido` (aviso) | Nenhum NPC, cabeça ou `DialogueSpeaker` tem esse id. | Corrija o id ou crie o `DialogueSpeaker`. |
 | `N opções, mais de 9 possíveis` (erro) | O nó tem opções demais para os atalhos `1` a `9`. | Divida em dois nós. |
 | `fala "X" com N caracteres (máximo 300)` (aviso) | A fala é longa demais. | Divida em duas falas seguidas. |
+| `participante "x" não é um NPC do roster` (aviso) | O id do `participants:` não existe no `npc_roster.tres`. | Corrija o id ou ponha o NPC no roster. |
+| `NPC "x" fala nesta conversa mas não está em "participants:"` (aviso) | Dois NPCs falam e o elenco não cobre os dois. | Acrescente o id ao `participants:`. |
 
 ### Sintomas no jogo
 
@@ -207,4 +242,7 @@ Aparecem no Output ao abrir a conversa e no relatório de **Validar conversas**,
 | Nada abre, e o Output diz `Roteiro "x" não encontrado` | O nome do arquivo não bate com o `conversation_id`. |
 | Nada abre, e o Output lista `linha N:` | Erro de sintaxe. Corrija as linhas indicadas. |
 | Clicar no NPC não faz nada | O `conversation_id` do NPC está vazio. O clique só funciona com uma conversa definida. |
+| Só um retrato aparece numa conversa de dois | Falta o `participants:` no roteiro, ou o segundo id está errado. Rode **Validar conversas**. |
+| O segundo NPC fala mas continua andando | Mesma causa: sem `participants:`, ele não é segurado nem virado para o jogador. |
+| A câmera não enquadra o segundo NPC | Ele está em outra cena naquele horário, ou mais longe que `camera_group_max_distance`. O Output diz qual dos dois. |
 | Uma opção some | O `if:` falhou e ela não tem `show_disabled`. Com **Ignorar condições** ligado ela aparece. |

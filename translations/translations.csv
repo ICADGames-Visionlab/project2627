@@ -67,3 +67,13 @@ SETTINGS_DIALOGUE_ANIMATION,Dialogue animation,Animação do diálogo
 SETTINGS_DIALOGUE_ANIMATION_NORMAL,Normal,Normal
 SETTINGS_DIALOGUE_ANIMATION_FAST,Fast,Rápida
 SETTINGS_DIALOGUE_ANIMATION_INSTANT,Instant,Instantânea
+DIALOGUE_ZE_ANA_FEIRA_01,"Ana, I keep telling you: good flour is never the cheapest.","Ana, eu te falo sempre: farinha boa nunca é a mais barata."
+DIALOGUE_ZE_ANA_FEIRA_02,And I keep telling you nobody here pays for the good one.,E eu te falo sempre que aqui ninguém paga pela boa.
+DIALOGUE_ZE_ANA_FEIRA_OPT_PRECO,How much is the good flour?,Quanto custa a farinha boa?
+DIALOGUE_ZE_ANA_FEIRA_OPT_CHUVA,What about last week’s rain?,E a chuva da semana passada?
+DIALOGUE_ZE_ANA_FEIRA_OPT_SAIR,I’ll leave you two to it.,Deixo vocês dois aí.
+DIALOGUE_ZE_ANA_FEIRA_PRECO_01,Twice as much. And it is gone before noon.,O dobro. E some antes do meio-dia.
+DIALOGUE_ZE_ANA_FEIRA_PRECO_02,Which is why I get here early.,Que é por isso que eu chego cedo.
+DIALOGUE_ZE_ANA_FEIRA_CHUVA_01,It soaked the whole wheat crop.,Encharcou o trigo inteiro.
+DIALOGUE_ZE_ANA_FEIRA_CHUVA_02,It soaked yours. Mine was under a tarp.,Encharcou o teu. O meu estava debaixo da lona.
+DIALOGUE_ZE_ANA_FEIRA_FIM,Come back tomorrow. We will still be at it.,Volta amanhã. A gente ainda vai estar nessa.

@@ -4,6 +4,7 @@
 #
 #   {
 #       "start": &"n1",
+#       "participants": [&"ze", &"ana"],   # opcional: o elenco de NPCs da conversa
 #       "nodes": {
 #           &"n1": {
 #               "line": [line_id, speaker_id, text_key, tags (opcional)],
@@ -28,6 +29,10 @@ var _pending_advance_target: StringName = &""
 
 func _init(content: Dictionary) -> void:
 	_content = content
+	# Array[StringName] explícito: o Dictionary do conteúdo devolve Variant, e atribuir direto num
+	# campo tipado do DialogueRunner falharia em tempo de execução.
+	for id: StringName in content.get("participants", []):
+		participant_ids.append(id)
 
 
 func _start(start_node_id: StringName) -> void:

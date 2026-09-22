@@ -77,10 +77,12 @@ signal dialogue_requested(head_id: StringName, text_key: String)
 # ------------------------------------------------------------------------------------
 
 # Clicou num NPC: antes de conversation_requested, trava o jogador e os orbes de insight cedo,
-# enquanto o Player anda até perto do NPC e a DialogueCamera aproxima dos dois. Não passa pelo
+# enquanto o Player anda até perto do NPC e a DialogueCamera aproxima de todo mundo. Não passa pelo
 # fluxo de debug (Iniciar conversa/Pular para nó emitem conversation_requested direto).
+# npc_id é o NPC clicado. Quem mais está na conversa (uma conversa pode ter dois NPCs junto com o
+# jogador) sai do roteiro, pelo DialogueCatalog — o evento carrega o fato, não o elenco derivado.
 # Emissor: NPCInteraction. Ouvintes: Player, InsightInteractor (travam entrada), NPCDirector
-# (segura o NPC parado, sem virar pra o jogador ainda — isso só acontece em conversation_started).
+# (segura os NPCs parados, sem virar pro jogador ainda — isso só acontece em conversation_started).
 signal conversation_approach_started(conversation_id: StringName, npc_id: StringName)
 
 # Pede o início de uma conversa. Pedido: espera exatamente 1 ouvinte.
@@ -91,7 +93,7 @@ signal conversation_requested(conversation_id: StringName, initiator_id: StringN
 
 # Emitido quando uma conversa abre.
 # Emissor: DialogueScreen. Ouvintes: Player (trava movimento, redundante se já veio de
-# conversation_approach_started), NPCDirector (segura o NPC e vira ele pro jogador),
+# conversation_approach_started), NPCDirector (segura os NPCs da conversa e vira eles pro jogador),
 # InsightInteractor (desliga orbes, idem Player).
 signal conversation_started(conversation_id: StringName, initiator_id: StringName)
 

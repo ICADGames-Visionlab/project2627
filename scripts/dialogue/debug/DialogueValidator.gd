@@ -5,7 +5,8 @@
 # Confere as chaves fixas do sistema, as conversas sintéticas de debug (DialoguePrototypeData) e
 # todo roteiro real (DialogueCatalog.list_script_ids()), com os mesmos critérios de conteúdo pros
 # três: falante desconhecido, chave sem tradução, mais de 9 opções e fala acima de max_line_chars.
-# Também confere o padrão de nome dos personagens: todo NPC do roster com alcunha no CSV.
+# Também confere o elenco da conversa (linha "participants:") e o padrão de nome dos personagens:
+# todo NPC do roster com alcunha no CSV.
 class_name DialogueValidator
 extends RefCounted
 
@@ -130,6 +131,7 @@ static func _validate_npc_epithets(rows: Dictionary) -> Array[Issue]:
 static func _validate_content(conversation_id: StringName, content: Dictionary, rows: Dictionary,
 		style: DialogueStyle, resolver: DialogueSpeakerResolver) -> Array[Issue]:
 	var issues: Array[Issue] = []
+	var npc_speakers: Array[StringName] = []
 	var nodes: Dictionary = content.get("nodes", {})
 	for node_id: Variant in nodes.keys():
 		var node: Dictionary = nodes[node_id]
@@ -139,9 +141,12 @@ static func _validate_content(conversation_id: StringName, content: Dictionary, 
 			var text_key: String = raw[2]
 			_check_key(issues, rows, conversation_id, node_id, text_key)
 			_check_length(issues, rows, style, conversation_id, node_id, text_key)
-			if resolver.resolve(speaker_id).kind == DialogueSpeakerResolver.Kind.UNKNOWN:
+			var resolved: DialogueSpeakerResolver.Resolved = resolver.resolve(speaker_id)
+			if resolved.kind == DialogueSpeakerResolver.Kind.UNKNOWN:
 				issues.append(Issue.new(Severity.WARNING, conversation_id, str(node_id),
 					"falante \"%s\" desconhecido" % speaker_id))
+			elif resolved.npc != null and not npc_speakers.has(resolved.npc.id):
+				npc_speakers.append(resolved.npc.id)
 		var choices: Array = node.get("choices", [])
 		for choice: Dictionary in choices:
 			for field: String in ["text", "tag", "reason"]:
@@ -149,6 +154,43 @@ static func _validate_content(conversation_id: StringName, content: Dictionary, 
 		if choices.size() > DialogueChoiceLayout.MAX_SHORTCUTS:
 			issues.append(Issue.new(Severity.ERROR, conversation_id, str(node_id),
 				"%d opções, mais de %d possíveis" % [choices.size(), DialogueChoiceLayout.MAX_SHORTCUTS]))
+	issues.append_array(_validate_cast(conversation_id, content, npc_speakers))
+	return issues
+
+
+# O elenco da conversa (linha "participants:" do .dlg): confere que cada id é NPC do roster e que
+# todo NPC que fala está declarado.
+#
+# O elenco não é dedutível das falas — um NPC pode estar presente e calado num galho inteiro —, mas
+# o contrário atrapalha de verdade: um NPC que fala sem estar no elenco não é segurado, não vira pro
+# jogador e não entra no enquadramento da câmera. Por isso só se cobra a declaração quando ela muda
+# alguma coisa: conversa de um NPC só, sem "participants:", é o caso normal e não gera aviso. O NPC
+# que aponta esta conversa no conversation_id dele conta como declarado, porque é ele quem a puxa.
+static func _validate_cast(conversation_id: StringName, content: Dictionary,
+		npc_speakers: Array[StringName]) -> Array[Issue]:
+	var issues: Array[Issue] = []
+	var roster: NPCRoster = load(DialogueCatalog.NPC_ROSTER_PATH)
+	if roster == null:
+		return issues
+
+	var declared: Array[StringName] = []
+	for id: StringName in content.get("participants", []):
+		declared.append(id)
+		if roster.find(id) == null:
+			issues.append(Issue.new(Severity.WARNING, conversation_id, "participants",
+				"participante \"%s\" não é um NPC do roster" % id))
+
+	if declared.is_empty() and npc_speakers.size() <= 1:
+		return issues
+
+	for definition: NPCDefinition in roster.npcs:
+		if definition != null and definition.conversation_id == conversation_id and not declared.has(definition.id):
+			declared.append(definition.id)
+
+	for id: StringName in npc_speakers:
+		if not declared.has(id):
+			issues.append(Issue.new(Severity.WARNING, conversation_id, "participants",
+				"NPC \"%s\" fala nesta conversa mas não está em \"participants:\"" % id))
 	return issues
 
 

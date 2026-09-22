@@ -49,10 +49,10 @@ func _input_event(viewport: Viewport, event: InputEvent, _shape_idx: int) -> voi
 	_start_conversation(definition)
 
 
-# Trava o jogador (via conversation_approach_started), anda até perto do NPC, aproxima a câmera dos
-# dois e só então pede a conversa. Sem Player ou DialogueCamera na cena (cena de teste, por
-# exemplo), pula a etapa que faltar e pede a conversa direto — degradação graciosa, mesmo espírito
-# do "sem Pathfinder" no Player/NPC.
+# Trava o jogador (via conversation_approach_started), anda até perto do NPC, aproxima a câmera de
+# todo mundo que está na conversa e só então pede a conversa. Sem Player ou DialogueCamera na cena
+# (cena de teste, por exemplo), pula a etapa que faltar e pede a conversa direto — degradação
+# graciosa, mesmo espírito do "sem Pathfinder" no Player/NPC.
 func _start_conversation(definition: NPCDefinition) -> void:
 	_approach_in_progress = true
 	EventBus.conversation_approach_started.emit(definition.conversation_id, definition.id)
@@ -61,7 +61,8 @@ func _start_conversation(definition: NPCDefinition) -> void:
 	if player != null:
 		player.start_conversation_approach(_approach_point(player.global_position))
 		await player.conversation_approach_arrived
-		await _zoom_in(player)
+		await _zoom_in(player, DialogueCatalog.cast_for(
+			DialogueCatalog.read_participants(definition.conversation_id), definition.id))
 
 	_approach_in_progress = false
 	EventBus.conversation_requested.emit(definition.conversation_id, definition.id)
@@ -76,11 +77,40 @@ func _approach_point(from: Vector2) -> Vector2:
 	return _npc.global_position + offset.normalized() * style.approach_distance
 
 
-# Aproxima a DialogueCamera do Player e do NPC, e espera o tween dela terminar. Sem DialogueCamera
-# na cena, não há o que esperar.
-func _zoom_in(player: Player) -> void:
+# Aproxima a DialogueCamera do Player e dos NPCs da conversa, e espera o tween dela terminar. Sem
+# DialogueCamera na cena, não há o que esperar.
+func _zoom_in(player: Player, participants: Array[StringName]) -> void:
 	var camera: DialogueCamera = get_tree().get_first_node_in_group(&"dialogue_camera") as DialogueCamera
 	if camera == null:
 		return
-	camera.engage(player, _npc, style.camera_zoom, style.camera_zoom_duration)
+	var targets: Array[Node2D] = [player as Node2D]
+	targets.append_array(_participant_bodies(participants))
+	camera.engage(targets, style.camera_zoom, style.camera_zoom_duration)
 	await camera.tween_completed
+
+
+# Os corpos dos NPCs do elenco que entram no enquadramento: quem está nesta cena agora e perto o
+# bastante do NPC clicado. O limite existe porque um participante do outro lado da cidade (rotina
+# que separou os dois) puxaria o enquadramento pra longe e tiraria a conversa da tela; ele continua
+# falando normalmente, só não é enquadrado.
+func _participant_bodies(participants: Array[StringName]) -> Array[Node2D]:
+	var bodies: Array[Node2D] = []
+	var director: NPCDirector = get_tree().get_first_node_in_group(NPCDirector.GROUP) as NPCDirector
+	if director == null:
+		return [_npc as Node2D]
+
+	for id: StringName in participants:
+		var body: NPC = director.get_body(id)
+		if body == null:
+			print("[Dialogue] - NPC \"%s\" não está nesta cena; a conversa segue sem ele no enquadramento" % id)
+			continue
+		if body != _npc and body.global_position.distance_to(_npc.global_position) > style.camera_group_max_distance:
+			print("[Dialogue] - NPC \"%s\" está longe demais; fora do enquadramento da conversa" % id)
+			continue
+		bodies.append(body)
+
+	# Cena montada à mão (teste), em que o director não conhece nenhum destes corpos: enquadrar o
+	# NPC clicado ainda é melhor que enquadrar só o jogador.
+	if bodies.is_empty():
+		bodies.append(_npc)
+	return bodies

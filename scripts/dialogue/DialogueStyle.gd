@@ -31,6 +31,12 @@ extends Resource
 @export var portrait_margin_left: float = 24.0
 @export var portrait_offset_top: float = 0.0
 @export_range(0.1, 1.0) var portrait_min_scale: float = 0.6
+# Espaço vertical entre os retratos quando a conversa tem dois NPCs: a coluna empilha de cima pra
+# baixo, na ordem em que o roteiro declara o elenco ("participants:").
+@export var portrait_stack_gap: float = 16.0
+# Opacidade do retrato de quem não está falando agora, numa conversa com dois NPCs. Com um NPC só
+# não há o que apagar, e o retrato fica sempre cheio.
+@export_range(0.0, 1.0) var portrait_inactive_alpha: float = 0.45
 @export var portrait_bg_color: Color = Color("#141414", 0.9)
 @export var portrait_frame_color: Color = Color("#8A8A8A")
 @export var portrait_frame_width: float = 3.0
@@ -113,6 +119,10 @@ extends Resource
 @export var camera_zoom: float = 1.6
 # Duração do tween de zoom, nos dois sentidos (PhantomCamera2D.tween_duration).
 @export var camera_zoom_duration: float = 0.5
+# Distância máxima, em pixels de tela, entre o NPC clicado e outro NPC da mesma conversa para ele
+# entrar no enquadramento. Mais longe que isso (a rotina separou os dois), a câmera teria que abrir
+# tanto que ninguém ficaria legível — ele continua falando, só não é enquadrado.
+@export var camera_group_max_distance: float = 500.0
 
 @export_group("Sons")
 @export var sfx_hover: AudioStream

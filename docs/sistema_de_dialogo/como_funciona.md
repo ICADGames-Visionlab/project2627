@@ -22,18 +22,20 @@ O sistema não usa o addon Godot Dialogue Manager, e não vai usar. O formato é
 clique no NPC
   -> NPCInteraction (Area2D filha do NPC)
   -> EventBus.conversation_approach_started(conversation_id, npc_id)
-       trava o Player e os orbes de insight; NPCDirector segura o NPC no lugar
+       trava o Player e os orbes de insight; NPCDirector segura no lugar TODOS os
+       NPCs do elenco da conversa (DialogueCatalog.read_participants)
   -> Player.start_conversation_approach() anda até perto do NPC (Pathfinder)
        await player.conversation_approach_arrived
-  -> DialogueCamera.engage() aproxima a câmera do Player e do NPC
+  -> DialogueCamera.engage() aproxima a câmera do Player e dos NPCs do elenco
        await camera.tween_completed
   -> EventBus.conversation_requested(conversation_id, npc_id)
   -> DialogueScreen.open()
   -> DialogueCatalog.create_runner(conversation_id)
+  -> a tela monta um retrato por NPC do elenco (o runner traz a lista do roteiro)
   -> o runner emite um DialogueStep por vez
   -> a tela mostra falas e opções; o jogador escolhe
   -> EventBus.conversation_ended
-       DialogueCamera devolve a câmera pra PlayerCamera; Player e NPC destravam
+       DialogueCamera devolve a câmera pra PlayerCamera; Player e NPCs destravam
 ```
 
 `NPCInteraction._start_conversation()` é quem conduz a abordagem inteira, com `await` em cada etapa — sem Player ou `DialogueCamera` na cena (cena de teste, por exemplo), ela pula a etapa que faltar e pede a conversa direto, sem travar nada.
@@ -43,8 +45,8 @@ Cada peça tem um trabalho só:
 | Peça | O que faz |
 | --- | --- |
 | `NPCInteraction` | Recebe o clique no NPC (só picking, sem colisão física) e conduz a abordagem: aproximação, zoom e só então o pedido de conversa pelo `EventBus`. Só age se o `conversation_id` do NPC não estiver vazio. |
-| `DialogueCamera` | `PhantomCamera2D` parada (priority 0) até `engage()` subir a prioridade acima da `PlayerCamera` (10, em `Player.tscn`) e enquadrar os dois personagens (`FollowMode.GROUP`); o `PhantomCameraHost` (`City.tscn`) faz o tween sozinho a cada troca de prioridade. Devolve a câmera em `conversation_ended`. |
-| `DialogueCatalog` | Descobre o runner certo para o id: conversa sintética de debug (`__stress_*`) ou `res://dialogue/<id>.dlg`. |
+| `DialogueCamera` | `PhantomCamera2D` parada (priority 0) até `engage()` subir a prioridade acima da `PlayerCamera` (10, em `Player.tscn`) e enquadrar todo mundo que está na conversa (`FollowMode.GROUP`); o `PhantomCameraHost` (`City.tscn`) faz o tween sozinho a cada troca de prioridade. Devolve a câmera em `conversation_ended`. |
+| `DialogueCatalog` | Descobre o runner certo para o id: conversa sintética de debug (`__stress_*`) ou `res://dialogue/<id>.dlg`. Também responde quem é o elenco de uma conversa, sem montá-la (`read_participants`/`cast_for`). |
 | `DialogueScriptParser` | Lê o texto do `.dlg` e devolve um `Dictionary` no formato que o `MemoryRunner` consome, ou a lista de erros com o número da linha. É estático: não toca em cena nem em save. |
 | `MemoryRunner` | Anda pelo `Dictionary` nó a nó e emite um `DialogueStep` (falas, opções, modo de avanço). Concede flags quando uma opção com `grant:` é escolhida. |
 | `SingleLineRunner` | Conversa de uma fala só, para os insights de personagem (`EventBus.dialogue_requested`). |
@@ -59,6 +61,7 @@ O `Dictionary` que o parser produz é o mesmo formato das conversas sintéticas 
 ```gdscript
 {
     "start": &"inicio",
+    "participants": [&"ze", &"ana"],
     "nodes": {
         &"inicio": { "line": [line_id, speaker_id, text_key], "choices": [ {...}, {...} ] },
         &"pao":    { "line": [...], "next": &"END" },
@@ -67,6 +70,8 @@ O `Dictionary` que o parser produz é o mesmo formato das conversas sintéticas 
 ```
 
 Cada opção é um `Dictionary` com `id`, `text`, `next` e, se houver, `tag`, `if_flag`, `show_disabled`, `reason` e `grant`. O `id` da opção é `<conversa>:<CHAVE>`. O prefixo da conversa evita que duas conversas com a mesma chave de texto (um "Sim." genérico) marquem a escolha uma da outra como já feita.
+
+`participants` é o elenco declarado na linha `participants:` do roteiro, e é a única parte do conteúdo que não descreve um nó. O `MemoryRunner` só o repassa (`DialogueRunner.participant_ids`); quem o usa é a tela, para montar os retratos.
 
 ---
 
@@ -85,9 +90,9 @@ O Passeio automático usa um modo sandbox do `DialogueGameState`: as flags vão 
 
 ## Integração com NPCs
 
-Um NPC conversa quando `NPCDefinition.conversation_id` não está vazio. O `Player` e o `InsightInteractor` já travam em `conversation_approach_started` (clique no NPC, antes de a tela abrir — ver [Do clique à tela](#do-clique-à-tela)); o `NPCDirector` segura o NPC parado nesse mesmo momento, mas só o vira para o jogador em `conversation_started`, quando o jogador de fato chegou perto. Enquanto a conversa está aberta:
+Um NPC conversa quando `NPCDefinition.conversation_id` não está vazio. O `Player` e o `InsightInteractor` já travam em `conversation_approach_started` (clique no NPC, antes de a tela abrir — ver [Do clique à tela](#do-clique-à-tela)); o `NPCDirector` segura os NPCs parados nesse mesmo momento, mas só os vira para o jogador em `conversation_started`, quando o jogador de fato chegou perto. Enquanto a conversa está aberta:
 
-- O `NPCDirector` mantém o NPC segurado e virado para o jogador.
+- O `NPCDirector` mantém os NPCs da conversa segurados e virados para o jogador.
 - O `Player` mantém o movimento travado.
 - O `InsightInteractor` mantém os orbes desligados.
 - O `GameClock` fica congelado, para o tempo do jogo não correr durante a conversa.
@@ -96,7 +101,29 @@ Tudo destrava quando `conversation_ended` chega. A `DialogueScreen` emite `conve
 
 O `NPCDefinition` também avisa no Inspector (`collect_issues()`) quando `dialogue_color` não passa no contraste mínimo contra o fundo da coluna de diálogo.
 
-O retrato segue o NPC da conversa. Ao abrir, a `DialogueScreen` pede ao resolvedor o NPC do `initiator_id` e mostra o retrato dele. A cada fala, se o falante resolve para um NPC, o retrato passa a ser o dele. A posição vem de `DialoguePortraitLayout`, que só faz conta (slot, espaço à esquerda da coluna, encolhimento em tela pequena) — sem nó, sem estado.
+### Dois NPCs na mesma conversa
+
+O roteiro declara o elenco numa linha `participants: ze ana` (ver a [referência](referencia.md#elenco-quem-está-na-conversa)). Um elenco é o jogador e **um ou dois NPCs** — o parser recusa mais que isso (`DialogueScriptParser.MAX_PARTICIPANTS`), porque é o que a coluna de retratos e o enquadramento da câmera foram pensados para mostrar.
+
+Quem participa é um fato da conversa, não do clique, e por isso **não viaja nos eventos**: os dois eventos de conversa continuam carregando só o id da conversa e quem a puxou, e quem precisa do elenco pergunta ao `DialogueCatalog`, que é quem lê o roteiro. São dois caminhos, pelo mesmo `cast_for()`:
+
+| Quem | Quando | De onde tira o elenco |
+| --- | --- | --- |
+| `NPCInteraction` | antes de a tela abrir, para enquadrar a câmera | `DialogueCatalog.read_participants()` (lê o `.dlg`) |
+| `NPCDirector` | em `conversation_approach_started` e `conversation_started`, para segurar e virar | idem |
+| `DialogueScreen` | ao abrir, para montar os retratos | `DialogueRunner.participant_ids`, que já veio parseado |
+
+A regra é sempre a mesma, e mora num lugar só: `DialogueCatalog.cast_for(declarados, initiator_id)` é o elenco declarado mais quem puxou a conversa, sem repetir. É ela que faz uma conversa sem `participants:` ter como elenco só o NPC clicado, e a mesma conversa aberta pelo console (sem NPC de origem) ter o elenco que o roteiro declara.
+
+Um participante que não está na cena naquele horário, ou que está a mais de `DialogueStyle.camera_group_max_distance` do NPC clicado, fica de fora do enquadramento (com aviso no Output) — a conversa roda igual, e as falas dele aparecem normalmente. Segurar um NPC longe é inofensivo: o `GameClock` está congelado, então nenhuma rotina ia movê-lo mesmo.
+
+### Os retratos
+
+A `DialogueScreen` monta um `DialoguePortrait` por NPC do elenco, na ordem do roteiro: o primeiro é o nó da cena, e os outros nascem em código conforme a conversa precisa. A cada fala, se o falante resolve para um NPC, o retrato dele acende e o outro apaga para `portrait_inactive_alpha`. Falas do jogador, da narração e de cabeças de insight não mexem em quem está aceso.
+
+Um NPC que fala sem estar no elenco entra na coluna se ainda couber, e senão toma o retrato de quem não está falando. É rede de segurança para roteiro com elenco incompleto — "Validar conversas" avisa nesse caso, e é lá que o problema deve ser resolvido.
+
+A posição vem de `DialoguePortraitLayout.compute_rects()`, que só faz conta (a pilha inteira, o espaço à esquerda da coluna, o encolhimento em tela pequena) — sem nó, sem estado.
 
 A ordem dos cliques está resolvida: o `_input_event` do `NPCInteraction` roda antes do `_unhandled_input` do `Player`, então clicar no NPC não faz o jogador andar até ele. É o mesmo esquema do `InsightInteractor`.
 
@@ -155,6 +182,7 @@ A lógica de `logic/` é pura de propósito: dá pra chamar de qualquer lugar se
 | 3. Integração | Insights na tela real, clique no NPC, trava de Player e orbes, `DialogueState` e save, preferências do jogador. | Pronta. |
 | 4. Ferramentas | Seção Diálogo no menu de debug, validadores, passeio automático. | Pronta, já validando roteiros reais. |
 | 5. Polimento | Sons placeholder, revelação progressiva, repetição de analógico e D-pad, rolagem em 200%, blur opcional. | Pronta, exceto os sons finais e o teste em 21:9. |
+| 6. Dois NPCs | Elenco no roteiro (`participants:`), os dois segurados e virados, câmera nos três, coluna de retratos com o falante aceso, validação do elenco. | Pronta. Falta arte de retrato para os dois NPCs. |
 
 O layout do painel é ancorado à direita com largura própria, então em tela 21:9 deveria só sobrar mais fundo à esquerda. Ninguém conferiu isso numa tela ultrawide de verdade.
 

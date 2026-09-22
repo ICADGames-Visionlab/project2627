@@ -16,6 +16,10 @@ static var ignore_conditions: bool = false
 var conversation_id: StringName
 var game_state: DialogueGameState
 
+# Os NPCs que o roteiro declara na conversa (linha "participants:" do .dlg), na ordem em que ele os
+# escreve. Vazio numa conversa sem a linha: aí quem participa é só quem a puxou.
+var participant_ids: Array[StringName] = []
+
 var _current_step: DialogueStep
 
 
