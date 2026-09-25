@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://bhexx6mj1xv3q" path="res://addons/phantom_camera/scripts/phantom_camera/phantom_camera_2d.gd" id="14_pcam_script"]
 [ext_resource type="Script" uid="uid://8umksf8e80fw" path="res://addons/phantom_camera/scripts/resources/tween_resource.gd" id="33_jtlb7"]
 [ext_resource type="SpriteFrames" path="res://resources/player_sprite_frames.tres" id="34_frames"]
+[ext_resource type="Script" uid="uid://vobx8n3i8ru2" path="res://scripts/player/Inventory.gd" id="40_inventory"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_player"]
 radius = 14.0
@@ -43,6 +44,9 @@ tween_resource = SubResource("Resource_ye1dr")
 tween_on_load = false
 follow_offset = Vector2(0, -64)
 follow_damping = true
+
+[node name="Inventory" type="Node" parent="."]
+script = ExtResource("40_inventory")
 
 [node name="HeadOrbitLayer" parent="." instance=ExtResource("34_head_orbit")]
 position = Vector2(0, -90)

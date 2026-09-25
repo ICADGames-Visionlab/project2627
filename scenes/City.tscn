@@ -25,6 +25,7 @@
 [ext_resource type="Resource" path="res://resources/insights/city_building3_gutter.tres" id="17_gutter"]
 [ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueScreen.tscn" id="18_dialogue_screen"]
 [ext_resource type="Script" path="res://scripts/dialogue/DialogueCamera.gd" id="19_dialogue_camera"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InventoryUI.tscn" id="18_inventory_ui"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -83,6 +84,8 @@ polygon = PackedVector2Array(-363.25, -28.75, 86.75, 191.25, 387.075, 39.35498, 
 position = Vector2(-81, 116)
 
 [node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_oxvur")]
+
+[node name="InventoryUI" parent="." instance=ExtResource("18_inventory_ui")]
 
 [node name="Pathfinder" type="Node2D" parent="." unique_id=1145640535]
 script = ExtResource("8_rmeea")
