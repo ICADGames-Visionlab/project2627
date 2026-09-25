@@ -280,6 +280,7 @@ func _fits_agent(from: Vector2, to: Vector2) -> bool:
 
 # Põe um ponto avulso no grafo, ligado a tudo que ele enxerga. Usado pro início e o destino de uma
 # consulta, que não são cantos de obstáculo e por isso não moram no grafo.
+@warning_ignore("shadowed_variable_base_class")
 func _add_temporary_point(position: Vector2, exclude: Array[RID] = []) -> int:
 	var id: int = _astar.get_available_point_id()
 	_astar.add_point(id, position)

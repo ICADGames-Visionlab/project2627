@@ -1,0 +1,36 @@
+[gd_resource type="Resource" script_class="NPCDefinition" format=3]
+
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_medo.tres" id="1_r7ulg"]
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_euforia.tres" id="2_pixw1"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_medo_folga.tres" id="3_bs1fm"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_medo_trabalho.tres" id="4_u6ttw"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_folga.tres" id="5_roqjy"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_trabalho.tres" id="6_7rdqp"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_euforia_folga.tres" id="7_sj6x0"]
+[ext_resource type="Resource" path="res://resources/npcs/rotinas/rotina_ana_euforia_trabalho.tres" id="8_q7tqg"]
+[ext_resource type="Script" path="res://scripts/npc/NPCDefinition.gd" id="9_wx0oo"]
+
+[resource]
+script = ExtResource("9_wx0oo")
+id = &"ana"
+name_key = &"NPC_NAME_ANA"
+tint = Color(1, 0.7, 0.5, 1)
+walk_speed = 240.0
+emotion_first = ExtResource("1_r7ulg")
+emotion_second = ExtResource("2_pixw1")
+starting_slot = 2
+routine_neutral_workday = ExtResource("6_7rdqp")
+routine_neutral_day_off = ExtResource("5_roqjy")
+routine_first_workday = ExtResource("4_u6ttw")
+routine_first_day_off = ExtResource("3_bs1fm")
+routine_second_workday = ExtResource("8_q7tqg")
+routine_second_day_off = ExtResource("7_sj6x0")
+resumo = "NPC \"ana\" · emoção inicial: emoção 2 (euforia)
+Trabalha: seg, ter, qua, qui, sex
+
+neutro / trabalho      5 entradas
+neutro / folga         4 entradas
+emoção 1 / trabalho    3 entradas
+emoção 1 / folga       3 entradas
+emoção 2 / trabalho    6 entradas
+emoção 2 / folga       5 entradas"

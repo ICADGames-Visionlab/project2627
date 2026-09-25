@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="NPCPatrol" format=3 uid="uid://chn1tw46nhbno"]
+
+[ext_resource type="Script" uid="uid://c5q1dd52hg7mq" path="res://scripts/npc/NPCPatrol.gd" id="1_er5xt"]
+
+[resource]
+script = ExtResource("1_er5xt")
+scene_path = "res://scenes/City.tscn"
+waypoints = Array[StringName]([&"quartel_porta", &"banco_da_praca", &"praca"])
+dwell_minutes = 10
+start_hour = 7
+end_hour = 11

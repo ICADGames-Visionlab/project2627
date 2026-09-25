@@ -81,8 +81,10 @@ static func enum_value(p_name: String, p_options: PackedStringArray, p_default_i
 func coerce(token: String) -> Variant:
 	match type:
 		Type.INT:
+			@warning_ignore("incompatible_ternary")
 			return token.to_int() if token.is_valid_int() else null
 		Type.FLOAT:
+			@warning_ignore("incompatible_ternary")
 			return token.to_float() if token.is_valid_float() else null
 		Type.STRING:
 			return token

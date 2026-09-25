@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="NPCRoster" format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/NPCDefinition.gd" id="1_4w1ag"]
+[ext_resource type="Resource" path="res://resources/npcs/npc_ze.tres" id="2_ti6rh"]
+[ext_resource type="Resource" path="res://resources/npcs/npc_ana.tres" id="3_2bj16"]
+[ext_resource type="Resource" path="res://resources/npcs/npc_policial.tres" id="5_x9q2m"]
+[ext_resource type="Script" path="res://scripts/npc/NPCRoster.gd" id="4_kdm0u"]
+
+[resource]
+script = ExtResource("4_kdm0u")
+npcs = Array[ExtResource("1_4w1ag")]([ExtResource("2_ti6rh"), ExtResource("3_2bj16"), ExtResource("5_x9q2m")])
+resumo = "3 NPCs no roster:
+  ze — 6/6 rotinas preenchidas
+  ana — 6/6 rotinas preenchidas
+  policial — 6/6 rotinas preenchidas"

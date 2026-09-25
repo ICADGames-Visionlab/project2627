@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="NPCRoutine" format=3 uid="uid://bovfft3x1ukh"]
+
+[ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_cjdfi"]
+[ext_resource type="Script" uid="uid://dnf7l0o4aeaw2" path="res://scripts/npc/NPCRoutine.gd" id="2_jhe8n"]
+[ext_resource type="Script" uid="uid://c8uw224es2o8w" path="res://scripts/npc/NPCRoutineException.gd" id="2_x47ut"]
+
+[sub_resource type="Resource" id="Resource_x47ut"]
+script = ExtResource("1_cjdfi")
+hour = 6
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_ze"
+
+[sub_resource type="Resource" id="Resource_lx8if"]
+script = ExtResource("1_cjdfi")
+hour = 7
+scene_path = "res://scenes/BakeryInterior.tscn"
+waypoint = &"forno"
+
+[sub_resource type="Resource" id="Resource_1liv8"]
+script = ExtResource("1_cjdfi")
+hour = 12
+scene_path = "res://scenes/City.tscn"
+waypoint = &"praca"
+
+[sub_resource type="Resource" id="Resource_8dric"]
+script = ExtResource("1_cjdfi")
+hour = 13
+scene_path = "res://scenes/BakeryInterior.tscn"
+waypoint = &"forno"
+
+[sub_resource type="Resource" id="Resource_s0yxm"]
+script = ExtResource("1_cjdfi")
+hour = 19
+scene_path = "res://scenes/City.tscn"
+waypoint = &"feira"
+
+[sub_resource type="Resource" id="Resource_y2125"]
+script = ExtResource("1_cjdfi")
+hour = 21
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_do_ze"
+
+[resource]
+script = ExtResource("2_jhe8n")
+entries = Array[ExtResource("1_cjdfi")]([SubResource("Resource_x47ut"), SubResource("Resource_lx8if"), SubResource("Resource_1liv8"), SubResource("Resource_8dric"), SubResource("Resource_s0yxm"), SubResource("Resource_y2125")])
+resumo = "6 entradas (ordem de relógio):
+  06:00  City / casa_do_ze
+  07:00  BakeryInterior / forno
+  12:00  City / praca
+  13:00  BakeryInterior / forno
+  19:00  City / feira
+  21:00  City / casa_do_ze"

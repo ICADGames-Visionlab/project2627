@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="EmotionDefinition" format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/EmotionDefinition.gd" id="1_3u5du"]
+
+[resource]
+script = ExtResource("1_3u5du")
+id = &"tristeza"
+name_key = &"EMOTION_SADNESS"
+tint = Color(0.45, 0.6, 1, 1)

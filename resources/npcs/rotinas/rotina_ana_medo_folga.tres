@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="NPCRoutine" format=3 uid="uid://jg7gnemm6nr7"]
+
+[ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_3u7nx"]
+[ext_resource type="Script" uid="uid://c8uw224es2o8w" path="res://scripts/npc/NPCRoutineException.gd" id="2_3gcqw"]
+[ext_resource type="Script" uid="uid://dnf7l0o4aeaw2" path="res://scripts/npc/NPCRoutine.gd" id="2_27b4q"]
+
+[sub_resource type="Resource" id="Resource_3gcqw"]
+script = ExtResource("1_3u7nx")
+hour = 6
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_da_ana"
+
+[sub_resource type="Resource" id="Resource_sd7ta"]
+script = ExtResource("1_3u7nx")
+hour = 14
+scene_path = "res://scenes/City.tscn"
+waypoint = &"quartel_porta"
+
+[sub_resource type="Resource" id="Resource_ln7d4"]
+script = ExtResource("1_3u7nx")
+hour = 18
+scene_path = "res://scenes/City.tscn"
+waypoint = &"casa_da_ana"
+
+[resource]
+script = ExtResource("2_27b4q")
+entries = Array[ExtResource("1_3u7nx")]([SubResource("Resource_3gcqw"), SubResource("Resource_sd7ta"), SubResource("Resource_ln7d4")])
+resumo = "3 entradas (ordem de relógio):
+  06:00  City / casa_da_ana
+  14:00  City / quartel_porta
+  18:00  City / casa_da_ana"
