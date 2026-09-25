@@ -33,6 +33,7 @@
 [ext_resource type="PackedScene" uid="uid://dkf8okr741w41" path="res://scenes/profiling/ProfilingScreen.tscn" id="23_profiling"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/DreamHud.tscn" id="24_dream_hud"]
 [ext_resource type="PackedScene" uid="uid://d1io3majq41f6" path="res://scenes/profiling/WordDiscoveryToast.tscn" id="25_word_toast"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InventoryUI.tscn" id="18_inventory_ui"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -106,6 +107,8 @@ color = Color(0.88763225, 0.63657296, 1.5016794e-05, 1)
 dream_color = Color(1, 0.43452293, 0.5070191, 1)
 
 [node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_oxvur")]
+
+[node name="InventoryUI" parent="." instance=ExtResource("18_inventory_ui")]
 
 [node name="Pathfinder" type="Node2D" parent="." unique_id=1145640535]
 script = ExtResource("8_rmeea")
