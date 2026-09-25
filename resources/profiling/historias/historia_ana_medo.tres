@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="ProfilingStory" format=3 uid="uid://dm2g6g21qtmqj"]
+
+[ext_resource type="Script" uid="uid://cx2leifm7wfkq" path="res://scripts/profiling/ProfilingStory.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://x0wnpu274mwe" path="res://scripts/profiling/GlossaryWord.gd" id="2_word_type"]
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_medo.tres" id="3_emotion"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/janela.tres" id="4_janela"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/luva.tres" id="5_luva"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/dalva.tres" id="6_dalva"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/prado.tres" id="7_prado"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/facao.tres" id="8_facao"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/sumiu.tres" id="9_sumiu"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"historia_ana_medo"
+emotion = ExtResource("3_emotion")
+template_key = "PROFILING_ANA_MEDO_TEMPLATE"
+resolved_text_key = "PROFILING_ANA_MEDO_RESOLVED"
+journal_entry_key = "PROFILING_ANA_MEDO_JOURNAL"
+solution = Array[ExtResource("2_word_type")]([ExtResource("4_janela"), ExtResource("5_luva"), ExtResource("6_dalva"), ExtResource("7_prado"), ExtResource("8_facao"), ExtResource("9_sumiu")])
+resumo = "História \"historia_ana_medo\" · emoção: medo
+6 lacuna(s) na solução
+
+  {0} -> janela
+  {1} -> luva
+  {2} -> dalva
+  {3} -> prado
+  {4} -> facao
+  {5} -> sumiu"

@@ -1,7 +1,9 @@
 [gd_resource type="Resource" script_class="NPCDefinition" format=3 uid="uid://j1gf18af5qqs"]
 
+[ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="1_j1tg8"]
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_tristeza.tres" id="1_rn71n"]
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_raiva.tres" id="2_1engy"]
+[ext_resource type="Texture2D" uid="uid://dbf8vbbawevf1" path="res://images/placeholder/portrait placeholder.png" id="3_1engy"]
 [ext_resource type="Resource" uid="uid://cm67xakva4eok" path="res://resources/npcs/rotinas/rotina_policial_tristeza_folga.tres" id="3_j1tg8"]
 [ext_resource type="Resource" uid="uid://vlra43f0h4k" path="res://resources/npcs/rotinas/rotina_policial_tristeza_trabalho.tres" id="4_tlos3"]
 [ext_resource type="Resource" uid="uid://bd0075adp3epj" path="res://resources/npcs/rotinas/rotina_policial_folga.tres" id="5_k4jvk"]
@@ -9,12 +11,22 @@
 [ext_resource type="Resource" uid="uid://g54h0hacpnx" path="res://resources/npcs/rotinas/rotina_policial_raiva_folga.tres" id="7_ku6yi"]
 [ext_resource type="Resource" uid="uid://cwujcllobikr8" path="res://resources/npcs/rotinas/rotina_policial_raiva_trabalho.tres" id="8_hpvjt"]
 [ext_resource type="Script" uid="uid://bm7w16uuu8ll5" path="res://scripts/npc/NPCDefinition.gd" id="9_7ypmh"]
+[ext_resource type="Texture2D" uid="uid://c2k4twj51h0af" path="res://images/placeholder/spirit art placeholder.png" id="12_tlos3"]
+
+[sub_resource type="Resource" id="Resource_pxwks"]
+script = ExtResource("1_j1tg8")
+hour = 0
+scene_path = "uid://uhsb0fmpfbay"
+waypoint = &"sonho_policial"
+metadata/_custom_type_script = "uid://bol28dgx6wlys"
 
 [resource]
 script = ExtResource("9_7ypmh")
 id = &"policial"
 name_key = &"NPC_NAME_POLICIAL"
 tint = Color(0.6, 0.55, 1, 1)
+portrait = ExtResource("3_1engy")
+spirit_art = ExtResource("12_tlos3")
 walk_speed = 210.0
 emotion_first = ExtResource("1_rn71n")
 emotion_second = ExtResource("2_1engy")
@@ -24,6 +36,7 @@ routine_first_workday = ExtResource("4_tlos3")
 routine_first_day_off = ExtResource("3_j1tg8")
 routine_second_workday = ExtResource("8_hpvjt")
 routine_second_day_off = ExtResource("7_ku6yi")
+dream_entry = SubResource("Resource_pxwks")
 resumo = "NPC \"policial\" · emoção inicial: neutro
 Trabalha: seg, ter, qua, qui, sex
 
@@ -32,4 +45,7 @@ neutro / folga         4 entradas
 emoção 1 / trabalho    4 entradas + 1 exceção
 emoção 1 / folga       3 entradas
 emoção 2 / trabalho    4 entradas + 1 exceção
-emoção 2 / folga       3 entradas"
+emoção 2 / folga       3 entradas
+
+ATENÇÃO:
+  - Sem posição no mundo dos sonhos (dream_entry): some enquanto o jogador sonha."

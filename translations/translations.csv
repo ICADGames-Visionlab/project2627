@@ -56,6 +56,110 @@ INSIGHT_CITY_BUILDING3_GUTTER,"That gutter drains into the street, not into the 
 HEAD_PLAYER_NAME,"Me","Eu"
 HEAD_OLD_FISHERMAN_NAME,"The Old Fisherman","O Velho Pescador"
 PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pending)","Placeholder - Orbe de insight desenhado em código (arte final pendente)"
+PROMPT_SLEEP,Press SPACE to sleep,Aperte ESPAÇO para dormir
+PROMPT_SLEEP_TOO_EARLY,It is not time to sleep yet,Ainda não é hora de dormir
+PROMPT_WAKE,Press SPACE to wake up,Aperte ESPAÇO para acordar
+GLOSSARY_CATEGORY_NAME,Name,Nome
+GLOSSARY_CATEGORY_WEAPON,Weapon,Arma
+GLOSSARY_CATEGORY_ACTION,Action,Ação
+GLOSSARY_CATEGORY_OBJECT,Object,Objeto
+GLOSSARY_TITLE,Glossary,Glossário
+GLOSSARY_SEARCH_PLACEHOLDER,Search for a word...,Procurar uma palavra...
+GLOSSARY_FILTER_TRASH,Trash,Lixo
+GLOSSARY_FILTER_STAR,Star,Estrela
+GLOSSARY_FILTER_ALPHABETICAL,A-Z,A-Z
+GLOSSARY_FILTER_CATEGORY,Category,Categoria
+GLOSSARY_FILTER_SEARCH,Search,Lupa
+PROFILING_INVESTIGATE,INVESTIGATE,INVESTIGAR
+PROFILING_NO_STORY,No story yet,Sem história ainda
+PROFILING_EXIT,Leave,Sair
+PROFILING_BACK,Back,Voltar
+PROFILING_CONTINUE,Click to continue,Clique para continuar
+PROFILING_HINT_HOLD,Hold the left button on an emotion to change it. Hover to investigate.,Segure o botão esquerdo sobre uma emoção para mudá-la. Passe o mouse para investigar.
+PROFILING_EMOTION_TODAY,feeling this today,sente isso hoje
+PROFILING_EMOTION_TOMORROW,will feel this tomorrow,vai sentir isso amanhã
+PROFILING_WORD_ADDED,Word added to %s's Glossary,Palavra adicionada ao Glossário de %s
+PROFILING_RESULT_ALL_CORRECT,Everything was filled in correctly,Tudo foi preenchido corretamente
+PROFILING_RESULT_FEW_WRONG,Two or fewer words are wrong,Duas ou menos palavras estão erradas
+PROFILING_RESULT_MANY_WRONG,Several words are incorrect,Várias palavras estão incorretas
+DREAM_WAKE_UP,Wake up,Acordar
+DREAM_WAKE_CONFIRM,Do you want to leave the dream world?,Deseja sair do mundo dos sonhos?
+DREAM_WAKE_YES,Yes,Sim
+DREAM_WAKE_NO,No,Não
+PROMPT_INVESTIGATE_SPIRIT,Press F to investigate the spirit,Aperte F para investigar o espírito
+PLACEHOLDER_PROFILING_SCREEN,Placeholder - Profiling screen drawn in code (final art pending),Placeholder - Tela de profiling desenhada em código (arte final pendente)
+PLACEHOLDER_NPC_PORTRAIT,Placeholder - NPC portrait,Placeholder - Portrait do NPC
+PLACEHOLDER_NPC_SPIRIT_ART,Placeholder - NPC spirit art (1920x1080),Placeholder - Arte do espírito do NPC (1920x1080)
+PLACEHOLDER_DIARY_ICON,Placeholder - Diary,Placeholder - Diário
+GLOSSARY_WORD_MARCOS,Marcos,Marcos
+GLOSSARY_WORD_CASTRO,Castro,Castro
+GLOSSARY_WORD_ROBERTA,Roberta,Roberta
+GLOSSARY_WORD_SMITH,Smith,Smith
+GLOSSARY_WORD_MARIA,Maria,Maria
+GLOSSARY_WORD_BAKER,Baker,Baker
+GLOSSARY_WORD_BRIAN,Brian,Brian
+GLOSSARY_WORD_WALKER,Walker,Walker
+GLOSSARY_WORD_VINHO,wine,vinho
+GLOSSARY_WORD_AGUA,water,água
+GLOSSARY_WORD_TONICO,tonic,tônico
+GLOSSARY_WORD_ESTATUA,statue,estátua
+GLOSSARY_WORD_VASO,vase,vaso
+GLOSSARY_WORD_BOLSA,purse,bolsa
+GLOSSARY_WORD_AQUARIO,fish tank,aquário
+GLOSSARY_WORD_FACA,knife,faca
+GLOSSARY_WORD_TESOURA,scissors,tesoura
+GLOSSARY_WORD_QUEIMOU,burned,queimou
+GLOSSARY_WORD_CORREU,ran,correu
+PROFILING_EXAMPLE_TEMPLATE,"{0} {1} wanted {2} {3} dead, so {4} {5} poisoned the {6} and hid the key inside a {7}\n\nAt the party, {8} {9} drank the poison and died","{0} {1} queria {2} {3} morta, e então {4} {5} envenenou o {6} e escondeu a chave necessária numa {7}\n\nNa festa, {8} {9} ingeriu o veneno e morreu"
+PROFILING_EXAMPLE_RESOLVED,"Marcos Castro wanted Roberta Smith dead, and he was not the one who did it: Maria Baker poisoned the wine and hid the key inside a statue, so that nobody could reach the cellar before the party. At the party, it was Brian Walker who drank from the wrong glass and died.","Marcos Castro queria Roberta Smith morta, e não foi ele quem agiu: Maria Baker envenenou o vinho e escondeu a chave necessária numa estátua, para que ninguém chegasse ao porão antes da festa. Na festa, foi Brian Walker quem bebeu do copo errado e morreu."
+PROFILING_EXAMPLE_JOURNAL,"The poisoned wine at the party was meant for Roberta Smith, and it killed Brian Walker.","O vinho envenenado da festa era para Roberta Smith, e matou Brian Walker."
+GLOSSARY_WORD_NESTOR,Nestor,Nestor
+GLOSSARY_WORD_AGUIAR,Aguiar,Aguiar
+GLOSSARY_WORD_TIAO,Tiao,Tião
+GLOSSARY_WORD_MOREIRA,Moreira,Moreira
+GLOSSARY_WORD_DALVA,Dalva,Dalva
+GLOSSARY_WORD_PRADO,Prado,Prado
+GLOSSARY_WORD_ROMEU,Romeu,Romeu
+GLOSSARY_WORD_VIDAL,Vidal,Vidal
+GLOSSARY_WORD_BENTO,Bento,Bento
+GLOSSARY_WORD_FURTADO,Furtado,Furtado
+GLOSSARY_WORD_SAL,salt,sal
+GLOSSARY_WORD_ASSINATURA,signature,assinatura
+GLOSSARY_WORD_ANDAIME,scaffold,andaime
+GLOSSARY_WORD_CAL,lime,cal
+GLOSSARY_WORD_REDE,net,rede
+GLOSSARY_WORD_MARE,tide,maré
+GLOSSARY_WORD_REMO,oar,remo
+GLOSSARY_WORD_JANELA,window,janela
+GLOSSARY_WORD_LUVA,glove,luva
+GLOSSARY_WORD_ENVELOPE,envelope,envelope
+GLOSSARY_WORD_ASSOALHO,floorboard,assoalho
+GLOSSARY_WORD_GAVETA,drawer,gaveta
+GLOSSARY_WORD_UMIDADE,damp,umidade
+GLOSSARY_WORD_MARRETA,sledgehammer,marreta
+GLOSSARY_WORD_FORMAO,chisel,formão
+GLOSSARY_WORD_FACAO,machete,facão
+GLOSSARY_WORD_REVOLVER,revolver,revólver
+GLOSSARY_WORD_RACHOU,cracked,rachou
+GLOSSARY_WORD_CULPOU,blamed,culpou
+GLOSSARY_WORD_SUMIU,vanished,sumiu
+GLOSSARY_WORD_GASTOU,spent,gastou
+GLOSSARY_WORD_ATIROU,fired,atirou
+PROFILING_ZE_RAIVA_TEMPLATE,"{0} {1} mixed {2} into the breakwater mortar and signed the job with the {3} of another man.\n\nWhen the wall {4}, it was that other man the town {5}.","{0} {1} misturou {2} na argamassa do quebra-mar e assinou a obra com a {3} de outro homem.\n\nQuando o muro {4}, foi esse outro homem que a cidade {5}."
+PROFILING_ZE_RAIVA_RESOLVED,"The breakwater mortar was mixed with sea water and salt, and the man who signed the job signed it with the signature of someone else: Nestor Aguiar. When the wall cracked in the first winter, the town went after the name on the paper, and Nestor was already in another port. That is what Ze is angry about: not the wall, but having been the easiest name to blame.","A argamassa do quebra-mar foi misturada com água do mar e sal, e quem assinou a obra assinou com a assinatura de outro homem: Nestor Aguiar. Quando o muro rachou no primeiro inverno, a cidade cobrou de quem tinha o nome no papel, e Nestor já estava em outro porto. É disso que o Zé tem raiva: não do muro, mas de ter sido o nome mais fácil de culpar."
+PROFILING_ZE_RAIVA_JOURNAL,"The breakwater cracked because of the salt in the mortar, and the name on the paperwork was not the name of the man who did the work.","O quebra-mar rachou por causa do sal na argamassa, e o nome no papel da obra não era de quem a fez."
+PROFILING_ZE_TRISTEZA_TEMPLATE,"{0} {1} went out in the boat with a torn {2}, and the {3} turned it over before noon.\n\nAll the water gave back was one {4}.","{0} {1} saiu no barco com a {2} rasgada, e a {3} virou a embarcação antes do meio-dia.\n\nO que a água devolveu foi só um {4}."
+PROFILING_ZE_TRISTEZA_RESOLVED,"Tiao Moreira went out with a torn net because there was no money for another one, and the tide turned the boat over before noon. The sea gave back one oar and nothing else. Ze was the one who lent him the boat, and that is what he carries: not the death, but the net he knew was torn.","Tião Moreira saiu com a rede rasgada porque não havia dinheiro para outra, e a maré virou o barco antes do meio-dia. O mar devolveu um remo e mais nada. O Zé foi quem emprestou o barco, e é isso que ele carrega: não a morte, mas a rede que ele sabia estar rasgada."
+PROFILING_ZE_TRISTEZA_JOURNAL,"Tiao Moreira died at sea with a torn net, in a borrowed boat.","Tião Moreira morreu no mar com uma rede rasgada, num barco emprestado."
+PROFILING_ANA_MEDO_TEMPLATE,"Every night someone knocked on the alley {0}, and whoever opened it found only a {1} on the ground.\n\n{2} {3} swore it was the {4} from the house next door, but the neighbour {5} from town before that.","Toda noite alguém batia na {0} do beco, e quem abria via só uma {1} no chão.\n\n{2} {3} jurou que era o {4} do vizinho, mas o vizinho {5} da cidade antes disso."
+PROFILING_ANA_MEDO_RESOLVED,"The knocking on the alley window went on for a month, and what stayed on the ground was always the same glove. Dalva Prado said it was the neighbour machete scraping the wall, and there was no neighbour: he had vanished from town before the first night. Ana still sleeps with that window locked. Her fear is not of whoever knocked; it is that nobody ever did.","As batidas na janela do beco duraram um mês, e o que ficava no chão era sempre a mesma luva. Dalva Prado dizia que era o facão do vizinho raspando a parede, e não havia vizinho: ele tinha sumido da cidade antes da primeira noite. A Ana ainda dorme com aquela janela trancada. O medo dela não é de quem batia, é de ninguém nunca ter batido."
+PROFILING_ANA_MEDO_JOURNAL,The knocking on the alley window and the glove on the ground: the accused neighbour had vanished before the first night.,As batidas na janela do beco e a luva no chão: o vizinho acusado já tinha sumido antes da primeira noite.
+PROFILING_ANA_EUFORIA_TEMPLATE,"On the night of the party, {0} {1} found a full {2} under the {3} and {4} all of it before dawn.\n\nFor three days the whole town drank his {5}.","Na noite da festa, {0} {1} achou um {2} cheio debaixo do {3} e {4} tudo antes do amanhecer.\n\nPor três dias a cidade inteira bebeu o {5} dele."
+PROFILING_ANA_EUFORIA_RESOLVED,"The envelope under the floorboard did not belong to Romeu Vidal, and he knew it. He spent all of it on three days of party, and the town drank along without asking whose money it was. Ana was the only one who asked, and her euphoria is the memory of those three days, when nobody in town was alone.","O envelope debaixo do assoalho não era de Romeu Vidal, e ele sabia. Gastou tudo em três dias de festa, e a cidade bebeu junto sem perguntar de quem era o dinheiro. A Ana foi a única que perguntou, e a euforia dela é a lembrança daqueles três dias, em que ninguém na cidade estava sozinho."
+PROFILING_ANA_EUFORIA_JOURNAL,Romeu Vidal found an envelope of money under the floorboard and spent all of it on three days of party.,Romeu Vidal achou um envelope de dinheiro debaixo do assoalho e gastou tudo em três dias de festa.
+PROFILING_POLICIAL_RAIVA_TEMPLATE,"{0} {1} swapped the holster {2} before the round: he was the one who {3}, and the other officer paid for it.\n\nThe report sat in the {4} until the {5} ate the ink.","{0} {1} trocou o {2} do coldre antes da ronda: quem {3} foi ele, e quem pagou foi o outro guarda.\n\nO relatório ficou na {4} até a {5} comer a tinta."
+PROFILING_POLICIAL_RAIVA_RESOLVED,"The revolver that fired that night was not the one in the report. Bento Furtado swapped the gun in his holster before the round, fired, and let the other officer answer for the shot. The report spent two winters in a drawer, and the damp ate the ink before anyone read it. That is the anger of the officer: he read it.","O revólver que disparou naquela noite não era o do relatório. Bento Furtado trocou a arma do coldre antes da ronda, atirou, e deixou o outro guarda responder pelo disparo. O relatório passou dois invernos numa gaveta, e a umidade comeu a tinta antes de alguém ler. A raiva do policial é essa: ele leu."
+PROFILING_POLICIAL_RAIVA_JOURNAL,"The revolver from the shot was swapped before the round by Bento Furtado, and the report rotted in a drawer.","O revólver do disparo foi trocado antes da ronda por Bento Furtado, e o relatório apodreceu numa gaveta."
 DIALOGUE_SPEAKER_PLAYER,You,Você
 DIALOGUE_SPEAKER_SEPARATOR," — "," — "
 DIALOGUE_SPEAKER_EPITHET_FORMAT,"%s, %s","%s, %s"

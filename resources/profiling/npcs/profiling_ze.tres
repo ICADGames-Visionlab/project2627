@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="NPCProfile" format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/NPCProfile.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/profiling/ProfilingStory.gd" id="2_story_type"]
+[ext_resource type="Script" path="res://scripts/profiling/GlossaryWord.gd" id="3_word_type"]
+[ext_resource type="Resource" path="res://resources/profiling/historias/historia_ze_raiva.tres" id="4_historia_ze_raiva"]
+[ext_resource type="Resource" path="res://resources/profiling/historias/historia_ze_tristeza.tres" id="5_historia_ze_tristeza"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/nestor.tres" id="10_nestor"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/aguiar.tres" id="11_aguiar"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/sal.tres" id="12_sal"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/assinatura.tres" id="13_assinatura"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/rachou.tres" id="14_rachou"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/culpou.tres" id="15_culpou"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/tiao.tres" id="16_tiao"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/moreira.tres" id="17_moreira"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/rede.tres" id="18_rede"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/mare.tres" id="19_mare"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/remo.tres" id="20_remo"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/marreta.tres" id="21_marreta"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/formao.tres" id="22_formao"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/andaime.tres" id="23_andaime"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/cal.tres" id="24_cal"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/queimou.tres" id="25_queimou"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/correu.tres" id="26_correu"]
+
+[resource]
+script = ExtResource("1_script")
+npc_id = &"ze"
+stories = Array[ExtResource("2_story_type")]([ExtResource("4_historia_ze_raiva"), ExtResource("5_historia_ze_tristeza")])
+glossary_words = Array[ExtResource("3_word_type")]([ExtResource("10_nestor"), ExtResource("11_aguiar"), ExtResource("12_sal"), ExtResource("13_assinatura"),
+ExtResource("14_rachou"), ExtResource("15_culpou"), ExtResource("16_tiao"), ExtResource("17_moreira"),
+ExtResource("18_rede"), ExtResource("19_mare"), ExtResource("20_remo"), ExtResource("21_marreta"),
+ExtResource("22_formao"), ExtResource("23_andaime"), ExtResource("24_cal"), ExtResource("25_queimou"),
+ExtResource("26_correu")])
+requires_real_world_meeting = true

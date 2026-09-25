@@ -70,6 +70,25 @@ const ALL_WEEKDAYS: int = 127
 ## o que diferencia um do outro (ver a chave PLACEHOLDER_NPC_BODY no CSV).
 @export var tint: Color = Color.WHITE
 
+## O retrato do NPC: a arte que representa a CARA dele, usada por quem precisa mostrá-lo sem ele
+## estar em cena. Hoje quem usa é a tela de profiling no mundo dos sonhos (a metade direita da
+## página da história) e a tela de diálogo (a moldura ao lado da coluna, slot 3:4 de
+## DialogueStyle.portrait_slot_size, 180x240: imagem em outra proporção é cortada embaixo); o diário
+## ("Pessoas Importantes") vai usar o mesmo campo — é por isso que ele mora aqui, e não dentro de um
+## sistema só.
+##
+## Vazio não quebra nada: cada tela desenha o seu placeholder (o profiling, um retângulo com o nome
+## do NPC; o diálogo, uma silhueta na dialogue_color). Basta arrastar a textura aqui no dia em que a
+## arte existir.
+@export var portrait: Texture2D
+
+## A arte do espírito do NPC, em 1920x1080: cobre a tela inteira de escolher a emoção, no mundo dos
+## sonhos, com o nome e as emoções por cima. Numa tela de outra proporção ela é cortada nas bordas,
+## nunca esticada.
+##
+## Vazio não quebra nada: a tela mostra o aviso de placeholder no lugar.
+@export var spirit_art: Texture2D
+
 ## Velocidade de caminhada, em pixels de tela por segundo. Balanceamento por NPC: um velho anda
 ## mais devagar que uma criança.
 @export var walk_speed: float = 220.0
@@ -86,11 +105,6 @@ const ALL_WEEKDAYS: int = 127
 ## Conversa aberta ao clicar no NPC (o id da conversa no catálogo de diálogo). Vazio = NPC não
 ## conversa (NPCInteraction não pede nada ao clicar nele).
 @export var conversation_id: StringName = &""
-
-## Retrato mostrado numa moldura ao lado da coluna de diálogo enquanto este NPC conversa. Vazio =
-## o diálogo desenha uma silhueta na dialogue_color (PLACEHOLDER até a arte final). O slot é 3:4
-## (DialogueStyle.portrait_slot_size, 180x240): imagem em outra proporção é cortada embaixo.
-@export var portrait: Texture2D
 
 @export_group("Emoções")
 
@@ -152,6 +166,16 @@ const ALL_WEEKDAYS: int = 127
 @export var routine_second_day_off: NPCRoutine:
 	set(value):
 		routine_second_day_off = value
+		_refresh_summary()
+
+@export_group("Mundo dos sonhos")
+
+## Onde este NPC fica enquanto o jogador sonha: a cena e o waypoint, no mesmo formato de uma entrada
+## de rotina. O HORÁRIO DA ENTRADA É IGNORADO — no sonho o relógio está travado (ver
+## TimeSettings.dream_hour) e o NPC não sai do lugar. Vazio = o NPC não aparece no sonho.
+@export var dream_entry: NPCRoutineEntry:
+	set(value):
+		dream_entry = value
 		_refresh_summary()
 
 @export_group("")
@@ -231,6 +255,8 @@ func collect_issues() -> PackedStringArray:
 		issues.append("Sem emoção no slot 2.")
 	if get_routine(EmotionSlot.NEUTRAL, DayType.WORKDAY) == null:
 		issues.append("Sem rotina neutro/trabalho — ela é o último fallback de todos os outros slots.")
+	if dream_entry == null or dream_entry.scene_path == "" or dream_entry.waypoint == &"":
+		issues.append("Sem posição no mundo dos sonhos (dream_entry): some enquanto o jogador sonha.")
 
 	var dialogue_style: DialogueStyle = load("res://resources/dialogue/dialogue_style.tres")
 	if dialogue_style != null:

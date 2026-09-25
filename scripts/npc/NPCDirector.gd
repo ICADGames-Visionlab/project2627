@@ -6,9 +6,11 @@
 ##
 ## POR QUE UM NÓ DE CENA E NÃO UM AUTOLOAD: porque não existe estado de NPC a preservar entre cenas.
 ## A posição de cada NPC é DERIVADA do relógio (ver NPCRoutineResolver), e a emoção vigente é
-## decidida na virada de dia. Um Autoload existiria só pra guardar o que já dá pra recalcular — e o
-## guideline pede discussão com o Lead de Programação antes de criar Autoload novo. Quando a emoção
-## passar a mudar dentro do dia, aí sim vale essa conversa (ver docs/sistema_de_npc.md).
+## decidida na virada de dia — a partir da escolha que o jogador fez no sonho, que é guardada e
+## salva pelo ProfilingJournal, não aqui. Um Autoload existiria só pra guardar o que já dá pra
+## recalcular — e o guideline pede discussão com o Lead de Programação antes de criar Autoload novo.
+## Quando a emoção passar a mudar dentro do dia, aí sim vale essa conversa (ver
+## docs/sistema_de_npc.md).
 ##
 ## O CICLO, INTEIRO:
 ##
@@ -116,6 +118,7 @@ func _ready() -> void:
 
 	EventBus.time_changed.connect(_on_time_changed)
 	EventBus.day_changed.connect(_on_day_changed)
+	EventBus.dream_started.connect(_on_dream_started)
 	EventBus.conversation_approach_started.connect(_on_conversation_approach_started)
 	EventBus.conversation_started.connect(_on_conversation_started)
 	EventBus.conversation_ended.connect(_on_conversation_ended)
@@ -136,10 +139,12 @@ func _ready() -> void:
 
 ## Espaço para funções personalizadas
 
-# Troca a emoção vigente de um NPC e recoloca ele na rotina correspondente.
+# Troca a emoção vigente de um NPC AGORA e recoloca ele na rotina correspondente.
 #
-# É a fronteira inteira entre este sistema e o sistema de emoção que ainda não existe: quando o
-# appraisal ficar pronto, é esta função que ele chama (na virada de dia), e nada aqui precisa mudar.
+# É a troca imediata, usada pelo menu de debug pra revisar as seis rotinas de um NPC em dois minutos.
+# O caminho do JOGO é outro: o jogador escolhe a emoção no sonho (profiling), e ela entra em vigor na
+# virada de dia, por _refresh_emotion_slots() — que é onde o sistema de emoção mora. Forçar aqui não
+# grava escolha nenhuma, então a próxima virada de dia devolve a emoção que o profiling manda.
 func set_emotion_slot(id: StringName, slot: int) -> void:
 	var definition: NPCDefinition = roster.find(id)
 	if definition == null:
@@ -171,14 +176,18 @@ func get_body(id: StringName) -> NPC:
 
 # Escolhe a emoção vigente de cada NPC para o dia.
 #
-# ESTE É O PONTO DE EXTENSÃO DO SISTEMA DE EMOÇÃO. A emoção vigente muda na virada de dia, e é aqui
-# que ela é decidida — hoje, simplesmente pela emoção inicial que o design marcou no .tres. Quando o
-# appraisal existir, ele entra nesta função e em nenhum outro lugar: todo o resto do sistema só
-# consulta o slot já decidido, e por isso não precisa saber nada sobre o que causa emoção.
+# ESTE É O PONTO DE EXTENSÃO DO SISTEMA DE EMOÇÃO, e quem o ocupa hoje é o profiling: a emoção de um
+# NPC é a que o JOGADOR escolheu no espírito dele, dentro do sonho, e que passou a valer no dia
+# seguinte. Sem escolha nenhuma, vale a emoção inicial que o design marcou no .tres — e é por isso
+# que a cidade funciona igual antes de o jogador sonhar pela primeira vez.
+#
+# A conta de "qual escolha já venceu" é do ProfilingJournal (ele é o dono desse estado e o que o
+# grava no save); ver ProfilingJournal.resolve_emotion_slot e docs/sistema_de_profiling.md. O resto
+# deste sistema continua só consultando o slot já decidido, sem saber nada sobre o que causa emoção.
 func _refresh_emotion_slots() -> void:
 	for definition: NPCDefinition in roster.npcs:
 		if definition != null:
-			_slots[definition.id] = definition.starting_slot
+			_slots[definition.id] = ProfilingJournal.resolve_emotion_slot(definition)
 
 
 # Resolve a rotina de todos os NPCs e ajusta a cena.
@@ -186,6 +195,13 @@ func _refresh_emotion_slots() -> void:
 # snap = true faz os NPCs ASSUMIREM a posição em vez de caminhar até ela. É o comportamento certo
 # quando não houve trajeto a percorrer: ao montar a cena, ao virar o dia e quando o tempo pula.
 func _apply_routines(snap: bool) -> void:
+	# No sonho a rotina não vale: todo mundo está na posição fixa de sonho. Desviar aqui, no ponto
+	# por onde TODA resolução passa (tique, virada de dia, debug), é o que garante que nenhum caminho
+	# esquecido tire um NPC do lugar enquanto o jogador sonha.
+	if GameClock.is_dreaming():
+		_apply_dream_positions()
+		return
+
 	var weekday: int = GameClock.time.get_weekday()
 	var minutes_into_day: int = GameClock.time.get_minutes_into_day()
 	var wake_hour: int = GameClock.settings.wake_hour
@@ -205,33 +221,50 @@ func _apply_routines(snap: bool) -> void:
 
 		_decisions[definition.id] = decision
 		_log_exception_change(definition, decision)
-		_apply_decision(definition, decision, snap)
+		_apply_entry(definition, decision.entry, snap)
 
 
-# Aplica a decisão de um NPC: nascer, andar, ficar ou desaparecer.
-func _apply_decision(definition: NPCDefinition, decision: NPCRoutineResolver.Decision, snap: bool) -> void:
+# Põe cada NPC na posição fixa de sonho, sem caminhar: ninguém atravessa a cidade para chegar a um
+# sonho. Quem não tem posição de sonho some — diferente do dia, em que o NPC sem rotina fica onde
+# está, porque no sonho "onde ele estava" é justamente o mundo acordado.
+func _apply_dream_positions() -> void:
+	for definition: NPCDefinition in roster.npcs:
+		if definition == null:
+			continue
+
+		if definition.dream_entry == null:
+			var body: NPC = _bodies.get(definition.id) as NPC
+			if body != null:
+				_despawn(definition.id, body)
+			continue
+
+		_apply_entry(definition, definition.dream_entry, true)
+
+
+# Aplica a entrada vigente de um NPC: nascer, andar, ficar ou desaparecer.
+func _apply_entry(definition: NPCDefinition, entry: NPCRoutineEntry, snap: bool) -> void:
 	var body: NPC = _bodies.get(definition.id) as NPC
 
-	if decision.entry == null:
+	if entry == null:
 		# Sem rotina executável. Quem já está em cena fica onde está (melhor que sumir), e quem não
 		# está não nasce. O aviso sai do "Validar rotinas", não daqui, pra não repetir a cada tique.
 		return
 
-	if not _is_current_scene(decision.entry.scene_path):
+	if not _is_current_scene(entry.scene_path):
 		if body != null:
 			_despawn(definition.id, body)
-		_entries[definition.id] = decision.entry
+		_entries[definition.id] = entry
 		return
 
-	var waypoint: Waypoint = Waypoint.find(get_tree(), decision.entry.waypoint)
+	var waypoint: Waypoint = Waypoint.find(get_tree(), entry.waypoint)
 	if waypoint == null:
-		_warn_missing_waypoint(definition, decision.entry)
+		_warn_missing_waypoint(definition, entry)
 		return
 
 	# Compara o LUGAR, e não a identidade da entrada: as paradas de uma exceção (a ronda) são entradas
 	# avulsas, recriadas a cada resolução, e o que faz o NPC andar é ter que ir pra um lugar diferente.
-	var changed: bool = not decision.entry.is_same_place(_entries.get(definition.id) as NPCRoutineEntry)
-	_entries[definition.id] = decision.entry
+	var changed: bool = not entry.is_same_place(_entries.get(definition.id) as NPCRoutineEntry)
+	_entries[definition.id] = entry
 
 	var target: Vector2 = _scattered_position(waypoint, definition)
 	if body == null:
@@ -422,6 +455,11 @@ func _on_day_changed(day: int) -> void:
 	_refresh_emotion_slots()
 	_apply_routines(true)
 	print("[NPCDirector] - Dia %d: rotinas reavaliadas" % day)
+
+
+func _on_dream_started(_day: int) -> void:
+	_apply_routines(true)
+	print("[NPCDirector] - Mundo dos sonhos: %d NPCs em posição de sonho nesta cena" % _bodies.size())
 
 
 # O elenco de NPCs de uma conversa: quem o roteiro declara em "participants:" mais quem a puxou.

@@ -99,7 +99,9 @@ aritmética de horário, e assim ela pode ser conferida sem rodar o jogo.
    circula em vez de ficar parado (o policial), a rotina ganha uma
    [exceção](#exceções-de-rotina) no campo `Exceptions`.
 3. **Criar o NPC**: `resources/npcs/npc_<nome>.tres`, recurso `NPCDefinition`. Preencher nome, cor,
-   velocidade, as duas emoções, os dias de trabalho e apontar as seis rotinas.
+   velocidade, as duas emoções, os dias de trabalho e apontar as seis rotinas. O campo `portrait` (a
+   cara do NPC, usada pelas telas que o mostram fora de cena — hoje o profiling) pode ficar vazio:
+   quem mostra desenha um retângulo identificado com o nome dele.
 4. **Arrastar pro roster**: `resources/npcs/npc_roster.tres`.
 
 Pronto — nenhuma edição de código e nenhuma cena tocada. Se um slot ficar vazio, o NPC não quebra:
@@ -302,20 +304,24 @@ sem reiniciar o ciclo, e uma das `22:00` às `02:00` atravessa a meia-noite.
 
 ---
 
-## Emoção: o que existe e o que não existe
+## Emoção: quem decide o slot
 
-O que existe: cada NPC tem duas emoções, um slot vigente, e o slot escolhe a rotina.
+Cada NPC tem duas emoções, um slot vigente, e o slot escolhe a rotina. **Quem troca o slot é o
+jogador**, pelo sistema de profiling: no mundo dos sonhos ele segura uma das emoções do espírito do
+NPC, e ela passa a valer **no dia seguinte** (ver `docs/sistema_de_profiling.md`).
 
-O que **não** existe: qualquer coisa que mude o slot. Por decisão de escopo, a emoção vigente é
-escolhida **na virada de dia** — e é exatamente isso que `NPCDirector._refresh_emotion_slots()` faz,
-hoje lendo o `starting_slot` que o design marcou no `.tres`.
+A emoção vigente continua sendo escolhida **na virada de dia**, dentro de
+`NPCDirector._refresh_emotion_slots()` — e em nenhum outro lugar. O que mudou é de onde vem a
+resposta: em vez do `starting_slot` do `.tres`, a função pergunta a
+`ProfilingJournal.resolve_emotion_slot(definition)`, que sabe qual escolha do jogador já venceu e
+cai no `starting_slot` quando o jogador nunca escolheu nada. Todo o resto deste sistema só consulta
+o slot já decidido, e por isso não precisa saber nada sobre o que causa emoção.
 
-> **É aqui que o sistema de emoção entra**, quando existir: dentro dessa função, e em nenhum outro
-> lugar. Todo o resto do sistema só consulta o slot já decidido, e por isso não precisa saber nada
-> sobre o que causa emoção. A API pública já está de pé: `NPCDirector.set_emotion_slot(id, slot)`.
+O que **não** existe ainda: emoção causada pelo mundo (appraisal) e emoção mudando **dentro** do dia.
 
-Até lá, o menu de debug força qualquer slot em qualquer NPC, o que permite revisar as seis rotinas de
-um NPC em dois minutos.
+> `NPCDirector.set_emotion_slot(id, slot)` continua de pé, e é a troca IMEDIATA — a que o menu de
+> debug usa pra revisar as seis rotinas de um NPC em dois minutos. Ela não grava escolha nenhuma, então
+> a próxima virada de dia devolve a emoção que o profiling manda.
 
 ---
 
@@ -375,8 +381,10 @@ um NPC em dois minutos.
   NPC passando atrás seria ruído visual.
 - **EventBus.** O sistema **não declara nenhum evento novo**. Não há fato aqui que três sistemas
   precisem ouvir ainda; o NPC avisa a própria chegada por um `signal` local, escutado pelo diretor que
-  vive na mesma cena (a regra está em `docs/event_bus.md`). O primeiro evento natural é
-  `npc_emotion_changed`, quando o sistema de emoção existir e houver um fato a anunciar.
+  vive na mesma cena (a regra está em `docs/event_bus.md`). A troca de emoção também não virou
+  evento: o diretor **pergunta** o slot na virada de dia (`ProfilingJournal.resolve_emotion_slot`) em
+  vez de escutar um anúncio, e é justamente isso que faz nada depender de ordem de evento. Ver
+  `docs/sistema_de_profiling.md`.
 
 ---
 
@@ -416,8 +424,8 @@ primeiras são baratas e independentes, e as últimas dependem das de cima.
 | 3 | **Cenário que reage à rotina** | Luz da casa que acende quando o dono está lá, porta que fica destrancada, som vindo de dentro. Fica barato justamente porque a posição é derivada: o objeto do cenário PERGUNTA ("meu dono está aqui agora?") em vez de a rotina ter que conhecer luz e porta. | — | Baixo |
 | 4 | **Dia de exceção** | Uma rotina que vale por um dia só, escolhida na virada de dia — "depois do colapso, ele passa o dia inteiro no hospital". Entra no mesmo gancho da emoção (`_refresh_emotion_slots`), sem tocar na resolução. Não é a [exceção de rotina](#exceções-de-rotina), que é uma faixa de horário dentro do dia. | — | Baixo |
 | 5 | **Ronda e perambulação** | **A ronda por lista de pontos está pronta** (ver [Exceções de rotina](#exceções-de-rotina)) e não precisou da #1. Falta a **perambulação** por uma *área*, sem lista de pontos, e o NPC *fazer* algo em cada ponto da ronda, que é a própria #1. | 1 | Médio |
-| 6 | **Estado persistente de NPC** | Um Autoload (`NPCManager`) + entrada no save para os fatos que precisam sobreviver à troca de cena: emoção vigente, morto, hospitalizado, reputação. É a fundação das features 7 a 10 — sem ela, "o policial morreu" não tem onde morar. **Criar Autoload exige discussão com o Lead de Programação.** | — | Médio |
-| 7 | **Sistema de emoção (appraisal)** | O que efetivamente TROCA a emoção vigente na virada de dia. O consumo da emoção já está pronto; falta o que a causa. Ver [Emoção](#emoção-o-que-existe-e-o-que-não-existe). | 6 | Médio |
+| 6 | **Estado persistente de NPC** | Um Autoload (`NPCManager`) + entrada no save para os fatos que precisam sobreviver à troca de cena: morto, hospitalizado, reputação. A **emoção vigente** já sobrevive — ela é escolha do jogador e mora no `ProfilingJournal`. É a fundação das features 7 a 10 — sem ela, "o policial morreu" não tem onde morar. **Criar Autoload exige discussão com o Lead de Programação.** | — | Médio |
+| 7 | **Emoção causada pelo mundo (appraisal)** | O que troca a emoção vigente **sem o jogador pedir** — o NPC reagindo ao que aconteceu com ele. A troca pelo jogador já está pronta (profiling), e o consumo também; falta a emoção que o próprio mundo causa. Ver [Emoção](#emoção-quem-decide-o-slot). | 6 | Médio |
 | 8 | **Condição e acaso na entrada** | Entradas que só valem sob condição ou com chance: "às vezes ele vai pro beco beber", "se o ladrão roubar hoje". É o mesmo mecanismo das chaves de agenda do Stardew, aplicado por entrada. | 6 | Médio |
 | 9 | **Influência entre rotinas** | Uma rotina consultar o estado de outro NPC: "a chance de o vizinho salvar o policial depende da emoção do vizinho". Metade já existe — o diretor conhece a emoção de todos (`get_emotion_slot`); falta o lugar de escrever a regra. | 6, 8 | Médio |
 | 10 | **Camada de interrupção** | Um evento quebrar a rotina do dia e assumir o controle do NPC: prisão, colapso, ser levado ao hospital, julgamento. A rotina vira o "plano do dia" e o evento passa por cima, por prioridade — é o *package stack* do Skyrim. | 6 | Alto |

@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://bm77g7wpn6avw"]
+
+[ext_resource type="Script" uid="uid://f0ggjt6onwe2" path="res://scripts/ui/ActionPrompt.gd" id="1_prompt"]
+
+[node name="ActionPrompt" type="CanvasLayer" unique_id=1790352585]
+layer = 10
+script = ExtResource("1_prompt")
+
+[node name="Label" type="Label" parent="." unique_id=1031192094]
+offset_left = 700.0
+offset_top = 958.0
+offset_right = 1220.0
+offset_bottom = 981.0
+text = "PROMPT_SLEEP"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,13 +1,17 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/npc/NPC.gd" id="1_npc_script"]
 [ext_resource type="SpriteFrames" path="res://resources/player_sprite_frames.tres" id="2_npc_frames"]
+[ext_resource type="Script" path="res://scripts/profiling/SpiritInteraction.gd" id="3_npc_spirit"]
 [ext_resource type="PackedScene" path="res://scenes/npc/NPCInteraction.tscn" id="3_npc_interaction"]
 [ext_resource type="Shader" path="res://resources/shaders/sprite_outline.gdshader" id="4_outline_shader"]
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_npc"]
 radius = 14.0
 height = 56.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_npc_spirit"]
+radius = 96.0
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_npc_outline"]
 resource_local_to_scene = true
@@ -46,3 +50,11 @@ theme_override_font_sizes/font_size = 22
 text = "NPC"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="SpiritInteraction" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("3_npc_spirit")
+
+[node name="Shape" type="CollisionShape2D" parent="SpiritInteraction"]
+shape = SubResource("CircleShape2D_npc_spirit")

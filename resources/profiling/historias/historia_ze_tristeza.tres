@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ProfilingStory" format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/ProfilingStory.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/profiling/GlossaryWord.gd" id="2_word_type"]
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_tristeza.tres" id="3_emotion"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/tiao.tres" id="4_tiao"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/moreira.tres" id="5_moreira"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/rede.tres" id="6_rede"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/mare.tres" id="7_mare"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/remo.tres" id="8_remo"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"historia_ze_tristeza"
+emotion = ExtResource("3_emotion")
+template_key = "PROFILING_ZE_TRISTEZA_TEMPLATE"
+resolved_text_key = "PROFILING_ZE_TRISTEZA_RESOLVED"
+journal_entry_key = "PROFILING_ZE_TRISTEZA_JOURNAL"
+solution = Array[ExtResource("2_word_type")]([ExtResource("4_tiao"), ExtResource("5_moreira"), ExtResource("6_rede"), ExtResource("7_mare"), ExtResource("8_remo")])
