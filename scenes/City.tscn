@@ -12,7 +12,6 @@
 [ext_resource type="Script" uid="uid://b2nn3d1caqwax" path="res://scripts/world/GameSession.gd" id="9_gsess"]
 [ext_resource type="PackedScene" path="res://scenes/insights/InsightSource.tscn" id="9_insight_source"]
 [ext_resource type="PackedScene" uid="uid://d3qucjg50f2e6" path="res://scenes/ui/ClockHud.tscn" id="10_clock"]
-[ext_resource type="PackedScene" path="res://scenes/insights/PlaceholderDialogueScreen.tscn" id="10_dialogue"]
 [ext_resource type="PackedScene" path="res://scenes/insights/InsightAudio.tscn" id="11_insight_audio"]
 [ext_resource type="Script" uid="uid://bu10qdqkywfje" path="res://scripts/world/Waypoint.gd" id="11_waypt"]
 [ext_resource type="Script" uid="uid://c6nb2dxmgp5ig" path="res://scripts/npc/NPCDirector.gd" id="12_ndir"]
@@ -33,6 +32,8 @@
 [ext_resource type="PackedScene" uid="uid://dkf8okr741w41" path="res://scenes/profiling/ProfilingScreen.tscn" id="23_profiling"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/DreamHud.tscn" id="24_dream_hud"]
 [ext_resource type="PackedScene" uid="uid://d1io3majq41f6" path="res://scenes/profiling/WordDiscoveryToast.tscn" id="25_word_toast"]
+[ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueScreen.tscn" id="18_dialogue_screen"]
+[ext_resource type="Script" path="res://scripts/dialogue/DialogueCamera.gd" id="19_dialogue_camera"]
 [ext_resource type="PackedScene" path="res://scenes/ui/InventoryUI.tscn" id="18_inventory_ui"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
@@ -202,7 +203,12 @@ position = Vector2(1017, -334)
 insights = Array[ExtResource("17_fp5nc")]([ExtResource("15_windows")])
 marker_offset = Vector2(0, -230)
 
-[node name="PlaceholderDialogueScreen" parent="." unique_id=950386784 instance=ExtResource("10_dialogue")]
+[node name="DialogueCamera" type="Node2D" parent="." groups=["dialogue_camera"]]
+script = ExtResource("19_dialogue_camera")
+follow_mode = 3
+auto_zoom = false
+
+[node name="DialogueScreen" parent="." unique_id=824431202 instance=ExtResource("18_dialogue_screen")]
 
 [node name="InsightAudio" parent="." unique_id=1420165515 instance=ExtResource("11_insight_audio")]
 

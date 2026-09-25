@@ -1,0 +1,10 @@
+[gd_resource type="Theme" load_steps=1 format=3]
+
+[resource]
+DialogueSpeakerName/base_type = &"RichTextLabel"
+DialogueText/base_type = &"RichTextLabel"
+DialogueOption/base_type = &"RichTextLabel"
+DialogueOptionHover/base_type = &"RichTextLabel"
+DialogueOptionChosen/base_type = &"RichTextLabel"
+DialogueOptionDisabled/base_type = &"RichTextLabel"
+DialogueScrollBar/base_type = &"VScrollBar"

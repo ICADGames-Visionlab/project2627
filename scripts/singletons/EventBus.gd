@@ -5,9 +5,9 @@
 # Todos os eventos do jogo ficam neste arquivo, agrupados por módulo, cada um com um comentário
 # acima dizendo quem emite e quem escuta. Abrir este arquivo é ver o jogo inteiro conversando.
 #
-# ESTADO ATUAL: os eventos de tempo (GameClock), os do sistema de insights e os do profiling.
-# Eventos nascem junto com o sistema que produz os fatos — criar antes disso seria adivinhar
-# features que o conceito do jogo ainda não decidiu.
+# ESTADO ATUAL: os eventos de tempo (GameClock), os do sistema de insights, os do profiling e os
+# do sistema de diálogo. Eventos nascem junto com o sistema que produz os fatos — criar antes
+# disso seria adivinhar features que o conceito do jogo ainda não decidiu.
 #
 # Para adicionar um evento, é uma edição só: declarar o sinal abaixo, tipado e comentado.
 #
@@ -85,9 +85,8 @@ signal action_prompt_changed(text_key: String)
 signal insight_revealed(event: InsightRevealedEvent)
 
 # Pede a exibição de uma fala na tela de diálogo. Pedido: espera exatamente 1 ouvinte, e o logger
-# acusa no console quando a contagem não é essa — é assim que esquecer de desligar o placeholder no
-# dia em que a tela real entrar vira erro visível em vez de duas telas abrindo juntas.
-# Emissor: InsightDirector. Ouvinte: a tela de diálogo (PlaceholderDialogueScreen por enquanto).
+# acusa no console quando a contagem não é essa.
+# Emissor: InsightDirector. Ouvinte: DialogueScreen.
 signal dialogue_requested(head_id: StringName, text_key: String)
 
 # ------------------------------------------------------------------------------------
@@ -125,6 +124,35 @@ signal npc_profiling_completed(npc_id: StringName)
 # docs/event_bus.md manda evitar, e o logger acusa em tempo de execução. Quando o primeiro ouvinte
 # existir, declarar o sinal aqui e emitir em ProfilingJournal.mark_story_solved (ou em
 # schedule_emotion_slot) é uma linha em cada lugar; ver docs/sistema_de_profiling.md.
+
+# ------------------------------------------------------------------------------------
+# Diálogo
+# ------------------------------------------------------------------------------------
+
+# Clicou num NPC: antes de conversation_requested, trava o jogador e os orbes de insight cedo,
+# enquanto o Player anda até perto do NPC e a DialogueCamera aproxima de todo mundo. Não passa pelo
+# fluxo de debug (Iniciar conversa/Pular para nó emitem conversation_requested direto).
+# npc_id é o NPC clicado. Quem mais está na conversa (uma conversa pode ter dois NPCs junto com o
+# jogador) sai do roteiro, pelo DialogueCatalog — o evento carrega o fato, não o elenco derivado.
+# Emissor: NPCInteraction. Ouvintes: Player, InsightInteractor (travam entrada), NPCDirector
+# (segura os NPCs parados, sem virar pro jogador ainda — isso só acontece em conversation_started).
+signal conversation_approach_started(conversation_id: StringName, npc_id: StringName)
+
+# Pede o início de uma conversa. Pedido: espera exatamente 1 ouvinte.
+# initiator_id é quem puxou a conversa (id do NPC, ou &"" para gatilho e debug); ele é repassado em
+# conversation_started para quem precisa segurar aquele NPC.
+# Emissor: NPCInteraction (fim da abordagem), debug. Ouvinte: DialogueScreen.
+signal conversation_requested(conversation_id: StringName, initiator_id: StringName)
+
+# Emitido quando uma conversa abre.
+# Emissor: DialogueScreen. Ouvintes: Player (trava movimento, redundante se já veio de
+# conversation_approach_started), NPCDirector (segura os NPCs da conversa e vira eles pro jogador),
+# InsightInteractor (desliga orbes, idem Player).
+signal conversation_started(conversation_id: StringName, initiator_id: StringName)
+
+# Emitido quando uma conversa fecha, com o nó onde terminou.
+# Emissor: DialogueScreen. Ouvintes: os mesmos de conversation_started.
+signal conversation_ended(conversation_id: StringName, end_node_id: StringName)
 
 var _logger: EventBusLogger
 

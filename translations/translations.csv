@@ -39,6 +39,8 @@ WEEKDAY_SUN,Sunday,Domingo
 NPC_NAME_ZE,Joe,Zé
 NPC_NAME_ANA,Ana,Ana
 NPC_NAME_POLICIAL,Officer,Policial
+NPC_NAME_ZE_ALCUNHA,The Baker,O Padeiro
+NPC_NAME_ANA_ALCUNHA,The Market Vendor,A Feirante
 EMOTION_ANGER,Anger,Raiva
 EMOTION_SADNESS,Sadness,Tristeza
 EMOTION_FEAR,Fear,Medo
@@ -53,8 +55,6 @@ INSIGHT_CITY_BUILDING3_WARM_WALL,"The wall is warm. Something behind it has been
 INSIGHT_CITY_BUILDING3_GUTTER,"That gutter drains into the street, not into the sea. Whoever built it had never seen a real tide.","Aquela calha despeja na rua, não no mar. Quem a construiu nunca tinha visto uma maré de verdade."
 HEAD_PLAYER_NAME,"Me","Eu"
 HEAD_OLD_FISHERMAN_NAME,"The Old Fisherman","O Velho Pescador"
-INSIGHT_DIALOGUE_CLOSE,"Close","Fechar"
-PLACEHOLDER_DIALOGUE_SCREEN,"Placeholder - Dialogue screen (final screen pending)","Placeholder - Tela de diálogo (tela final pendente)"
 PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pending)","Placeholder - Orbe de insight desenhado em código (arte final pendente)"
 PROMPT_SLEEP,Press SPACE to sleep,Aperte ESPAÇO para dormir
 PROMPT_SLEEP_TOO_EARLY,It is not time to sleep yet,Ainda não é hora de dormir
@@ -160,6 +160,36 @@ PROFILING_ANA_EUFORIA_JOURNAL,Romeu Vidal found an envelope of money under the f
 PROFILING_POLICIAL_RAIVA_TEMPLATE,"{0} {1} swapped the holster {2} before the round: he was the one who {3}, and the other officer paid for it.\n\nThe report sat in the {4} until the {5} ate the ink.","{0} {1} trocou o {2} do coldre antes da ronda: quem {3} foi ele, e quem pagou foi o outro guarda.\n\nO relatório ficou na {4} até a {5} comer a tinta."
 PROFILING_POLICIAL_RAIVA_RESOLVED,"The revolver that fired that night was not the one in the report. Bento Furtado swapped the gun in his holster before the round, fired, and let the other officer answer for the shot. The report spent two winters in a drawer, and the damp ate the ink before anyone read it. That is the anger of the officer: he read it.","O revólver que disparou naquela noite não era o do relatório. Bento Furtado trocou a arma do coldre antes da ronda, atirou, e deixou o outro guarda responder pelo disparo. O relatório passou dois invernos numa gaveta, e a umidade comeu a tinta antes de alguém ler. A raiva do policial é essa: ele leu."
 PROFILING_POLICIAL_RAIVA_JOURNAL,"The revolver from the shot was swapped before the round by Bento Furtado, and the report rotted in a drawer.","O revólver do disparo foi trocado antes da ronda por Bento Furtado, e o relatório apodreceu numa gaveta."
+DIALOGUE_SPEAKER_PLAYER,You,Você
+DIALOGUE_SPEAKER_SEPARATOR," — "," — "
+DIALOGUE_SPEAKER_EPITHET_FORMAT,"%s, %s","%s, %s"
+DIALOGUE_SPEAKER_NARRATOR,Narrator,Narrador
+DIALOGUE_OPTION_FORMAT,"%d. - ","%d. - "
+DIALOGUE_CONTINUE,Continue,Continuar
+DIALOGUE_END,End,Encerrar
+DIALOGUE_NEW_LINES,%d new,%d nova(s)
+DIALOGUE_LOG_TRIMMED,… earlier lines,… falas anteriores
+DIALOGUE_TAG_AUTHORITY,Authority,Autoridade
+SETTINGS_DIALOGUE_TEXT_SCALE,Dialogue text size,Tamanho do texto do diálogo
+SETTINGS_DIALOGUE_ALT_FONT,Sans-serif dialogue font,Fonte sem serifa no diálogo
+SETTINGS_DIALOGUE_PANEL_OPACITY,Dialogue panel opacity,Opacidade do painel de diálogo
+SETTINGS_DIALOGUE_REVEAL,Text reveal,Revelação de texto
+SETTINGS_DIALOGUE_REVEAL_INSTANT,Instant,Instantânea
+SETTINGS_DIALOGUE_REVEAL_PROGRESSIVE,Progressive,Progressiva
+SETTINGS_DIALOGUE_ANIMATION,Dialogue animation,Animação do diálogo
+SETTINGS_DIALOGUE_ANIMATION_NORMAL,Normal,Normal
+SETTINGS_DIALOGUE_ANIMATION_FAST,Fast,Rápida
+SETTINGS_DIALOGUE_ANIMATION_INSTANT,Instant,Instantânea
+DIALOGUE_ZE_ANA_FEIRA_01,"Ana, I keep telling you: good flour is never the cheapest.","Ana, eu te falo sempre: farinha boa nunca é a mais barata."
+DIALOGUE_ZE_ANA_FEIRA_02,And I keep telling you nobody here pays for the good one.,E eu te falo sempre que aqui ninguém paga pela boa.
+DIALOGUE_ZE_ANA_FEIRA_OPT_PRECO,How much is the good flour?,Quanto custa a farinha boa?
+DIALOGUE_ZE_ANA_FEIRA_OPT_CHUVA,What about last week’s rain?,E a chuva da semana passada?
+DIALOGUE_ZE_ANA_FEIRA_OPT_SAIR,I’ll leave you two to it.,Deixo vocês dois aí.
+DIALOGUE_ZE_ANA_FEIRA_PRECO_01,Twice as much. And it is gone before noon.,O dobro. E some antes do meio-dia.
+DIALOGUE_ZE_ANA_FEIRA_PRECO_02,Which is why I get here early.,Que é por isso que eu chego cedo.
+DIALOGUE_ZE_ANA_FEIRA_CHUVA_01,It soaked the whole wheat crop.,Encharcou o trigo inteiro.
+DIALOGUE_ZE_ANA_FEIRA_CHUVA_02,It soaked yours. Mine was under a tarp.,Encharcou o teu. O meu estava debaixo da lona.
+DIALOGUE_ZE_ANA_FEIRA_FIM,Come back tomorrow. We will still be at it.,Volta amanhã. A gente ainda vai estar nessa.
 DIARY_EMPTY,"The diary has no pages yet.","O diário ainda não tem nenhuma página."
 DIARY_PAGE_INDICATOR,"%d / %d","%d / %d"
 DIARY_PREVIOUS,"< Previous","< Anterior"

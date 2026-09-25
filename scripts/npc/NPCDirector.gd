@@ -119,6 +119,9 @@ func _ready() -> void:
 	EventBus.time_changed.connect(_on_time_changed)
 	EventBus.day_changed.connect(_on_day_changed)
 	EventBus.dream_started.connect(_on_dream_started)
+	EventBus.conversation_approach_started.connect(_on_conversation_approach_started)
+	EventBus.conversation_started.connect(_on_conversation_started)
+	EventBus.conversation_ended.connect(_on_conversation_ended)
 
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "NPCs" do menu (F4) e do console (F1).
@@ -457,6 +460,44 @@ func _on_day_changed(day: int) -> void:
 func _on_dream_started(_day: int) -> void:
 	_apply_routines(true)
 	print("[NPCDirector] - Mundo dos sonhos: %d NPCs em posição de sonho nesta cena" % _bodies.size())
+
+
+# O elenco de NPCs de uma conversa: quem o roteiro declara em "participants:" mais quem a puxou.
+# Vem do DialogueCatalog, e não do evento, porque quem participa é um fato da CONVERSA e não do
+# clique — é o mesmo elenco que a DialogueScreen usa para montar os retratos, lido do mesmo roteiro.
+func _conversation_cast(conversation_id: StringName, initiator_id: StringName) -> Array[StringName]:
+	return DialogueCatalog.cast_for(DialogueCatalog.read_participants(conversation_id), initiator_id)
+
+
+# Segura os NPCs da conversa assim que o jogador clica num deles, antes mesmo de ele terminar de
+# andar até lá — sem isso a rotina poderia levar um NPC embora enquanto o jogador ainda está a
+# caminho. Não vira ninguém pro jogador ainda: isso só faz sentido quando o jogador de fato chegou
+# (conversation_started).
+func _on_conversation_approach_started(conversation_id: StringName, npc_id: StringName) -> void:
+	for id: StringName in _conversation_cast(conversation_id, npc_id):
+		var body: NPC = _bodies.get(id) as NPC
+		if body != null:
+			body.hold()
+
+
+# Confirma os NPCs segurados e vira todos eles para o jogador (SPEC §11.4). Elenco vazio (gatilho,
+# cutscene, debug de conversa sem "participants:" nem NPC de origem) não segura ninguém; quando há
+# elenco, esses caminhos nunca passaram por conversation_approach_started, então o hold() daqui
+# também é o primeiro para eles.
+func _on_conversation_started(conversation_id: StringName, initiator_id: StringName) -> void:
+	var player: Node2D = get_tree().get_first_node_in_group("player") as Node2D
+	for id: StringName in _conversation_cast(conversation_id, initiator_id):
+		var body: NPC = _bodies.get(id) as NPC
+		if body == null:
+			continue
+		body.hold()
+		if player != null:
+			body.face_toward(player.global_position)
+
+
+func _on_conversation_ended(_conversation_id: StringName, _end_node_id: StringName) -> void:
+	for body: Variant in _bodies.values():
+		(body as NPC).release()
 
 
 func _on_npc_arrived(definition: NPCDefinition) -> void:

@@ -63,6 +63,10 @@ const BLOCKED_GRACE_SECONDS: float = 0.4
 ## Duração do fade ao aparecer e ao desaparecer (quando a rotina o manda pra outra cena).
 @export var fade_duration: float = 0.3
 
+## Espessura do contorno branco de hover (SPEC §11.4), em texels da textura de origem — ver
+## resources/shaders/sprite_outline.gdshader. A NPCInteraction liga e desliga com o mouse.
+@export var hover_outline_width: float = 1.0
+
 ## Espaço para variáveis
 
 # Quem este NPC é. Preenchido por configure(), nunca aqui.
@@ -92,6 +96,9 @@ var _attempts: int = 0
 
 var _is_moving: bool = false
 var _facing: Isometric.Facing = Isometric.Facing.S
+
+# Segurado por uma conversa (SPEC §11.4): cancela o caminho e ignora walk_to() até release().
+var _is_held: bool = false
 
 @onready var _animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 @onready var _name_label: Label = $NameLabel
@@ -159,13 +166,46 @@ func set_emotion(emotion: EmotionDefinition) -> void:
 	_name_label.modulate = emotion.tint if emotion != null else Color.WHITE
 
 
-# Manda o NPC andar até um ponto, desviando do cenário. Chamar de novo troca o destino.
+# Manda o NPC andar até um ponto, desviando do cenário. Chamar de novo troca o destino. Ignorado
+# enquanto segurado por uma conversa (ver hold()).
 func walk_to(target: Vector2) -> void:
+	if _is_held:
+		return
 	_target = target
 	_has_target = true
 	_attempts = 0
 	_retry_time = 0.0
 	_request_path()
+
+
+# Segura o NPC parado durante uma conversa: cancela o caminho e ignora walk_to() até release().
+func hold() -> void:
+	_is_held = true
+	_has_target = false
+	_clear_path()
+
+
+# Larga o NPC: _target sobrevive ao hold() (só _has_target foi zerado), então retoma o caminho até
+# lá. Sem isto, um NPC clicado no meio do trajeto ficaria parado no ponto onde foi segurado até a
+# próxima mudança de rotina, minutos de jogo depois.
+func release() -> void:
+	_is_held = false
+	walk_to(_target)
+
+
+# Liga/desliga o contorno branco de hover (mouse em cima, com conversa disponível). Quem decide
+# quando chamar é a NPCInteraction; este método só aplica o parâmetro do shader.
+func set_hover_outline(enabled: bool) -> void:
+	_animated_sprite.material.set_shader_parameter(&"outline_width", hover_outline_width if enabled else 0.0)
+
+
+# Vira o sprite para encarar um ponto (o jogador, ao abrir uma conversa), sem se mover.
+func face_toward(world_position: Vector2) -> void:
+	var to_target: Vector2 = world_position - global_position
+	if to_target.is_zero_approx():
+		return
+	_facing = Isometric.facing_from_direction(Isometric.to_cartesian(to_target, isometric_y_ratio))
+	_play_animation()
 
 
 # Põe o NPC direto no ponto, sem andar. Usado quando ele aparece em cena (chegou de outra cena, ou

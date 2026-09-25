@@ -8,6 +8,10 @@ extends CharacterBody2D
 # sem mexer aqui.
 signal movement_state_changed(is_moving: bool, facing_direction: Isometric.Facing)
 
+# Emitido quando start_conversation_approach() chega ao destino (ou desiste por bloqueio). Quem
+# chama dá await nele — ver NPCInteraction._start_conversation.
+signal conversation_approach_arrived
+
 @export var speed: float = 300.0
 
 # Achatamento do eixo Y que alinha a DIREÇÃO do movimento aos eixos do losango isométrico. Não
@@ -48,8 +52,16 @@ const BLOCKED_SPEED_FRACTION: float = 0.1
 # lento pra jogar fora um trajeto inteiro que estava indo bem.
 const BLOCKED_GRACE_SECONDS: float = 0.25
 
+# Mesma ideia de BLOCKED_GRACE_SECONDS, mas pra aproximação de conversa (ver
+# start_conversation_approach()): mais tolerante, porque desistir aqui abre o diálogo um pouco
+# longe demais do NPC, em vez de só descartar um trajeto e parar.
+const APPROACH_BLOCKED_GRACE_SECONDS: float = 1.0
+
 var _is_moving: bool = false
 var _facing_direction: Isometric.Facing = Isometric.Facing.S
+
+# Verdadeiro enquanto uma conversa está aberta: nenhum esquema de movimento responde (SPEC §11.5).
+var _is_input_locked: bool = false
 
 # Caminho que o personagem está percorrendo no esquema de clique, e em qual ponto dele está. Vem
 # pronto do Pathfinder (ou é um ponto só, quando não há Pathfinder na cena). Caminho vazio
@@ -60,11 +72,22 @@ var _path_index: int = 0
 # Há quanto tempo ele está travado indo até o ponto atual. Ver _cancel_click_target_if_blocked().
 var _blocked_time: float = 0.0
 
+# Trilha própria da aproximação de conversa — não é _path/_path_index de propósito: aqueles somem
+# numa troca de esquema de movimento (ver _get_movement_direction()), e a aproximação precisa
+# sobreviver a isso, já que ela nem é um dos dois esquemas.
+var _approach_path: PackedVector2Array = PackedVector2Array()
+var _approach_index: int = 0
+var _is_approaching: bool = false
+var _approach_blocked_time: float = 0.0
+
 @onready var _animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
 
 
 func _ready() -> void:
 	movement_state_changed.connect(_on_movement_state_changed)
+	EventBus.conversation_approach_started.connect(_on_conversation_started)
+	EventBus.conversation_started.connect(_on_conversation_started)
+	EventBus.conversation_ended.connect(_on_conversation_ended)
 	print("[Player] - Controlador inicializado na posição %s" % [global_position])
 
 
@@ -73,6 +96,7 @@ func _physics_process(delta: float) -> void:
 	velocity = _to_screen_velocity(input_direction)
 	move_and_slide()
 	_cancel_click_target_if_blocked(delta)
+	_cancel_approach_if_blocked(delta)
 	_update_movement_state(input_direction)
 
 
@@ -80,6 +104,8 @@ func _physics_process(delta: float) -> void:
 # assim um clique consumido pela interface — um botão, um menu aberto por cima do jogo — não faz
 # o personagem sair andando pra trás da UI.
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_input_locked:
+		return
 	if GameManager.movement_scheme != GameManager.MovementScheme.CLICK:
 		return
 
@@ -91,7 +117,15 @@ func _unhandled_input(event: InputEvent) -> void:
 # nas configurações. Os dois esquemas são exclusivos: no modo clique o teclado não anda, e
 # vice-versa. Daqui pra frente o resto do script não sabe (nem precisa saber) de onde veio a
 # direção — achatamento isométrico e escolha de animação são iguais nos dois casos.
+#
+# A aproximação de conversa vem ANTES de tudo isso, inclusive de _is_input_locked: é justamente
+# por estar travado que o personagem só anda pela aproximação (script), nunca por input do
+# jogador, enquanto ela dura.
 func _get_movement_direction() -> Vector2:
+	if _is_approaching:
+		return _get_approach_direction()
+	if _is_input_locked:
+		return Vector2.ZERO
 	if GameManager.movement_scheme == GameManager.MovementScheme.CLICK:
 		return _get_click_direction()
 
@@ -176,6 +210,80 @@ func _clear_path() -> void:
 	_path = PackedVector2Array()
 	_path_index = 0
 	_blocked_time = 0.0
+
+
+# Anda até "target" ignorando o esquema de movimento ativo e _is_input_locked (ver
+# _get_movement_direction()) — usado para abordar um NPC (NPCInteraction._start_conversation).
+# Emite conversation_approach_arrived ao chegar. _is_input_locked já precisa estar true antes de
+# chamar (quem inicia a abordagem trava o input via conversation_approach_started); este método só
+# cuida do caminho.
+func start_conversation_approach(target: Vector2) -> void:
+	var pathfinder: Pathfinder = get_tree().get_first_node_in_group(Pathfinder.GROUP) as Pathfinder
+
+	if pathfinder == null:
+		_approach_path = PackedVector2Array([target])
+	else:
+		_approach_path = pathfinder.find_path(global_position, target, [get_rid()])
+
+	_approach_index = 0
+	_approach_blocked_time = 0.0
+	_is_approaching = not _approach_path.is_empty()
+
+	if not _is_approaching:
+		# Sem caminho (NPC cercado): adiado por call_deferred, senão o sinal dispararia antes de
+		# quem chamou ter a chance de dar await nele (mesmo cuidado do DialogueRunner._emit_step).
+		print("[Player] - Sem caminho até %s; abrindo diálogo daqui mesmo" % target)
+		call_deferred("_deferred_approach_arrived")
+
+
+# Só o corpo do adiamento acima — ver o comentário em start_conversation_approach().
+func _deferred_approach_arrived() -> void:
+	conversation_approach_arrived.emit()
+
+
+# Mesma mecânica de _get_click_direction, mas sobre _approach_path (ver o comentário dela lá em
+# cima pra saber por que ela é separada de _path).
+func _get_approach_direction() -> Vector2:
+	var arrival_distance: float = maxf(CLICK_ARRIVAL_DISTANCE, speed * get_physics_process_delta_time())
+
+	while _approach_index < _approach_path.size() and global_position.distance_to(_approach_path[_approach_index]) <= arrival_distance:
+		_approach_index += 1
+
+	if _approach_index >= _approach_path.size():
+		_is_approaching = false
+		conversation_approach_arrived.emit()
+		return Vector2.ZERO
+
+	var to_waypoint: Vector2 = _approach_path[_approach_index] - global_position
+	return Isometric.to_cartesian(to_waypoint, isometric_y_ratio)
+
+
+# Desiste da aproximação se o personagem travar por tempo demais (NPC cercado, cenário mudou desde
+# o último rebuild do Pathfinder). Sem isto um caminho impossível deixaria o input congelado para
+# sempre — pior que abrir o diálogo um pouco mais longe do NPC do que o previsto.
+func _cancel_approach_if_blocked(delta: float) -> void:
+	if not _is_approaching:
+		_approach_blocked_time = 0.0
+		return
+
+	if get_real_velocity().length() >= speed * BLOCKED_SPEED_FRACTION:
+		_approach_blocked_time = 0.0
+		return
+
+	_approach_blocked_time += delta
+	if _approach_blocked_time >= APPROACH_BLOCKED_GRACE_SECONDS:
+		_is_approaching = false
+		print("[Player] - Aproximação de conversa travada; abrindo diálogo daqui mesmo")
+		conversation_approach_arrived.emit()
+
+
+func _on_conversation_started(_conversation_id: StringName, _initiator_id: StringName) -> void:
+	_is_input_locked = true
+	_clear_path()
+
+
+func _on_conversation_ended(_conversation_id: StringName, _end_node_id: StringName) -> void:
+	_is_input_locked = false
 
 
 # Converte a direção cartesiana do input na velocidade final, em pixels de tela por segundo. A

@@ -45,9 +45,15 @@ var _focused_marker: InsightMarker = null
 var _is_manual_focus: bool = false
 var _target_sources: Dictionary = {}    # InsightMarker -> InsightSource (só orbes de ambiente)
 
+# Verdadeiro enquanto uma conversa está aberta: os orbes desligam (SPEC §11.5).
+var _is_input_locked: bool = false
+
 
 func _ready() -> void:
 	set_process(false)
+	EventBus.conversation_approach_started.connect(_on_conversation_started)
+	EventBus.conversation_started.connect(_on_conversation_started)
+	EventBus.conversation_ended.connect(_on_conversation_ended)
 
 
 func _exit_tree() -> void:
@@ -78,6 +84,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _is_input_locked:
+		return
 	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 	if mouse_button != null and mouse_button.pressed and mouse_button.button_index == MOUSE_BUTTON_LEFT:
 		_handle_orb_click(mouse_button)
@@ -232,3 +240,12 @@ func _close_bubbles_except(kept_source: InsightSource) -> void:
 # Ordena dois orbes de ambiente pela distância até o jogador.
 func _is_closer(left: InsightMarker, right: InsightMarker) -> bool:
 	return global_position.distance_squared_to(left.global_position) < global_position.distance_squared_to(right.global_position)
+
+
+func _on_conversation_started(_conversation_id: StringName, _initiator_id: StringName) -> void:
+	_is_input_locked = true
+	_set_focused_marker(null)
+
+
+func _on_conversation_ended(_conversation_id: StringName, _end_node_id: StringName) -> void:
+	_is_input_locked = false

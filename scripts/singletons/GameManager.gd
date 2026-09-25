@@ -8,11 +8,27 @@ extends Node
 # ocorreu. O GameManager escuta este sinal para saber a hora certa de disparar o fade-in final.
 signal scene_loaded
 
+# Emitido quando qualquer preferência de diálogo muda. Signal direto, não evento do EventBus: o
+# único ouvinte é a DialogueScreen, numa relação direta e permanente (ver docs/event_bus.md).
+signal dialogue_preferences_changed
+
 ## Espaço para variáveis
 
 # Esquemas de movimentação que o jogador pode escolher nas configurações. A ordem importa: é a
 # mesma em que as opções aparecem no OptionButton da tela de Settings.
 enum MovementScheme { KEYBOARD, CLICK }
+
+# Modo de revelação do texto de diálogo (SPEC §14): instantâneo mostra a fala inteira de uma vez;
+# progressivo é o typewriter (DialogueScreen._await_entry_then_continue).
+enum TextReveal { INSTANT, PROGRESSIVE }
+
+# Preferências de diálogo (SPEC §14.1). Mude sempre por set_dialogue_preference(): é o setter que
+# aplica o clamp, persiste e avisa a DialogueScreen.
+var dialogue_text_scale: float = 1.0          # 0.8 .. 2.0
+var dialogue_use_alt_font: bool = false
+var dialogue_panel_opacity: float = 0.82      # 0.82 .. 1.0
+var dialogue_text_reveal: TextReveal = TextReveal.INSTANT
+var dialogue_animation_multiplier: float = 1.0   # 1.0, 0.5 ou 0.0
 
 # Variável a ser utilizada na transição de cenas, fica true no inicio da troca e passa para false após a troca
 var in_transition: bool = false
@@ -69,6 +85,27 @@ func set_movement_scheme(scheme: MovementScheme) -> void:
 	movement_scheme = scheme
 	_save_gameplay_settings()
 	print("[GameManager] - Esquema de movimentação definido para %s" % MovementScheme.keys()[scheme])
+
+
+# Muda uma preferência de diálogo, com o clamp de cada campo (SPEC §14.1), persiste e avisa a
+# DialogueScreen. key é o nome do campo sem o prefixo "dialogue_" (ex.: &"text_scale").
+func set_dialogue_preference(key: StringName, value: Variant) -> void:
+	match key:
+		&"text_scale":
+			dialogue_text_scale = clampf(value, 0.8, 2.0)
+		&"use_alt_font":
+			dialogue_use_alt_font = value
+		&"panel_opacity":
+			dialogue_panel_opacity = clampf(value, 0.82, 1.0)
+		&"text_reveal":
+			dialogue_text_reveal = value as TextReveal
+		&"animation_multiplier":
+			dialogue_animation_multiplier = value
+		_:
+			push_warning("[GameManager] - AVISO: preferência de diálogo desconhecida: \"%s\"" % key)
+			return
+	_save_gameplay_settings()
+	dialogue_preferences_changed.emit()
 
 # Ponto de entrada público para qualquer troca de cena do projeto. Nenhum outro script deve
 # chamar get_tree().change_scene_to_file()/change_scene_to_packed() diretamente.
@@ -185,28 +222,43 @@ func _try_load_within_grace_period(scene_path: String) -> Dictionary:
 	return { "status": "pending" }
 
 
-# Salva as configurações de jogabilidade atuais em disco.
+# Salva as configurações de jogabilidade atuais em disco: gameplay (movimentação) e diálogo
+# (SPEC §14.1) juntas, sempre a partir do estado em memória — as duas seções são regravadas a cada
+# chamada de propósito, senão uma apagaria a outra na primeira mudança (mesmo cuidado do
+# Settings.gd com o user://settings.cfg).
 func _save_gameplay_settings() -> void:
 	var config: ConfigFile = ConfigFile.new()
 	config.set_value("gameplay", "movement_scheme", int(movement_scheme))
+	config.set_value("dialogue", "text_scale", dialogue_text_scale)
+	config.set_value("dialogue", "use_alt_font", dialogue_use_alt_font)
+	config.set_value("dialogue", "panel_opacity", dialogue_panel_opacity)
+	config.set_value("dialogue", "text_reveal", int(dialogue_text_reveal))
+	config.set_value("dialogue", "animation_multiplier", dialogue_animation_multiplier)
 	config.save(GAMEPLAY_CONFIG_PATH)
 	print("[GameManager] - Configurações de jogabilidade salvas")
 
 
 # Carrega as configurações de jogabilidade do disco, caindo no padrão se não houver arquivo (1ª
-# vez rodando o jogo) ou se o valor salvo não for um esquema válido — o arquivo fica em user:// e
-# pode ter sido editado à mão ou vir de uma versão antiga com outros esquemas.
+# vez rodando o jogo) ou se um valor salvo não for válido — o arquivo fica em user:// e pode ter
+# sido editado à mão ou vir de uma versão antiga com outros esquemas.
 func _load_gameplay_settings() -> void:
 	var config: ConfigFile = ConfigFile.new()
 	if config.load(GAMEPLAY_CONFIG_PATH) != OK:
 		movement_scheme = MovementScheme.KEYBOARD
-		print("[GameManager] - Nenhuma configuração de jogabilidade salva, usando movimentação por teclado")
+		print("[GameManager] - Nenhuma configuração de jogabilidade salva, usando os padrões")
 		return
 
 	var saved_scheme: int = config.get_value("gameplay", "movement_scheme", int(MovementScheme.KEYBOARD))
 	if not MovementScheme.values().has(saved_scheme):
 		push_warning("[GameManager] - Esquema de movimentação salvo inválido (%d), usando o padrão" % saved_scheme)
 		saved_scheme = int(MovementScheme.KEYBOARD)
-
 	movement_scheme = saved_scheme as MovementScheme
+
+	dialogue_text_scale = clampf(config.get_value("dialogue", "text_scale", dialogue_text_scale), 0.8, 2.0)
+	dialogue_use_alt_font = config.get_value("dialogue", "use_alt_font", dialogue_use_alt_font)
+	dialogue_panel_opacity = clampf(config.get_value("dialogue", "panel_opacity", dialogue_panel_opacity), 0.82, 1.0)
+	var saved_reveal: int = config.get_value("dialogue", "text_reveal", int(dialogue_text_reveal))
+	dialogue_text_reveal = saved_reveal as TextReveal if TextReveal.values().has(saved_reveal) else TextReveal.INSTANT
+	dialogue_animation_multiplier = config.get_value("dialogue", "animation_multiplier", dialogue_animation_multiplier)
+
 	print("[GameManager] - Configurações de jogabilidade carregadas (movimentação: %s)" % MovementScheme.keys()[movement_scheme])

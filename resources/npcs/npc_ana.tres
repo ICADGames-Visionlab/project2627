@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="NPCDefinition" format=3 uid="uid://yy3xoxjmg14n"]
+[gd_resource type="Resource" script_class="NPCDefinition" format=3 uid="uid://csg3um5uweh8m"]
 
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_medo.tres" id="1_r7ulg"]
 [ext_resource type="Resource" path="res://resources/emocoes/emocao_euforia.tres" id="2_pixw1"]
@@ -27,6 +27,7 @@ tint = Color(1, 0.7, 0.5, 1)
 portrait = ExtResource("4_bs1fm")
 spirit_art = ExtResource("12_u6ttw")
 walk_speed = 240.0
+conversation_id = &"ze_ana_feira"
 emotion_first = ExtResource("1_r7ulg")
 emotion_second = ExtResource("2_pixw1")
 starting_slot = 2
