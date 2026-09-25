@@ -1,0 +1,63 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://bcpk8vk7dip7v" path="res://scripts/ui/InventoryUI.gd" id="1_inventory_ui"]
+
+[node name="InventoryUI" type="CanvasLayer"]
+layer = 45
+script = ExtResource("1_inventory_ui")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Center" type="CenterContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="Root/Center"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Root/Center/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Layout" type="VBoxContainer" parent="Root/Center/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Root/Center/Panel/Margin/Layout"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Root/Center/Panel/Margin/Layout/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "INVENTORY_TITLE"
+
+[node name="Close" type="Button" parent="Root/Center/Panel/Margin/Layout/Header"]
+layout_mode = 2
+text = "INVENTORY_CLOSE"
+
+[node name="HeaderSeparator" type="HSeparator" parent="Root/Center/Panel/Margin/Layout"]
+layout_mode = 2
+
+[node name="EmptyLabel" type="Label" parent="Root/Center/Panel/Margin/Layout"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "INVENTORY_EMPTY"
+
+[node name="Slots" type="GridContainer" parent="Root/Center/Panel/Margin/Layout"]
+layout_mode = 2
+columns = 4
