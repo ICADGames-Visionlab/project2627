@@ -10,6 +10,7 @@
 [ext_resource type="Resource" uid="uid://cmgptgva76vd3" path="res://resources/npcs/rotinas/rotina_ana_euforia_folga.tres" id="7_sj6x0"]
 [ext_resource type="Resource" uid="uid://b3lanonwna2vf" path="res://resources/npcs/rotinas/rotina_ana_euforia_trabalho.tres" id="8_q7tqg"]
 [ext_resource type="Script" uid="uid://bm7w16uuu8ll5" path="res://scripts/npc/NPCDefinition.gd" id="9_wx0oo"]
+[ext_resource type="Texture2D" uid="uid://c2k4twj51h0af" path="res://images/placeholder/spirit art placeholder.png" id="12_u6ttw"]
 [ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="90_dream"]
 
 [sub_resource type="Resource" id="Resource_dream"]
@@ -24,6 +25,7 @@ id = &"ana"
 name_key = &"NPC_NAME_ANA"
 tint = Color(1, 0.7, 0.5, 1)
 portrait = ExtResource("4_bs1fm")
+spirit_art = ExtResource("12_u6ttw")
 walk_speed = 240.0
 emotion_first = ExtResource("1_r7ulg")
 emotion_second = ExtResource("2_pixw1")

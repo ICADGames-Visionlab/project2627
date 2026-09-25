@@ -3,39 +3,15 @@
 [ext_resource type="Script" uid="uid://dnl4x2ste4hte" path="res://scripts/profiling/ProfilingScreen.gd" id="1_screen"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingPage.tscn" id="2_page"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/GlossaryPanel.tscn" id="3_glossary"]
-[ext_resource type="PackedScene" path="res://scenes/profiling/ProfilingEmotionOption.tscn" id="4_emotion_option"]
+[ext_resource type="PackedScene" uid="uid://cpo6wd2gb8gkv" path="res://scenes/profiling/ProfilingEmotionOption.tscn" id="4_emotion_option"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/GlossaryMarkMenu.tscn" id="5_mark_menu"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_portrait"]
-bg_color = Color(0.13, 0.13, 0.17, 0.95)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.85, 0.4, 0.45)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_confirm"]
-bg_color = Color(0.09, 0.09, 0.11, 0.98)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.85, 0.4, 0.5)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
 
 [node name="ProfilingScreen" type="CanvasLayer" unique_id=1122286895]
 layer = 90
 script = ExtResource("1_screen")
-emotion_option_scene = ExtResource("4_emotion_option")
 
 [node name="Root" type="Control" parent="." unique_id=706637177]
+unique_name_in_owner = true
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -53,17 +29,8 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0.82)
 
-[node name="EmotionFilter" type="ColorRect" parent="Root" unique_id=173113172]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(1, 1, 1, 0)
-
 [node name="Shake" type="Control" parent="Root" unique_id=2026291817]
+unique_name_in_owner = true
 anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -71,7 +38,39 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
 
+[node name="SpiritArt" type="TextureRect" parent="Root/Shake" unique_id=1569195833]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -24.0
+offset_top = -24.0
+offset_right = 24.0
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="EmotionFilter" type="ColorRect" parent="Root/Shake" unique_id=173113172]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -24.0
+offset_top = -24.0
+offset_right = 24.0
+offset_bottom = 24.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0)
+
 [node name="SpiritView" type="Control" parent="Root/Shake" unique_id=1357206106]
+unique_name_in_owner = true
 anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -89,7 +88,86 @@ offset_right = 648.0
 offset_bottom = 66.0
 text = "PLACEHOLDER_PROFILING_SCREEN"
 
-[node name="Center" type="VBoxContainer" parent="Root/Shake/SpiritView" unique_id=1926738169]
+[node name="SpiritName" type="Label" parent="Root/Shake/SpiritView" unique_id=1016245450]
+unique_name_in_owner = true
+auto_translate_mode = 2
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -324.0
+offset_right = 400.0
+offset_bottom = -264.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 44
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SpiritCaption" type="Label" parent="Root/Shake/SpiritView" unique_id=1529714670]
+unique_name_in_owner = true
+auto_translate_mode = 2
+modulate = Color(1, 0.85, 0.4, 1)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -214.0
+offset_right = 400.0
+offset_bottom = 86.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="Emotions" type="Control" parent="Root/Shake/SpiritView" unique_id=636890357]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="EmotionFirst" parent="Root/Shake/SpiritView/Emotions" unique_id=1146484466 instance=ExtResource("4_emotion_option")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.18
+anchor_top = 0.5
+anchor_right = 0.18
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -55.0
+offset_right = 229.99997
+offset_bottom = 55.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="EmotionSecond" parent="Root/Shake/SpiritView/Emotions" unique_id=82709062 instance=ExtResource("4_emotion_option")]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.82
+anchor_top = 0.5
+anchor_right = 0.82
+anchor_bottom = 0.5
+offset_left = -230.0
+offset_top = -55.0
+offset_right = 30.0
+offset_bottom = 55.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Hint" type="Label" parent="Root/Shake/SpiritView" unique_id=1090096970]
+modulate = Color(1, 1, 1, 0.65)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -97,58 +175,18 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -560.0
-offset_top = -340.0
+offset_top = -263.0
 offset_right = 560.0
-offset_bottom = 340.0
+offset_bottom = -229.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 50
-alignment = 1
-
-[node name="NpcName" type="Label" parent="Root/Shake/SpiritView/Center" unique_id=1016245450]
-auto_translate_mode = 2
-layout_mode = 2
-theme_override_font_sizes/font_size = 44
-horizontal_alignment = 1
-
-[node name="Portrait" type="PanelContainer" parent="Root/Shake/SpiritView/Center" unique_id=369288576]
-custom_minimum_size = Vector2(300, 300)
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_styles/panel = SubResource("StyleBoxFlat_portrait")
-
-[node name="Content" type="VBoxContainer" parent="Root/Shake/SpiritView/Center/Portrait" unique_id=1025018983]
-layout_mode = 2
-alignment = 1
-
-[node name="Image" type="TextureRect" parent="Root/Shake/SpiritView/Center/Portrait/Content" unique_id=1569195833]
-layout_mode = 2
-size_flags_vertical = 3
-expand_mode = 1
-stretch_mode = 5
-
-[node name="Caption" type="Label" parent="Root/Shake/SpiritView/Center/Portrait/Content" unique_id=1529714670]
-auto_translate_mode = 2
-modulate = Color(1, 0.85, 0.4, 1)
-layout_mode = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-autowrap_mode = 3
-
-[node name="Emotions" type="HBoxContainer" parent="Root/Shake/SpiritView/Center" unique_id=636890357]
-layout_mode = 2
-size_flags_horizontal = 4
-theme_override_constants/separation = 40
-alignment = 1
-
-[node name="Hint" type="Label" parent="Root/Shake/SpiritView/Center" unique_id=1090096970]
-modulate = Color(1, 1, 1, 0.65)
-layout_mode = 2
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 20
 text = "PROFILING_HINT_HOLD"
 horizontal_alignment = 1
 
 [node name="ExitButton" type="Button" parent="Root/Shake/SpiritView" unique_id=1519738763]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -165,6 +203,7 @@ theme_override_font_sizes/font_size = 24
 text = "PROFILING_EXIT"
 
 [node name="StoryView" type="Control" parent="Root/Shake" unique_id=1232291479]
+unique_name_in_owner = true
 anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -172,66 +211,81 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 1
 
-[node name="Columns" type="HBoxContainer" parent="Root/Shake/StoryView" unique_id=1915917166]
+[node name="Page" parent="Root/Shake/StoryView" unique_id=979592363 instance=ExtResource("2_page")]
+unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = -1
+anchor_right = 0.5
+anchor_bottom = 0.58
 offset_left = 72.0
 offset_top = 56.0
-offset_right = -72.0
+offset_right = -24.0
+
+[node name="Glossary" parent="Root/Shake/StoryView" unique_id=1262481180 instance=ExtResource("3_glossary")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_top = 0.58
+anchor_right = 0.5
+offset_left = 72.0
+offset_top = 16.0
+offset_right = -24.0
 offset_bottom = -120.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 32
 
-[node name="Left" type="VBoxContainer" parent="Root/Shake/StoryView/Columns" unique_id=1109249453]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 20
-
-[node name="Page" parent="Root/Shake/StoryView/Columns/Left" instance=ExtResource("2_page")]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="Glossary" parent="Root/Shake/StoryView/Columns/Left" instance=ExtResource("3_glossary")]
-layout_mode = 2
-
-[node name="Right" type="VBoxContainer" parent="Root/Shake/StoryView/Columns" unique_id=82776095]
-custom_minimum_size = Vector2(300, 0)
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="NpcName" type="Label" parent="Root/Shake/StoryView/Columns/Right" unique_id=1520891202]
+[node name="StoryName" type="Label" parent="Root/Shake/StoryView" unique_id=1520891202]
+unique_name_in_owner = true
 auto_translate_mode = 2
-layout_mode = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 56.0
+offset_right = -72.0
+offset_bottom = 106.0
+grow_horizontal = 2
 theme_override_font_sizes/font_size = 32
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="Portrait" type="PanelContainer" parent="Root/Shake/StoryView/Columns/Right" unique_id=500359197]
-custom_minimum_size = Vector2(300, 300)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_confirm")
-
-[node name="Content" type="VBoxContainer" parent="Root/Shake/StoryView/Columns/Right/Portrait" unique_id=1040514734]
-layout_mode = 2
-alignment = 1
-
-[node name="Image" type="TextureRect" parent="Root/Shake/StoryView/Columns/Right/Portrait/Content" unique_id=1291256249]
-layout_mode = 2
-size_flags_vertical = 3
+[node name="StoryPortrait" type="TextureRect" parent="Root/Shake/StoryView" unique_id=1291256249]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -27.611206
+offset_right = 141.0
+offset_bottom = 29.222168
+grow_horizontal = 2
+grow_vertical = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Caption" type="Label" parent="Root/Shake/StoryView/Columns/Right/Portrait/Content" unique_id=862512708]
+[node name="StoryCaption" type="Label" parent="Root/Shake/StoryView" unique_id=862512708]
+unique_name_in_owner = true
 auto_translate_mode = 2
 modulate = Color(1, 0.85, 0.4, 1)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 120.0
+offset_right = -72.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
 
 [node name="BackButton" type="Button" parent="Root/Shake/StoryView" unique_id=615623373]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
@@ -244,6 +298,23 @@ grow_vertical = 0
 theme_override_font_sizes/font_size = 24
 text = "PROFILING_BACK"
 
-[node name="MarkMenu" parent="Root" instance=ExtResource("5_mark_menu")]
+[node name="ContinueHint" type="Label" parent="Root/Shake/StoryView" unique_id=1335196404]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 72.0
+offset_top = -104.0
+offset_right = 672.0
+offset_bottom = -48.0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+text = "PROFILING_CONTINUE"
+vertical_alignment = 1
+
+[node name="MarkMenu" parent="Root" unique_id=1817841858 instance=ExtResource("5_mark_menu")]
+unique_name_in_owner = true
 visible = false
 layout_mode = 0

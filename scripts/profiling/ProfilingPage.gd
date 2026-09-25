@@ -2,7 +2,9 @@
 ## depois de resolvida, a história contada por inteiro.
 ##
 ## COMO USAR: o layout está em scenes/profiling/ProfilingPage.tscn (moldura do papel, margens, fonte
-## da mensagem, espaçamento entre parágrafos). A ProfilingScreen instancia essa cena e chama
+## da mensagem, espaçamento entre parágrafos). A mensagem e o papel são peças soltas (âncoras), e o
+## script as acha pelo nome único (%): dá pra mover cada uma no editor. A ProfilingScreen instancia
+## essa cena e chama
 ## configure(). A página não abre nem fecha nada e não decide nada sobre o sonho: ela desenha o
 ## estado que está no ProfilingJournal, escreve nele quando o jogador mexe numa lacuna, e anuncia o
 ## resultado da correção por signal.
@@ -21,7 +23,7 @@
 ##
 ## O guia completo está em docs/sistema_de_profiling.md.
 class_name ProfilingPage
-extends VBoxContainer
+extends Control
 
 ## Espaço para sinais
 
@@ -70,9 +72,9 @@ var _show_resolved: bool = false
 
 ## Espaço para variáveis onready
 
-@onready var _message: Label = $Message
-@onready var _lines: VBoxContainer = $PagePanel/Margin/Content/Lines
-@onready var _resolved_text: ClickableWordText = $PagePanel/Margin/Content/ResolvedText
+@onready var _message: Label = %Message
+@onready var _lines: VBoxContainer = %Lines
+@onready var _resolved_text: ClickableWordText = %ResolvedText
 
 ## Espaço para funções nativas
 
@@ -119,8 +121,9 @@ func show_resolved() -> void:
 	refresh()
 
 
-# Usa uma palavra do glossário sem arrastar: ela vai pra primeira lacuna vazia, ou volta pro
-# glossário se já estiver numa lacuna.
+# Usa uma palavra do glossário sem arrastar: ela vai pra primeira lacuna vazia que aceita a
+# categoria dela. Palavra que já está numa lacuna fica onde está: tirar é o clique direito na
+# lacuna (ver ProfilingBlank), e o clique esquerdo nunca tira palavra.
 #
 # É o atalho de quem joga de teclado/controle (não há como arrastar com um analógico) e de quem está
 # preenchendo rápido. Ele não escolhe lacuna "melhor" de propósito: a primeira vazia é previsível, e
@@ -130,18 +133,17 @@ func activate_word(word_id: StringName) -> void:
 		return
 
 	var blank_count: int = _story.get_blank_count()
-	var current: int = ProfilingJournal.find_blank_with_word(_story.id, word_id, blank_count)
-	if current >= 0:
-		ProfilingJournal.clear_blank(_story.id, current, blank_count)
+	var word: GlossaryWord = ProfilingCatalog.find_word(word_id)
+	if word == null or ProfilingJournal.find_blank_with_word(_story.id, word_id, blank_count) >= 0:
 		return
 
 	var fills: PackedStringArray = ProfilingJournal.get_fills(_story.id, blank_count)
 	for index: int in blank_count:
-		if fills[index].is_empty():
+		if fills[index].is_empty() and word.fits_category(_get_blank_category(index)):
 			_fill_blank(index, word_id)
 			return
 
-	print("[Profiling] - Página cheia: a palavra \"%s\" não tem lacuna vazia pra entrar" % word_id)
+	print("[Profiling] - Nenhuma lacuna vazia aceita a palavra \"%s\"" % word_id)
 
 
 # Devolve uma palavra ao glossário: acha a lacuna em que ela está e esvazia.
@@ -227,7 +229,7 @@ func _add_blank(row: HFlowContainer, index: int, fills: PackedStringArray,
 	var word: GlossaryWord = null
 	if index < fills.size() and not fills[index].is_empty():
 		word = ProfilingCatalog.find_word(StringName(fills[index]))
-	blank.configure(index, word, evaluation.is_solved())
+	blank.configure(index, word, evaluation.is_solved(), _get_blank_category(index))
 
 
 # Põe uma palavra do texto da história na fileira. Ela não é clicável: o texto com lacunas é o
@@ -268,6 +270,13 @@ func _update_message(evaluation: ProfilingEvaluation) -> void:
 		_:
 			_message.modulate = color_many_wrong
 	_message.show()
+
+
+# A categoria que uma lacuna aceita: a da palavra esperada nela. É o que colore a lacuna e o que
+# decide quais palavras entram.
+func _get_blank_category(index: int) -> GlossaryCategory:
+	var expected: GlossaryWord = _story.get_expected_word(index)
+	return expected.category if expected != null else null
 
 
 func _clear_lines() -> void:

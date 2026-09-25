@@ -8,15 +8,23 @@
 ##
 ## AS DUAS TELAS, como no GDD:
 ##
-##   ESPÍRITO  o portrait do NPC no centro, as emoções dele em volta. Segurar o botão esquerdo em
+##   ESPÍRITO  a arte do espírito do NPC cobrindo a tela inteira (NPCDefinition.spirit_art, 1920x1080),
+##             com o nome e as emoções por cima. Segurar o botão esquerdo em
 ##             cima de uma emoção troca a emoção do NPC (a partir do dia seguinte); passar o mouse
 ##             mostra o INVESTIGAR, que abre a história dela. "Sair" no canto inferior direito volta
 ##             pro sonho, e o jogador pode procurar outro espírito.
-##   HISTÓRIA  a página com lacunas, o glossário embaixo e o portrait na direita. A seta no canto
-##             inferior esquerdo volta pra tela de emoções.
+##   HISTÓRIA  metade esquerda: a página com lacunas e o glossário embaixo; metade direita: a arte do
+##             NPC, sem moldura. A seta no canto inferior esquerdo volta pra tela de emoções.
 ##
-## Acertar TODAS as emoções de um NPC faz o jogador ACORDAR — é o GDD: entender o NPC inteiro fecha
-## o sonho. O jogador tem alguns segundos pra ler a história completa antes (wake_delay).
+## O ACERTO: a página vira a história completa na hora, sem a seta de voltar — o jogador lê e clica
+## (ou aperta Enter/ESC) pra continuar, e volta pra tela de emoções. Quando esse acerto completou
+## TODAS as emoções do NPC, a tela de emoções é a última parada: dali, sair é ACORDAR (o GDD:
+## entender o NPC inteiro fecha o sonho), e ele ainda pode escolher a emoção antes.
+##
+## O LAYOUT É LIVRE: as peças da cena são soltas (âncoras), e não presas em contêineres — dá pra
+## arrastar cada uma no editor, inclusive as opções de emoção (filhas do nó Emotions, que recebem as
+## emoções do NPC na ordem). O script acha os nós pelo nome único (%), então mudar um nó de pai
+## também não quebra nada.
 ##
 ## O QUE ESTA TELA NÃO FAZ, porque os sistemas ainda não existem:
 ##
@@ -44,19 +52,9 @@ const GROUP: StringName = &"profiling_screen"
 
 ## Espaço para variáveis exportadas
 
-## A cena de uma emoção na tela do espírito (ProfilingEmotionOption.tscn). A tela instancia uma por
-## emoção do NPC — a aparência delas se mexe na cena, não aqui.
-@export var emotion_option_scene: PackedScene
-
-## Quanto tempo a mensagem "Tudo foi preenchido corretamente" fica na tela antes de a página ser
-## trocada pela história completa, em segundos.
-@export var reveal_delay: float = 2.5
-
-## Quanto tempo o jogador tem pra ler a história completa do último acerto antes de acordar, em
-## segundos. Só vale quando aquele acerto completou TODAS as emoções do NPC.
-@export var wake_delay: float = 6.0
-
-## Tremor da tela enquanto o jogador segura uma emoção, em pixels no auge do gesto.
+## Tremor da tela enquanto o jogador segura uma emoção, em pixels no auge do gesto. A arte do
+## espírito e o filtro de cor passam 24 px de cada borda da tela (offsets na cena) pra a borda não
+## aparecer tremendo: se este valor passar de 24, aumente essa sobra junto.
 @export var shake_strength: float = 12.0
 
 ## Opacidade do filtro de cor da emoção vigente, sempre presente na tela do espírito.
@@ -65,7 +63,8 @@ const GROUP: StringName = &"profiling_screen"
 ## Opacidade do filtro no auge do gesto de segurar uma emoção.
 @export var filter_hold_alpha: float = 0.38
 
-## Período do pisca-pisca da seta de voltar depois de uma história resolvida, em segundos.
+## Período do pisca-pisca da seta de voltar numa história resolvida (e do "clique para continuar"
+## logo depois do acerto), em segundos.
 @export var blink_period: float = 0.8
 
 ## Espaço para variáveis
@@ -75,35 +74,42 @@ var _profile: NPCProfile
 var _definition: NPCDefinition
 var _story: ProfilingStory
 var _view: View = View.SPIRIT
-# Verdadeiro entre o acerto da página e a troca dela pela história completa. Segura o pedido de
-# revelar pra ele não acontecer duas vezes (o diário muda, a página se redesenha e a correção é
-# anunciada de novo no meio da espera).
+# Verdadeiro entre o acerto da página e a troca dela pela história completa (que é adiada pro fim do
+# quadro). Segura o pedido de revelar pra ele não acontecer duas vezes.
 var _is_revealing: bool = false
-# O jogador acertou a última emoção deste NPC: quando a revelação terminar, ele acorda.
+# A história acabou de ser resolvida e está na tela pela primeira vez: sem seta de voltar, e
+# qualquer clique continua pra tela de emoções.
+var _awaiting_continue: bool = false
+# O jogador acertou a última emoção deste NPC: sair do espírito agora é acordar.
 var _wake_pending: bool = false
 var _blink_time: float = 0.0
 
 ## Espaço para variáveis onready
 
-@onready var _root: Control = $Root
-@onready var _filter: ColorRect = $Root/EmotionFilter
-@onready var _shake: Control = $Root/Shake
-@onready var _spirit_view: Control = $Root/Shake/SpiritView
-@onready var _spirit_name: Label = $Root/Shake/SpiritView/Center/NpcName
-@onready var _spirit_portrait: TextureRect = $Root/Shake/SpiritView/Center/Portrait/Content/Image
-@onready var _spirit_caption: Label = $Root/Shake/SpiritView/Center/Portrait/Content/Caption
-@onready var _emotions: HBoxContainer = $Root/Shake/SpiritView/Center/Emotions
-@onready var _exit_button: Button = $Root/Shake/SpiritView/ExitButton
-@onready var _story_view: Control = $Root/Shake/StoryView
-@onready var _page: ProfilingPage = $Root/Shake/StoryView/Columns/Left/Page
-@onready var _glossary: GlossaryPanel = $Root/Shake/StoryView/Columns/Left/Glossary
-@onready var _story_name: Label = $Root/Shake/StoryView/Columns/Right/NpcName
-@onready var _story_portrait: TextureRect = $Root/Shake/StoryView/Columns/Right/Portrait/Content/Image
-@onready var _story_caption: Label = $Root/Shake/StoryView/Columns/Right/Portrait/Content/Caption
-@onready var _back_button: Button = $Root/Shake/StoryView/BackButton
+@onready var _root: Control = %Root
+@onready var _filter: ColorRect = %EmotionFilter
+@onready var _shake: Control = %Shake
+@onready var _spirit_view: Control = %SpiritView
+@onready var _spirit_name: Label = %SpiritName
+# A arte do espírito fica DENTRO do "Shake" (treme junto com a tela) e ABAIXO do filtro de cor, que
+# a tinge. Ela sobra um pouco além das bordas da tela, pra a borda não aparecer no tremor.
+@onready var _spirit_art: TextureRect = %SpiritArt
+@onready var _spirit_caption: Label = %SpiritCaption
+# As opções de emoção já estão NA CENA, como filhos deste nó, e cada uma fica onde foi posta no
+# editor: a 1ª recebe a primeira emoção do NPC, a 2ª a segunda (ver _refresh_spirit_view).
+@onready var _emotions: Control = %Emotions
+@onready var _exit_button: Button = %ExitButton
+@onready var _story_view: Control = %StoryView
+@onready var _page: ProfilingPage = %Page
+@onready var _glossary: GlossaryPanel = %Glossary
+@onready var _story_name: Label = %StoryName
+@onready var _story_portrait: TextureRect = %StoryPortrait
+@onready var _story_caption: Label = %StoryCaption
+@onready var _back_button: Button = %BackButton
+@onready var _continue_hint: Control = %ContinueHint
 # O retângulo de marcas fica FORA do "Shake" e por cima de tudo: ele se posiciona em coordenadas de
 # tela (acima da palavra clicada), e tremer com a tela o descolaria da palavra.
-@onready var _mark_menu: GlossaryMarkMenu = $Root/MarkMenu
+@onready var _mark_menu: GlossaryMarkMenu = %MarkMenu
 
 ## Espaço para funções nativas
 
@@ -121,30 +127,38 @@ func _ready() -> void:
 
 	_exit_button.pressed.connect(close)
 	_back_button.pressed.connect(show_spirit_view)
+	_story_view.gui_input.connect(_on_story_view_gui_input)
 	_page.evaluated.connect(_on_page_evaluated)
 	_glossary.word_activated.connect(_on_glossary_word_activated)
 	_glossary.mark_menu_requested.connect(_on_glossary_mark_menu_requested)
 	_glossary.word_returned.connect(_on_glossary_word_returned)
 	_mark_menu.mark_chosen.connect(_on_mark_chosen)
-
-	if emotion_option_scene == null:
-		push_error("[Profiling] - Tela sem \"Emotion Option Scene\" apontada; "
-			+ "nenhuma emoção vai aparecer no espírito")
+	for option: ProfilingEmotionOption in _get_emotion_options():
+		option.hold_changed.connect(_on_option_hold_changed)
+		option.hold_completed.connect(_on_option_hold_completed)
+		option.investigate_requested.connect(show_story_view)
 
 	_root.hide()
 	set_process(false)
 
 
 func _process(delta: float) -> void:
-	# Só roda pelo pisca-pisca da seta: "a seta para voltar para a tela de selecionar emoções fica
-	# piscando" (GDD), o aviso de que não há mais nada pra fazer naquela página.
+	# Só roda pelo pisca-pisca: da seta, numa história já resolvida ("a seta para voltar para a tela
+	# de selecionar emoções fica piscando", GDD), ou do "clique para continuar" logo depois do acerto.
 	_blink_time += delta
 	var wave: float = 0.55 + 0.45 * sin(_blink_time * TAU / maxf(blink_period, 0.05))
-	_back_button.modulate = Color(1.0, 1.0, 1.0, wave)
+	var target: CanvasItem = _continue_hint if _awaiting_continue else _back_button
+	target.modulate = Color(1.0, 1.0, 1.0, wave)
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _root.visible or not event.is_action_pressed(&"ui_cancel"):
+	if not _root.visible:
+		return
+	if _awaiting_continue and event.is_action_pressed(&"ui_accept"):
+		get_viewport().set_input_as_handled()
+		show_spirit_view()
+		return
+	if not event.is_action_pressed(&"ui_cancel"):
 		return
 
 	get_viewport().set_input_as_handled()
@@ -206,10 +220,13 @@ func show_spirit_view() -> void:
 	_view = View.SPIRIT
 	_story = null
 	_is_revealing = false
+	_awaiting_continue = false
 	_spirit_view.show()
 	_story_view.hide()
 	set_process(false)
 	_back_button.modulate = Color.WHITE
+	_back_button.show()
+	_continue_hint.hide()
 	_refresh_spirit_view()
 
 
@@ -225,10 +242,12 @@ func show_story_view(slot: int) -> void:
 	_story = story
 	_is_revealing = false
 	_spirit_view.hide()
+	_spirit_art.hide()
 	_story_view.show()
 
 	_story_name.text = _get_npc_name()
-	_apply_portrait(_story_portrait, _story_caption)
+	_apply_art(_story_portrait, _story_caption,
+		_definition.portrait if _definition != null else null, "PLACEHOLDER_NPC_PORTRAIT")
 	_page.configure(_profile, story)
 	_glossary.configure(_npc_id, story)
 	# O glossário sai da tela nas histórias já resolvidas: não há mais lacuna pra preencher, e é o
@@ -240,20 +259,22 @@ func show_story_view(slot: int) -> void:
 		story.id, emotion.id if emotion != null else "?"])
 
 
-# Redesenha a tela de emoções: uma opção por emoção do NPC, com o estado de cada uma.
+# Redesenha a tela de emoções: cada emoção do NPC vai pra uma das opções que estão na cena, na ordem
+# dos filhos do nó Emotions (a 1ª opção recebe a primeira emoção, a 2ª a segunda). As opções não são
+# criadas aqui: estão na cena pra poderem ser posicionadas à mão, cada uma num canto da arte.
 #
 # As emoções vêm do NPCDefinition, não de uma lista fixa de três como no GDD: o projeto usa emoções
-# modulares em slots (ver EmotionDefinition), e é por isso que o dia em que um NPC tiver um terceiro
-# slot esta tela não muda.
+# modulares em slots (ver EmotionDefinition). No dia em que um NPC tiver um terceiro slot, basta
+# duplicar uma opção na cena. Opção sobrando (NPC com menos emoções) fica escondida.
 func _refresh_spirit_view() -> void:
-	for child: Node in _emotions.get_children():
-		child.queue_free()
-
 	_spirit_name.text = _get_npc_name()
-	_apply_portrait(_spirit_portrait, _spirit_caption)
+	_apply_art(_spirit_art, _spirit_caption,
+		_definition.spirit_art if _definition != null else null, "PLACEHOLDER_NPC_SPIRIT_ART")
 
 	var current_slot: int = _get_current_slot()
 	var scheduled_slot: int = ProfilingJournal.get_scheduled_slot(_npc_id)
+	var options: Array[ProfilingEmotionOption] = _get_emotion_options()
+	var used: int = 0
 
 	for slot: int in NPCDefinition.EmotionSlot.values():
 		var emotion: EmotionDefinition = _get_emotion(slot)
@@ -261,42 +282,47 @@ func _refresh_spirit_view() -> void:
 			# O neutro não é uma emoção do catálogo: é a ausência de emoção vigente, e não tem
 			# história por trás nem pode ser escolhido no sonho.
 			continue
+		if used >= options.size():
+			push_warning(("[Profiling] - AVISO: \"%s\" tem mais emoções do que opções no nó "
+				+ "Emotions da ProfilingScreen.tscn; duplique uma opção lá") % _npc_id)
+			break
 
 		var story: ProfilingStory = _profile.find_story_for_emotion(emotion)
-		if emotion_option_scene == null:
-			continue
-		var option: ProfilingEmotionOption = emotion_option_scene.instantiate() as ProfilingEmotionOption
-		if option == null:
-			push_error("[Profiling] - A cena de emoção apontada na tela não é um "
-				+ "ProfilingEmotionOption")
-			break
-		_emotions.add_child(option)
+		var option: ProfilingEmotionOption = options[used]
+		option.show()
 		option.configure(emotion, slot, slot == current_slot, slot == scheduled_slot,
 			story != null and ProfilingJournal.is_story_solved(story.id), story != null)
-		option.hold_changed.connect(_on_option_hold_changed)
-		option.hold_completed.connect(_on_option_hold_completed)
-		option.investigate_requested.connect(show_story_view)
+		used += 1
+
+	for index: int in range(used, options.size()):
+		options[index].hide()
 
 	_apply_base_filter()
 
 
-# A revelação do acerto, na ordem do GDD: a mensagem fica alguns segundos, a página some e dá lugar à
-# história contada por inteiro, o glossário sai e a seta de voltar começa a piscar.
+# As opções de emoção da cena, na ordem dos filhos do nó Emotions.
+func _get_emotion_options() -> Array[ProfilingEmotionOption]:
+	var options: Array[ProfilingEmotionOption] = []
+	for child: Node in _emotions.get_children():
+		var option: ProfilingEmotionOption = child as ProfilingEmotionOption
+		if option != null:
+			options.append(option)
+	return options
+
+
+# A revelação do acerto: a página dá lugar à história contada por inteiro NA HORA, o glossário sai e
+# a seta de voltar também — no lugar dela, o "clique para continuar", que leva à tela de emoções.
 func _reveal_solved() -> void:
-	_is_revealing = true
+	_is_revealing = false
+	# A tela pode ter sido fechada (ou trocado de história) antes do fim do quadro.
+	if not _root.visible or _story == null:
+		return
 	var story: ProfilingStory = _story
 
-	# MÚSICA: é AQUI que a "música curta" do GDD tocaria, no instante do acerto, antes da espera.
+	# MÚSICA: é AQUI que a "música curta" do GDD tocaria, no instante do acerto.
 	# Não há música no projeto ainda (ver docs/AudioManager.md); quando houver, é uma linha:
 	#     AudioManager.play_sfx(...)
 	print("[Profiling] - Acerto da história \"%s\" (música do acerto: pendente)" % story.id)
-
-	# O timer roda com a árvore pausada porque o jogo está parado enquanto esta tela está aberta.
-	await get_tree().create_timer(reveal_delay, true).timeout
-	# A tela pode ter sido fechada (ou trocado de história) durante a espera.
-	if not _root.visible or _story != story:
-		_is_revealing = false
-		return
 
 	# DIÁRIO: marcar é o funil de todo acerto, e é lá (ProfilingJournal.mark_story_solved) que o
 	# diário do jogador vai se pendurar quando existir — ele guarda ProfilingStory.journal_entry_key.
@@ -306,15 +332,11 @@ func _reveal_solved() -> void:
 
 	_page.show_resolved()
 	_glossary.hide()
+	_back_button.hide()
+	_continue_hint.show()
+	_awaiting_continue = true
 	_blink_time = 0.0
 	set_process(true)
-	_is_revealing = false
-
-	if _wake_pending:
-		# O jogador entendeu o NPC inteiro: ele tem wake_delay pra ler a história e acorda.
-		await get_tree().create_timer(wake_delay, true).timeout
-		if _root.visible and _wake_pending:
-			_wake_up()
 
 
 # Acorda o jogador, com a mesma passagem que a cama usa. Fora do sonho (a tela aberta pelo menu de
@@ -360,17 +382,17 @@ func _apply_filter(emotion: EmotionDefinition, hold_progress: float) -> void:
 	_filter.color = tint
 
 
-# PLACEHOLDER: põe o retrato do NPC, ou o retângulo com o nome dele quando não há arte.
+# PLACEHOLDER: põe uma arte do NPC (o retrato ou a arte do espírito), ou o aviso de placeholder com
+# o nome dele quando a arte não existe.
 #
-# O retrato vem do NPCDefinition, e não do perfil de profiling: é a cara do NPC, e o diário e a tela
-# de diálogo vão mostrar a mesma imagem.
-func _apply_portrait(image: TextureRect, caption: Label) -> void:
-	var has_art: bool = _definition != null and _definition.portrait != null
-	image.texture = _definition.portrait if has_art else null
-	image.visible = has_art
-	caption.visible = not has_art
-	if not has_art:
-		caption.text = "%s\n%s" % [tr("PLACEHOLDER_NPC_PORTRAIT"), _get_npc_name()]
+# As artes vêm do NPCDefinition, e não do perfil de profiling: são a cara do NPC, e o diário e a
+# tela de diálogo vão mostrar as mesmas imagens.
+func _apply_art(image: TextureRect, caption: Label, art: Texture2D, placeholder_key: String) -> void:
+	image.texture = art
+	image.visible = art != null
+	caption.visible = art == null
+	if art == null:
+		caption.text = "%s\n%s" % [tr(placeholder_key), _get_npc_name()]
 
 
 # A emoção de um slot do NPC, ou null (o caso do neutro e do slot que o design deixou vazio).
@@ -440,12 +462,27 @@ func _on_option_hold_completed(slot: int) -> void:
 
 # A correção da página, a cada mudança. Só o acerto de uma história AINDA NÃO RESOLVIDA dispara a
 # revelação — reabrir uma história resolvida mostra a mesma página sem tocar música de novo.
+#
+# A revelação é adiada pro fim do quadro: a correção chega de DENTRO do redesenho da página, e
+# revelar ali redesenharia a página no meio do próprio redesenho.
 func _on_page_evaluated(evaluation: ProfilingEvaluation) -> void:
 	if _story == null or _is_revealing or not evaluation.is_solved():
 		return
 	if ProfilingJournal.is_story_solved(_story.id):
 		return
-	_reveal_solved()
+	_is_revealing = true
+	_reveal_solved.call_deferred()
+
+
+# Clique em qualquer lugar da história logo depois do acerto: continua pra tela de emoções. Chega
+# aqui o clique que nenhuma peça da página consumiu (o texto e o papel deixam passar).
+func _on_story_view_gui_input(event: InputEvent) -> void:
+	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
+	if not _awaiting_continue or mouse_button == null or not mouse_button.pressed \
+			or mouse_button.button_index != MOUSE_BUTTON_LEFT:
+		return
+	_story_view.accept_event()
+	show_spirit_view()
 
 
 func _on_glossary_word_activated(word_id: StringName) -> void:
@@ -484,8 +521,8 @@ func _on_journal_changed() -> void:
 		_refresh_spirit_view()
 
 
-# O jogador acertou a última emoção deste NPC. Acordar não acontece aqui: a revelação da história
-# ainda está na tela, e é ela que leva ao sono no fim (ver _reveal_solved).
+# O jogador acertou a última emoção deste NPC. Acordar não acontece aqui: ele ainda lê a história,
+# continua pra tela de emoções (onde pode escolher a emoção), e acorda ao sair dela (ver close).
 func _on_npc_profiling_completed(npc_id: StringName) -> void:
 	if npc_id != _npc_id:
 		return

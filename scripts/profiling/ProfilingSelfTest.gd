@@ -49,6 +49,7 @@ func run() -> void:
 	_test_template_parser()
 	_test_story_issues()
 	_test_blanks()
+	_test_blank_categories()
 	_test_marks()
 	_test_scheduled_emotion()
 	_test_pairs()
@@ -316,6 +317,22 @@ func _test_pairs() -> void:
 		not ProfilingJournal.discover_word(paired.id, npc_id))
 	_expect("As duas palavras contam no \"23/36\"",
 		ProfilingJournal.count_discovered_words(npc_id) >= 2)
+
+
+# Cada lacuna só aceita a categoria da palavra esperada nela.
+func _test_blank_categories() -> void:
+	var name_category: GlossaryCategory = GlossaryCategory.new()
+	name_category.id = &"nome"
+	var weapon_category: GlossaryCategory = GlossaryCategory.new()
+	weapon_category.id = &"arma"
+	var knife: GlossaryWord = GlossaryWord.new()
+	knife.category = weapon_category
+
+	_expect("Palavra entra em lacuna da categoria dela", knife.fits_category(weapon_category))
+	_expect("Palavra não entra em lacuna de outra categoria", not knife.fits_category(name_category))
+	_expect("Lacuna sem categoria aceita qualquer palavra", knife.fits_category(null))
+	_expect("Palavra sem categoria só entra em lacuna sem categoria",
+		not GlossaryWord.new().fits_category(weapon_category))
 
 
 # O agrupamento da marcação do GDD: "[A]/[B]" é um clique só, "[A] e [B]" são dois.

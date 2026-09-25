@@ -63,6 +63,14 @@ func get_category_id() -> StringName:
 	return category.id
 
 
+# Se esta palavra cabe numa lacuna que pede a categoria dada. Cada lacuna só aceita a categoria da
+# palavra esperada nela (um nome não entra onde a frase pede uma arma); lacuna sem categoria aceita
+# qualquer palavra. Compara por id, e não por instância, pra um recurso duplicado não recusar a
+# palavra certa.
+func fits_category(expected: GlossaryCategory) -> bool:
+	return expected == null or get_category_id() == expected.id
+
+
 # Problemas de preenchimento, uma frase por problema. Compartilhado entre o resumo do NPCProfile e a
 # validação em lote do menu de debug.
 func collect_issues() -> PackedStringArray:

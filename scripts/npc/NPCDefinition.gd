@@ -69,13 +69,20 @@ const ALL_WEEKDAYS: int = 127
 @export var tint: Color = Color.WHITE
 
 ## O retrato do NPC: a arte que representa a CARA dele, usada por quem precisa mostrá-lo sem ele
-## estar em cena. Hoje quem usa é a tela de profiling no mundo dos sonhos (o retrato no centro do
-## espírito e na lateral da página); o diário ("Pessoas Importantes") e a tela de diálogo vão usar o
-## mesmo campo quando existirem — é por isso que ele mora aqui, e não dentro de um sistema só.
+## estar em cena. Hoje quem usa é a tela de profiling no mundo dos sonhos (a metade direita da
+## página da história); o diário ("Pessoas Importantes") e a tela de diálogo vão usar o mesmo campo
+## quando existirem — é por isso que ele mora aqui, e não dentro de um sistema só.
 ##
 ## Vazio não quebra nada: quem mostra desenha um retângulo com o nome do NPC, identificado como
 ## placeholder. Basta arrastar a textura aqui no dia em que a arte existir.
 @export var portrait: Texture2D
+
+## A arte do espírito do NPC, em 1920x1080: cobre a tela inteira de escolher a emoção, no mundo dos
+## sonhos, com o nome e as emoções por cima. Numa tela de outra proporção ela é cortada nas bordas,
+## nunca esticada.
+##
+## Vazio não quebra nada: a tela mostra o aviso de placeholder no lugar.
+@export var spirit_art: Texture2D
 
 ## Velocidade de caminhada, em pixels de tela por segundo. Balanceamento por NPC: um velho anda
 ## mais devagar que uma criança.

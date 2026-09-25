@@ -9,6 +9,7 @@
 [ext_resource type="Resource" uid="uid://bovfft3x1ukh" path="res://resources/npcs/rotinas/rotina_ze_trabalho.tres" id="6_xrhdl"]
 [ext_resource type="Resource" uid="uid://ddpodb5sd0y2k" path="res://resources/npcs/rotinas/rotina_ze_tristeza_folga.tres" id="7_bk0is"]
 [ext_resource type="Script" uid="uid://bm7w16uuu8ll5" path="res://scripts/npc/NPCDefinition.gd" id="8_48vj3"]
+[ext_resource type="Texture2D" uid="uid://c2k4twj51h0af" path="res://images/placeholder/spirit art placeholder.png" id="11_n0dhc"]
 [ext_resource type="Script" uid="uid://bol28dgx6wlys" path="res://scripts/npc/NPCRoutineEntry.gd" id="90_dream"]
 
 [sub_resource type="Resource" id="Resource_dream"]
@@ -23,6 +24,7 @@ id = &"ze"
 name_key = &"NPC_NAME_ZE"
 tint = Color(0.53, 0.74, 1, 1)
 portrait = ExtResource("4_kvoqe")
+spirit_art = ExtResource("11_n0dhc")
 walk_speed = 200.0
 emotion_first = ExtResource("1_dd48x")
 emotion_second = ExtResource("2_5bjh8")

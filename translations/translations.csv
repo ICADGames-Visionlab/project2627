@@ -66,6 +66,7 @@ PROFILING_INVESTIGATE,INVESTIGATE,INVESTIGAR
 PROFILING_NO_STORY,No story yet,Sem história ainda
 PROFILING_EXIT,Leave,Sair
 PROFILING_BACK,Back,Voltar
+PROFILING_CONTINUE,Click to continue,Clique para continuar
 PROFILING_HINT_HOLD,Hold the left button on an emotion to change it. Hover to investigate.,Segure o botão esquerdo sobre uma emoção para mudá-la. Passe o mouse para investigar.
 PROFILING_EMOTION_TODAY,feeling this today,sente isso hoje
 PROFILING_EMOTION_TOMORROW,will feel this tomorrow,vai sentir isso amanhã
@@ -80,6 +81,7 @@ DREAM_WAKE_NO,No,Não
 PROMPT_INVESTIGATE_SPIRIT,Press F to investigate the spirit,Aperte F para investigar o espírito
 PLACEHOLDER_PROFILING_SCREEN,Placeholder - Profiling screen drawn in code (final art pending),Placeholder - Tela de profiling desenhada em código (arte final pendente)
 PLACEHOLDER_NPC_PORTRAIT,Placeholder - NPC portrait,Placeholder - Portrait do NPC
+PLACEHOLDER_NPC_SPIRIT_ART,Placeholder - NPC spirit art (1920x1080),Placeholder - Arte do espírito do NPC (1920x1080)
 PLACEHOLDER_DIARY_ICON,Placeholder - Diary,Placeholder - Diário
 GLOSSARY_WORD_MARCOS,Marcos,Marcos
 GLOSSARY_WORD_CASTRO,Castro,Castro
@@ -89,17 +91,17 @@ GLOSSARY_WORD_MARIA,Maria,Maria
 GLOSSARY_WORD_BAKER,Baker,Baker
 GLOSSARY_WORD_BRIAN,Brian,Brian
 GLOSSARY_WORD_WALKER,Walker,Walker
-GLOSSARY_WORD_VINHO,Wine,Vinho
-GLOSSARY_WORD_AGUA,Water,Água
-GLOSSARY_WORD_TONICO,Tonic,Tônico
-GLOSSARY_WORD_ESTATUA,Statue,Estátua
-GLOSSARY_WORD_VASO,Vase,Vaso
-GLOSSARY_WORD_BOLSA,Purse,Bolsa
-GLOSSARY_WORD_AQUARIO,Fish tank,Aquário
-GLOSSARY_WORD_FACA,Knife,Faca
-GLOSSARY_WORD_TESOURA,Scissors,Tesoura
-GLOSSARY_WORD_QUEIMOU,Burned,Queimou
-GLOSSARY_WORD_CORREU,Ran,Correu
+GLOSSARY_WORD_VINHO,wine,vinho
+GLOSSARY_WORD_AGUA,water,água
+GLOSSARY_WORD_TONICO,tonic,tônico
+GLOSSARY_WORD_ESTATUA,statue,estátua
+GLOSSARY_WORD_VASO,vase,vaso
+GLOSSARY_WORD_BOLSA,purse,bolsa
+GLOSSARY_WORD_AQUARIO,fish tank,aquário
+GLOSSARY_WORD_FACA,knife,faca
+GLOSSARY_WORD_TESOURA,scissors,tesoura
+GLOSSARY_WORD_QUEIMOU,burned,queimou
+GLOSSARY_WORD_CORREU,ran,correu
 PROFILING_EXAMPLE_TEMPLATE,"{0} {1} wanted {2} {3} dead, so {4} {5} poisoned the {6} and hid the key inside a {7}\n\nAt the party, {8} {9} drank the poison and died","{0} {1} queria {2} {3} morta, e então {4} {5} envenenou o {6} e escondeu a chave necessária numa {7}\n\nNa festa, {8} {9} ingeriu o veneno e morreu"
 PROFILING_EXAMPLE_RESOLVED,"Marcos Castro wanted Roberta Smith dead, and he was not the one who did it: Maria Baker poisoned the wine and hid the key inside a statue, so that nobody could reach the cellar before the party. At the party, it was Brian Walker who drank from the wrong glass and died.","Marcos Castro queria Roberta Smith morta, e não foi ele quem agiu: Maria Baker envenenou o vinho e escondeu a chave necessária numa estátua, para que ninguém chegasse ao porão antes da festa. Na festa, foi Brian Walker quem bebeu do copo errado e morreu."
 PROFILING_EXAMPLE_JOURNAL,"The poisoned wine at the party was meant for Roberta Smith, and it killed Brian Walker.","O vinho envenenado da festa era para Roberta Smith, e matou Brian Walker."
@@ -113,28 +115,28 @@ GLOSSARY_WORD_ROMEU,Romeu,Romeu
 GLOSSARY_WORD_VIDAL,Vidal,Vidal
 GLOSSARY_WORD_BENTO,Bento,Bento
 GLOSSARY_WORD_FURTADO,Furtado,Furtado
-GLOSSARY_WORD_SAL,Salt,Sal
-GLOSSARY_WORD_ASSINATURA,Signature,Assinatura
-GLOSSARY_WORD_ANDAIME,Scaffold,Andaime
-GLOSSARY_WORD_CAL,Lime,Cal
-GLOSSARY_WORD_REDE,Net,Rede
-GLOSSARY_WORD_MARE,Tide,Maré
-GLOSSARY_WORD_REMO,Oar,Remo
-GLOSSARY_WORD_JANELA,Window,Janela
-GLOSSARY_WORD_LUVA,Glove,Luva
-GLOSSARY_WORD_ENVELOPE,Envelope,Envelope
-GLOSSARY_WORD_ASSOALHO,Floorboard,Assoalho
-GLOSSARY_WORD_GAVETA,Drawer,Gaveta
-GLOSSARY_WORD_UMIDADE,Damp,Umidade
-GLOSSARY_WORD_MARRETA,Sledgehammer,Marreta
-GLOSSARY_WORD_FORMAO,Chisel,Formão
-GLOSSARY_WORD_FACAO,Machete,Facão
-GLOSSARY_WORD_REVOLVER,Revolver,Revólver
-GLOSSARY_WORD_RACHOU,Cracked,Rachou
-GLOSSARY_WORD_CULPOU,Blamed,Culpou
-GLOSSARY_WORD_SUMIU,Vanished,Sumiu
-GLOSSARY_WORD_GASTOU,Spent,Gastou
-GLOSSARY_WORD_ATIROU,Fired,Atirou
+GLOSSARY_WORD_SAL,salt,sal
+GLOSSARY_WORD_ASSINATURA,signature,assinatura
+GLOSSARY_WORD_ANDAIME,scaffold,andaime
+GLOSSARY_WORD_CAL,lime,cal
+GLOSSARY_WORD_REDE,net,rede
+GLOSSARY_WORD_MARE,tide,maré
+GLOSSARY_WORD_REMO,oar,remo
+GLOSSARY_WORD_JANELA,window,janela
+GLOSSARY_WORD_LUVA,glove,luva
+GLOSSARY_WORD_ENVELOPE,envelope,envelope
+GLOSSARY_WORD_ASSOALHO,floorboard,assoalho
+GLOSSARY_WORD_GAVETA,drawer,gaveta
+GLOSSARY_WORD_UMIDADE,damp,umidade
+GLOSSARY_WORD_MARRETA,sledgehammer,marreta
+GLOSSARY_WORD_FORMAO,chisel,formão
+GLOSSARY_WORD_FACAO,machete,facão
+GLOSSARY_WORD_REVOLVER,revolver,revólver
+GLOSSARY_WORD_RACHOU,cracked,rachou
+GLOSSARY_WORD_CULPOU,blamed,culpou
+GLOSSARY_WORD_SUMIU,vanished,sumiu
+GLOSSARY_WORD_GASTOU,spent,gastou
+GLOSSARY_WORD_ATIROU,fired,atirou
 PROFILING_ZE_RAIVA_TEMPLATE,"{0} {1} mixed {2} into the breakwater mortar and signed the job with the {3} of another man.\n\nWhen the wall {4}, it was that other man the town {5}.","{0} {1} misturou {2} na argamassa do quebra-mar e assinou a obra com a {3} de outro homem.\n\nQuando o muro {4}, foi esse outro homem que a cidade {5}."
 PROFILING_ZE_RAIVA_RESOLVED,"The breakwater mortar was mixed with sea water and salt, and the man who signed the job signed it with the signature of someone else: Nestor Aguiar. When the wall cracked in the first winter, the town went after the name on the paper, and Nestor was already in another port. That is what Ze is angry about: not the wall, but having been the easiest name to blame.","A argamassa do quebra-mar foi misturada com água do mar e sal, e quem assinou a obra assinou com a assinatura de outro homem: Nestor Aguiar. Quando o muro rachou no primeiro inverno, a cidade cobrou de quem tinha o nome no papel, e Nestor já estava em outro porto. É disso que o Zé tem raiva: não do muro, mas de ter sido o nome mais fácil de culpar."
 PROFILING_ZE_RAIVA_JOURNAL,"The breakwater cracked because of the salt in the mortar, and the name on the paperwork was not the name of the man who did the work.","O quebra-mar rachou por causa do sal na argamassa, e o nome no papel da obra não era de quem a fez."

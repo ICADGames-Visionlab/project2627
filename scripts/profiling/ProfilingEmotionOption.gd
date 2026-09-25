@@ -2,9 +2,11 @@
 ## enche enquanto o jogador segura, o checkmark de história resolvida e o botão INVESTIGAR.
 ##
 ## COMO USAR: o layout está em scenes/profiling/ProfilingEmotionOption.tscn — moldura, moldura de
-## destaque, barra que enche, posição do INVESTIGAR e fontes. A ProfilingScreen instancia essa cena
-## (apontada no Inspector dela) uma vez por emoção do NPC e chama configure(). A opção não muda
-## emoção nem abre história: ela avisa por signal.
+## destaque, barra que enche, posição do INVESTIGAR e fontes. As opções já estão instanciadas na
+## ProfilingScreen.tscn (filhas do nó Emotions), cada uma posicionada à mão, e a tela chama
+## configure() em cada uma com uma emoção do NPC. O "Emoção" escrito na cena é só pra ver a opção no
+## editor: configure() sempre troca pelo nome da emoção. A opção não muda emoção nem abre história:
+## ela avisa por signal.
 ##
 ## OS DOIS GESTOS, como o GDD pede:
 ##

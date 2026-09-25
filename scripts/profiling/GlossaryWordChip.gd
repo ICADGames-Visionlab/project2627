@@ -12,10 +12,12 @@
 ##
 ## CLIQUE E ARRASTE SÃO GESTOS DIFERENTES, e é isso que _gui_input separa:
 ##
-##   arrastar         -> leva a palavra pra uma lacuna da página (o jeito do GDD)
-##   clique curto     -> atalho: a página põe a palavra na primeira lacuna vazia, ou a devolve ao
-##                       glossário se ela já estiver em uma. Existe pra quem joga de teclado e
-##                       controle, que não tem como arrastar.
+##   arrastar         -> PUXA a palavra pra uma lacuna da página (o jeito do GDD): o chip some do
+##                       glossário enquanto ela está na mão do jogador, e volta se ela não entrar
+##                       em lacuna nenhuma
+##   clique curto     -> atalho: a página põe a palavra na primeira lacuna vazia da categoria dela.
+##                       Existe pra quem joga de teclado e controle, que não tem como arrastar. Ele
+##                       nunca TIRA palavra: tirar é o clique direito na lacuna (ver ProfilingBlank).
 ##   clique direito   -> pede o retângulo de marcas (lixo e estrela), que é um nó da tela, não uma
 ##                       janela: ver GlossaryMarkMenu.
 ##
@@ -28,7 +30,7 @@ extends PanelContainer
 
 ## Espaço para sinais
 
-## Emitido no clique curto: o jogador quer usar (ou devolver) esta palavra.
+## Emitido no clique curto: o jogador quer pôr esta palavra numa lacuna.
 signal word_activated(word_id: StringName)
 
 ## Emitido no clique direito, com o retângulo do chip na tela — é ele que diz onde o menu de marcas
@@ -127,6 +129,9 @@ func _notification(what: int) -> void:
 	_is_dragging = false
 	if not is_inside_tree() or word == null:
 		return
+	# A palavra volta a aparecer no lugar dela. Se ela entrou numa lacuna, o glossário já está se
+	# redesenhando e este chip vai embora de qualquer jeito.
+	modulate = Color.WHITE
 	if not get_viewport().gui_is_drag_successful():
 		print("[Profiling] - Arraste de \"%s\" solto fora de lacuna: palavra devolvida" % word.id)
 		word_returned.emit(word.id)
@@ -166,6 +171,9 @@ func _gui_input(event: InputEvent) -> void:
 # Ser chamada JÁ É a resposta de que o gesto é arraste, e não clique: o clique curto pendente morre
 # aqui.
 #
+# A PALAVRA É PUXADA, NÃO COPIADA: o chip fica invisível (mas guarda o lugar, pra lista não pular)
+# e o que segue o cursor é a palavra inteira, sem transparência. Ela reaparece no fim do arraste.
+#
 # O PREVIEW FICA CENTRADO NO MOUSE. set_drag_preview() põe o canto superior esquerdo do nó no
 # cursor, então o que se passa é um Control vazio com o chip DENTRO dele, deslocado meio tamanho —
 # é a única forma de centralizar, porque a posição do preview é escrita pela engine a cada quadro.
@@ -179,7 +187,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	# preview não deve responder por esta palavra — ele é só um desenho seguindo o cursor.
 	var preview: GlossaryWordChip = duplicate(Node.DUPLICATE_SCRIPTS) as GlossaryWordChip
 	preview.custom_minimum_size = size
-	preview.modulate = Color(1.0, 1.0, 1.0, 0.85)
+	preview.modulate = Color.WHITE
 
 	var holder: Control = Control.new()
 	holder.add_child(preview)
@@ -189,6 +197,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	# O duplicate() copia o nó, não o estado: configure() precisa rodar de novo, e só depois de ele
 	# estar na árvore (o _ready dele é que acha o Label).
 	preview.configure(word, _mark, false)
+	modulate = Color(1.0, 1.0, 1.0, 0.0)
 	return { "word_id": word.id }
 
 ## Espaço para funções personalizadas
@@ -197,7 +206,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 #
 # in_use deixa o chip apagado em vez de escondê-lo: o GDD conta as palavras descobertas ("23/36"),
 # e uma palavra que desaparece do glossário ao ser usada faria o jogador achar que a perdeu. Ela
-# continua clicável de propósito — clicar nela é o atalho que a devolve ao glossário.
+# continua arrastável: puxá-la daqui leva a palavra pra outra lacuna.
 func configure(p_word: GlossaryWord, kind: GlossaryMark.Kind, in_use: bool) -> void:
 	word = p_word
 	_mark = kind

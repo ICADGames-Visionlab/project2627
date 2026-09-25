@@ -65,7 +65,8 @@ MUNDO REAL       no dia seguinte o NPC acorda na emoção escolhida
 ```
 
 Acertar **todas** as histórias de um NPC faz o jogador acordar: entender alguém por inteiro fecha o
-sonho (`ProfilingScreen.wake_delay` dá alguns segundos pra ele ler a última história antes).
+sonho. Depois de ler a última história ele volta pra tela de emoções (onde ainda pode escolher a
+emoção do NPC), e **sair dela é acordar**.
 
 ---
 
@@ -73,8 +74,16 @@ sonho (`ProfilingScreen.wake_delay` dá alguns segundos pra ele ler a última hi
 
 **Tela do espírito** (`ProfilingScreen`, view `SPIRIT`)
 
-- portrait do NPC no centro, com o nome em cima;
-- uma opção por emoção do NPC (`ProfilingEmotionOption`), com o nome na cor da emoção;
+- a **arte do espírito** do NPC cobrindo a tela inteira (`NPCDefinition.spirit_art`, 1920x1080), com
+  o nome e as emoções por cima. Ela fica abaixo do filtro de cor da emoção (o filtro a tinge) e
+  treme junto com a tela. Ela passa 24 px de cada borda (offsets do `SpiritArt` na cena) pra a
+  beirada não aparecer no tremor — ao aumentar `Shake Strength`, aumente essa sobra junto. Numa tela
+  de outra proporção ela é cortada nas bordas, nunca esticada;
+- uma opção por emoção do NPC (`ProfilingEmotionOption`), com o nome na cor da emoção. As opções
+  **já estão na cena**, filhas do nó `Emotions` (`EmotionFirst` na esquerda, `EmotionSecond` na
+  direita), e cada uma fica onde foi posta no editor: a 1ª filha recebe a primeira emoção do NPC, a
+  2ª a segunda. Opção sobrando fica escondida; emoção sobrando (um terceiro slot, no futuro) pede
+  uma opção a mais — é duplicar uma na cena. O "Emoção" escrito nelas só aparece no editor;
 - **segurar** o botão esquerdo: a tela treme, o nome cresce, o retângulo em volta enche e a tela
   ganha um filtro na cor da emoção. Quando enche, a emoção é agendada. Soltar antes, ou arrastar o
   mouse pra fora, **cancela** — e o cancelamento devolve a tela ao repouso: sem tremor e com o filtro
@@ -87,11 +96,12 @@ sonho (`ProfilingScreen.wake_delay` dá alguns segundos pra ele ler a última hi
 
 **Tela da história** (view `STORY`)
 
-- a página (`ProfilingPage`) com o texto e as lacunas (`ProfilingBlank`);
-- o glossário do NPC embaixo (`GlossaryPanel`);
-- o portrait na direita, o mesmo da tela anterior;
-- a seta **Voltar**, no canto inferior esquerdo, volta pra tela de emoções. Depois de uma história
-  resolvida, ela **pisca**;
+- a tela é dividida **50/50**: na metade esquerda, a página (`ProfilingPage`) com o texto e as
+  lacunas (`ProfilingBlank`) e o glossário do NPC embaixo (`GlossaryPanel`); na metade direita, a
+  arte do NPC, sem moldura;
+- a seta **Voltar**, no canto inferior esquerdo, volta pra tela de emoções. Ao reabrir uma história
+  já resolvida, ela **pisca**. Logo depois do acerto ela **não aparece**: no lugar dela fica o
+  *"Clique para continuar"* (ver [A correção da página](#a-correção-da-página));
 - `ESC` volta um passo: da história pras emoções, das emoções pro sonho.
 
 **O aviso do rodapé** (`SpiritInteraction` + `ActionPrompt`) — *"Aperte F para investigar o
@@ -110,7 +120,17 @@ inferior esquerdo, com a pergunta *"Deseja sair do mundo dos sonhos?"*. A cama c
 
 **Nenhuma peça da interface é montada em código.** Cada coisa que aparece na tela é uma cena, e o
 script só põe o dado no lugar: o que é repetido (uma palavra do glossário, uma lacuna, uma emoção)
-é uma cena que o script INSTANCIA, apontada no Inspector de quem instancia. Quem quiser trocar
+é uma cena que o script INSTANCIA, apontada no Inspector de quem instancia.
+
+**O layout é livre.** As peças de `ProfilingScreen.tscn`, `ProfilingPage.tscn` e
+`GlossaryPanel.tscn` são nós soltos, posicionados por âncora — não estão presas em
+`VBoxContainer`/`HBoxContainer`. Dá pra arrastar cada uma no editor. Os scripts acham os nós pelo
+**nome único** (`%Nome`, o "Access as Unique Name" do editor), então mudar um nó de pai também não
+quebra nada — **só não renomeie** um nó marcado com `%`. Contêiner sobrou só onde o conteúdo é
+montado em código: a barra de filtros, o texto da página e a lista de palavras. As opções de emoção
+também são nós soltos na cena (ver [As duas telas](#as-duas-telas)).
+
+Quem quiser trocar
 fonte, cor de moldura, cantos, margens ou posição abre a cena e mexe — sem tocar em `.gd`.
 
 | Cena | O que é | Quem a instancia |
@@ -123,7 +143,7 @@ fonte, cor de moldura, cantos, margens ou posição abre a cena e mexe — sem t
 | `GlossaryPanel.tscn` | Título, contagem, os cinco filtros, a pesquisa e a área das palavras | a tela (e, no futuro, o diário) |
 | `GlossaryWordChip.tscn` | O retângulo de uma palavra | o glossário, um por palavra descoberta |
 | `GlossaryMarkMenu.tscn` | O retângulo de lixo/estrela que abre acima da palavra | está na tela |
-| `ProfilingEmotionOption.tscn` | Uma emoção do espírito, com moldura, barra e INVESTIGAR | a tela, uma por emoção do NPC |
+| `ProfilingEmotionOption.tscn` | Uma emoção do espírito, com moldura, barra e INVESTIGAR | está na tela, uma por posição (filhas do nó `Emotions`) |
 | `WordDiscoveryToast.tscn` | O aviso de palavra nova e o canto do diário | está na `City.tscn` |
 | `FlyingWord.tscn` | A palavra que desce pro canto | o aviso, uma por descoberta |
 | `DreamHud.tscn` | O "Acordar" e a pergunta de sair do sonho | está na `City.tscn` |
@@ -172,9 +192,11 @@ Nenhum passo exige editar script, e nenhum exige mexer em cena.
 | `ProfilingStory` | A história de **uma** emoção: texto com lacunas, solução, texto resolvido. | `resources/profiling/historias/` |
 | `NPCProfile` | O que se pode descobrir sobre **um** NPC: as histórias e o pool de palavras. | `resources/profiling/npcs/` |
 
-O **retrato do NPC** não é um desses: ele é a cara do NPC, e mora em `NPCDefinition.portrait`
-(`resources/npcs/npc_<nome>.tres`), junto do nome e da cor. É lá que a arte é arrastada, e é de lá
-que o diário e a tela de diálogo vão ler o mesmo arquivo quando existirem.
+As **artes do NPC** não são nenhum desses: são a cara dele, e moram no `NPCDefinition`
+(`resources/npcs/npc_<nome>.tres`), junto do nome e da cor. São duas: `portrait` (o retrato, na
+metade direita da página da história) e `spirit_art` (a imagem 1920x1080 que cobre a tela de
+escolher a emoção). É lá que a arte é arrastada, e é de lá que o diário e a tela de diálogo vão ler
+os mesmos arquivos quando existirem.
 
 Categoria é **recurso, e não enum**, pela mesma razão de `EmotionDefinition` (ver
 `docs/sistema_de_npc.md`): categoria é conteúdo. Criar uma categoria nova é criar um arquivo e
@@ -239,10 +261,20 @@ ProfilingJournal.discover_word(&"faca")          # pro glossário de quem tiver 
 ```
 
 O glossário (`GlossaryPanel`) mostra as palavras descobertas, cada uma num retângulo da cor da
-categoria, a contagem `23/36` (descobertas / pool do NPC) e os cinco filtros do GDD: **Lixo**,
-**Estrela**, **A-Z**, **Categoria** e **Lupa**. Ligar um filtro o preenche e o move pra primeira
-posição; eles se combinam. O clique direito numa palavra abre o retângulo de marcas (lixo e
-estrela), e escolher a marca que já está posta a remove.
+categoria, a contagem `23/36` (descobertas / pool do NPC) e os filtros: **Lixo**, **Estrela**,
+**A-Z** e **Categoria**, com a **Lupa** sempre à direita deles.
+
+- Só **um** filtro fica selecionado por vez (a lupa não conta: ela combina com qualquer um).
+- O selecionado vai pra primeira posição; os outros ficam **na ordem em que estão na cena**, sem
+  se embaralhar. O selecionado pulsa devagar na escala (`Selected Scale`, `Pulse Amount` e
+  `Pulse Period`, no Inspector do `GlossaryPanel`).
+- **Lixo** e **Estrela** têm dois passos: o 1º clique **ordena** (as marcadas primeiro), o 2º
+  **filtra** (só as marcadas, e o botão fica na cor `Only Marked Modulate`), o 3º desliga.
+  **A-Z** e **Categoria** ligam e desligam.
+- A **Lupa** abre o campo de pesquisa do lado dela; fechar a lupa limpa a pesquisa.
+
+O clique direito numa palavra abre o retângulo de marcas (lixo e estrela), e escolher a marca que
+já está posta a remove.
 
 Uma palavra que já está numa lacuna continua na lista, apagada — o jogador conta as palavras que
 descobriu, e uma palavra que desaparece ao ser usada parece perdida.
@@ -251,18 +283,27 @@ descobriu, e uma palavra que desaparece ao ser usada parece perdida.
 
 | Gesto | O que faz |
 | --- | --- |
-| Arrastar | Leva a palavra para uma lacuna. O preview sai centrado no cursor. |
-| Clique curto | Atalho: põe a palavra na primeira lacuna vazia, ou a devolve ao glossário se já estiver numa. É o caminho de quem joga de teclado/controle. |
+| Arrastar | **Puxa** a palavra: o chip some do glossário (guardando o lugar) e a palavra inteira segue o cursor, centrada nele. Se ela não entrar em lacuna nenhuma, reaparece. |
+| Clique curto | Atalho: põe a palavra na primeira lacuna vazia **da categoria dela**. Numa palavra que já está em lacuna, não faz nada. É o caminho de quem joga de teclado/controle. |
 | Clique direito | Abre o retângulo de marcas acima da palavra. |
 
 **Os gestos de uma palavra que já está numa lacuna** (`ProfilingBlank`) são os mesmos, espelhados:
 
 | Gesto | O que faz |
 | --- | --- |
-| Arrastar para outra lacuna | Move a palavra. |
+| Arrastar para outra lacuna | Move a palavra. A lacuna de onde ela saiu fica vazia já durante o arraste. |
 | Arrastar e soltar no glossário | Devolve a palavra: a lacuna esvazia. |
 | Arrastar e soltar em qualquer outro lugar | Idem: devolve a palavra. |
-| Clique curto | Devolve a palavra direto. |
+| Clique **direito** | Devolve a palavra direto. |
+
+O clique **esquerdo** numa lacuna não tira a palavra: o esquerdo é o botão de arrastar, e pegar a
+palavra pra levá-la a outra lacuna não pode correr o risco de devolvê-la ao glossário.
+
+**Cada lacuna tem categoria**: a da palavra esperada nela. A lacuna vazia aparece na cor dessa
+categoria e **só aceita palavras dela** — não dá pra pôr um nome onde a frase pede uma arma. Soltar
+uma palavra de outra categoria em cima dela é como soltar no nada: a palavra volta pro glossário.
+A regra mora em `GlossaryWord.fits_category()`, que a lacuna (no arraste) e a página (no clique
+curto) usam.
 
 **Arraste que não termina em lacuna devolve a palavra ao glossário**, e isso vale nos dois sentidos:
 puxando da lacuna ou puxando do próprio glossário uma palavra que está em uso. Quem detecta é
@@ -271,10 +312,10 @@ Quando alguém aceitou (uma lacuna, ou o glossário recebendo palavra vinda de l
 o `_drop_data` de lá; quando ninguém aceitou, o nó que COMEÇOU o arraste devolve a palavra. Sem isso,
 soltar no meio do nada deixava a palavra presa na lacuna e o gesto sem desfecho.
 
-Nos dois casos o atalho do clique dispara **ao soltar** o botão, e só se o arraste não tiver começado
-no meio. Se ele disparasse na pressão, pegar a palavra para arrastar já a mandaria para a lacuna (ou
-já a devolveria ao glossário) — e o arraste ficaria impossível. É o `_press_pending` dos dois
-scripts: a pressão só marca a intenção, e `_get_drag_data` ser chamada cancela o clique.
+No chip, o atalho do clique dispara **ao soltar** o botão, e só se o arraste não tiver começado no
+meio. Se ele disparasse na pressão, pegar a palavra para arrastar já a mandaria para a lacuna — e o
+arraste ficaria impossível. É o `_press_pending` do chip: a pressão só marca a intenção, e
+`_get_drag_data` ser chamada cancela o clique.
 
 Com o mouse em cima, a palavra clareia e faz um lerp pequeno de escala e rotação (`Hover Scale`,
 `Hover Rotation Degrees` e `Hover Lerp Speed`, no Inspector do chip). O `_process` do chip liga no
@@ -306,10 +347,11 @@ O único destaque por lacuna é o checkmark verde, e ele aparece **quando tudo e
 
 O limite de "duas ou menos" é balanceamento: `ProfilingPage.few_wrong_limit`, no Inspector.
 
-Ao acertar tudo, na ordem: a mensagem fica `reveal_delay` segundos → a história é marcada como
-resolvida → a página é substituída pelo texto completo → o glossário sai da tela → a seta de voltar
-começa a piscar. Na tela de emoções, a emoção ganha o checkmark — e o jogador ainda pode entrar nela
-e mudar a emoção do NPC pra essa.
+Ao acertar tudo, **na hora**: a história é marcada como resolvida → a página é substituída pelo
+texto completo → o glossário e a seta de voltar saem da tela → aparece o *"Clique para continuar"*.
+Um clique em qualquer lugar (ou Enter, ou ESC) leva à tela de emoções, onde a emoção ganha o
+checkmark — e o jogador ainda pode mudar a emoção do NPC pra essa. Reabrir a história depois mostra
+o texto completo com a seta de voltar piscando.
 
 A correção é função pura (`ProfilingEvaluation.evaluate`), e é o miolo do autoteste.
 
@@ -453,6 +495,9 @@ com a tag "Substituição de Placeholder"** antes do PR.
 
 - **Retrato do NPC**: retângulo com o nome do NPC e a etiqueta *Placeholder - Portrait do NPC*.
   A arte final entra em `NPCDefinition.portrait`, no `.tres` do NPC — nada a mexer no profiling.
+- **Arte do espírito**: sem ela, a tela de emoções mostra o fundo escurecido e a etiqueta
+  *Placeholder - Arte do espírito do NPC (1920x1080)*. A arte final entra em
+  `NPCDefinition.spirit_art`, no `.tres` do NPC.
 - **Ícone do diário**, no canto inferior direito: retângulo etiquetado. É o destino da animação da
   palavra.
 - **Marcas e checkmarks**: glifos de texto (`✗`, `★`, `✓`), em `GlossaryMark` e `ProfilingBlank`.

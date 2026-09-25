@@ -3,73 +3,97 @@
 [ext_resource type="Script" path="res://scripts/profiling/GlossaryPanel.gd" id="1_glossary"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/GlossaryWordChip.tscn" id="2_chip"]
 
-[node name="GlossaryPanel" type="VBoxContainer"]
-theme_override_constants/separation = 8
+[node name="GlossaryPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_glossary")
 chip_scene = ExtResource("2_chip")
 
-[node name="Header" type="HBoxContainer" parent="."]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="Title" type="Label" parent="Header"]
-layout_mode = 2
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+offset_right = 100.0
+offset_bottom = 32.0
 text = "GLOSSARY_TITLE"
+vertical_alignment = 1
 
-[node name="Count" type="Label" parent="Header"]
+[node name="Count" type="Label" parent="."]
+unique_name_in_owner = true
 auto_translate_mode = 2
 modulate = Color(1, 1, 1, 0.75)
-layout_mode = 2
+layout_mode = 1
+offset_left = 108.0
+offset_right = 208.0
+offset_bottom = 32.0
+vertical_alignment = 1
 
-[node name="Spacer" type="Control" parent="Header"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
+[node name="FilterBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+offset_left = 6.0
+offset_top = 40.0
+offset_right = 606.0
+offset_bottom = 80.0
+theme_override_constants/separation = 14
 
-[node name="Filters" type="HBoxContainer" parent="Header"]
+[node name="Categories" type="HBoxContainer" parent="FilterBar"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 14
 
-[node name="TrashFilter" type="Button" parent="Header/Filters"]
+[node name="TrashFilter" type="Button" parent="FilterBar/Categories"]
+unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 toggle_mode = true
 text = "GLOSSARY_FILTER_TRASH"
 
-[node name="StarFilter" type="Button" parent="Header/Filters"]
+[node name="StarFilter" type="Button" parent="FilterBar/Categories"]
+unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 toggle_mode = true
 text = "GLOSSARY_FILTER_STAR"
 
-[node name="AlphabeticalFilter" type="Button" parent="Header/Filters"]
+[node name="AlphabeticalFilter" type="Button" parent="FilterBar/Categories"]
+unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 toggle_mode = true
 text = "GLOSSARY_FILTER_ALPHABETICAL"
 
-[node name="CategoryFilter" type="Button" parent="Header/Filters"]
+[node name="CategoryFilter" type="Button" parent="FilterBar/Categories"]
+unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 toggle_mode = true
 text = "GLOSSARY_FILTER_CATEGORY"
 
-[node name="SearchFilter" type="Button" parent="Header/Filters"]
+[node name="SearchFilter" type="Button" parent="FilterBar"]
+unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0
 toggle_mode = true
 text = "GLOSSARY_FILTER_SEARCH"
 
-[node name="SearchField" type="LineEdit" parent="."]
+[node name="SearchField" type="LineEdit" parent="FilterBar"]
+unique_name_in_owner = true
 visible = false
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 placeholder_text = "GLOSSARY_SEARCH_PLACEHOLDER"
 clear_button_enabled = true
 
 [node name="Scroll" type="ScrollContainer" parent="."]
-custom_minimum_size = Vector2(0, 190)
-layout_mode = 2
-size_flags_vertical = 3
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 88.0
+grow_horizontal = 2
+grow_vertical = 2
 horizontal_scroll_mode = 0
 
 [node name="Margin" type="MarginContainer" parent="Scroll"]
@@ -82,6 +106,7 @@ theme_override_constants/margin_right = 8
 theme_override_constants/margin_bottom = 8
 
 [node name="Words" type="HFlowContainer" parent="Scroll/Margin"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/h_separation = 8
