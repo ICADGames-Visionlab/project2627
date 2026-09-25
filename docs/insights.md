@@ -336,18 +336,18 @@ ele falha.
 
 ## Costuras
 
-Dois sistemas de que os insights dependem ainda não existem. Nenhum deles bloqueia o trabalho, e os
-dois têm uma costura definida para que, quando chegarem, nenhum arquivo de `scripts/insights/`
-precise ser editado.
+A tela de diálogo já é a `DialogueScreen` de verdade: `PlaceholderDialogueScreen` saiu da
+`City.tscn` e da árvore de resources. `EventBus.dialogue_requested` (o pedido dos insights de
+personagem) agora é atendido pela `DialogueScreen`, via `SingleLineRunner` — ver
+[`docs/sistema_de_dialogo/README.md`](sistema_de_dialogo/README.md). Nenhum arquivo de
+`scripts/insights/` precisou ser editado para essa troca, como a costura previa.
+
+Um sistema de que os insights dependem ainda não existe. Não bloqueia o trabalho, e tem uma costura
+definida para que, quando chegar, nenhum arquivo de `scripts/insights/` precise ser editado.
 
 | Falta | Substituto de hoje | Some quando |
 | --- | --- | --- |
-| Tela de diálogo | `PlaceholderDialogueScreen`, instanciada na `main.tscn`, atendendo `dialogue_requested` | A tela real passar a atender o mesmo pedido |
 | Derrota de NPC | Ação de debug "Desbloquear cabeça" chamando `HeadRegistry.unlock_head()` | O sistema de derrota emitir `npc_defeated` e o `HeadRegistry` conectar |
-
-Trocar a tela não custa nada nos insights. O `EventBusLogger` acusa no console quando um pedido
-`_requested` tem zero ou dois ouvintes, então esquecer o placeholder na cena aparece como erro, e não
-como duas telas abrindo juntas.
 
 Trocar a derrota custa uma linha. Quando `npc_defeated(npc_id: StringName)` existir no bus, com
 ouvintes reais (cabeças, missões, som), o `HeadRegistry` se conecta a ele no `_ready()`. A ação de
@@ -355,13 +355,11 @@ debug continua existindo depois disso, como ferramenta de teste.
 
 ### Placeholders
 
-Estes quatro precisam de Issue com a tag "Substituição de Placeholder" antes do PR, conforme o
+Estes três precisam de Issue com a tag "Substituição de Placeholder" antes do PR, conforme o
 Guideline:
 
 - Orbe de insight: desenhado em código (`InsightMarker._draw()`), sem arte final.
 - Caixa de texto: `InsightBubble`, com um StyleBox provisório (escuro, borda verde).
-- Tela de diálogo: `PlaceholderDialogueScreen`, com o tema padrão da engine e uma etiqueta dizendo o
-  que é.
 - Som da primeira leitura: sininho de duas notas sintetizado em código pelo `InsightAudio` (cena na
   `main.tscn`) enquanto o campo `first_read_sfx` estiver vazio. O log do boot avisa quando o
   placeholder está em uso, e o som final entra pelo Inspector, sem mexer no script.

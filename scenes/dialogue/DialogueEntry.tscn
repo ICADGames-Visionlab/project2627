@@ -1,0 +1,28 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/dialogue/DialogueEntry.gd" id="1_entry"]
+
+[node name="DialogueEntry" type="MarginContainer"]
+mouse_filter = 1
+script = ExtResource("1_entry")
+
+[node name="Row" type="HBoxContainer" parent="."]
+layout_mode = 2
+mouse_filter = 1
+theme_override_constants/separation = 0
+
+[node name="Text" type="RichTextLabel" parent="Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
+theme_type_variation = "DialogueText"
+
+[node name="IdLabel" type="Label" parent="Row"]
+layout_mode = 2
+visible = false
+modulate = Color(1, 1, 1, 0.5)
+theme_override_font_sizes/font_size = 12

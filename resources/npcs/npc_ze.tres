@@ -15,6 +15,7 @@ id = &"ze"
 name_key = &"NPC_NAME_ZE"
 tint = Color(0.53, 0.74, 1, 1)
 walk_speed = 200.0
+conversation_id = &"ze_ana_feira"
 emotion_first = ExtResource("1_dd48x")
 emotion_second = ExtResource("2_5bjh8")
 work_weekdays = 63

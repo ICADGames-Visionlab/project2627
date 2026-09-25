@@ -43,6 +43,11 @@ const AVAILABLE_LANGUAGES := ["en", "pt_BR"]
 @onready var screen_mode_option: OptionButton = $VBoxContainer/Fullscreen_Janela
 @onready var language_option: OptionButton = $VBoxContainer/Idioma
 @onready var movement_option: OptionButton = $VBoxContainer/Movimentacao
+@onready var dialogue_scale_slider: HSlider = $VBoxContainer/DialogoEscala
+@onready var dialogue_alt_font_check: CheckButton = $VBoxContainer/DialogoFonteAlt
+@onready var dialogue_opacity_slider: HSlider = $VBoxContainer/DialogoOpacidade
+@onready var dialogue_reveal_option: OptionButton = $VBoxContainer/DialogoRevelacao
+@onready var dialogue_animation_option: OptionButton = $VBoxContainer/DialogoAnimacao
 @onready var close_button: Button = $Sair
 
 
@@ -50,10 +55,18 @@ func _ready() -> void:
 	general_volume_slider.min_value = 0.0
 	general_volume_slider.max_value = 1.0
 	general_volume_slider.step = 0.01
+	dialogue_scale_slider.min_value = 0.8
+	dialogue_scale_slider.max_value = 2.0
+	dialogue_scale_slider.step = 0.1
+	dialogue_opacity_slider.min_value = 0.82
+	dialogue_opacity_slider.max_value = 1.0
+	dialogue_opacity_slider.step = 0.01
 
 	_populate_screen_mode_options()
 	_populate_language_options()
 	_populate_movement_options()
+	_populate_dialogue_reveal_options()
+	_populate_dialogue_animation_options()
 
 	_load_settings() # aplica valores salvos (ou padrão, se for a 1ª vez)
 
@@ -62,6 +75,11 @@ func _ready() -> void:
 	screen_mode_option.item_selected.connect(_on_screen_mode_selected)
 	language_option.item_selected.connect(_on_language_selected)
 	movement_option.item_selected.connect(_on_movement_selected)
+	dialogue_scale_slider.value_changed.connect(_on_dialogue_scale_changed)
+	dialogue_alt_font_check.toggled.connect(_on_dialogue_alt_font_toggled)
+	dialogue_opacity_slider.value_changed.connect(_on_dialogue_opacity_changed)
+	dialogue_reveal_option.item_selected.connect(_on_dialogue_reveal_selected)
+	dialogue_animation_option.item_selected.connect(_on_dialogue_animation_selected)
 	close_button.pressed.connect(_on_close_pressed)
 
 
@@ -70,6 +88,8 @@ func _notification(what: int) -> void:
 		_populate_screen_mode_options()
 		_populate_language_options()
 		_populate_movement_options()
+		_populate_dialogue_reveal_options()
+		_populate_dialogue_animation_options()
 
 
 # --- Áudio ---
@@ -149,6 +169,58 @@ func _on_movement_selected(index: int) -> void:
 	GameManager.set_movement_scheme(index as GameManager.MovementScheme)
 
 
+# --- Diálogo ---
+# As preferências de diálogo não são controladas nem salvas aqui: esta tela só reflete o valor
+# atual e repassa a escolha pro GameManager, dono desse estado (SPEC §14) — mesma divisão do
+# volume geral e do esquema de movimentação.
+
+func _populate_dialogue_reveal_options() -> void:
+	var selected := dialogue_reveal_option.selected
+	dialogue_reveal_option.clear()
+	dialogue_reveal_option.add_item(tr("SETTINGS_DIALOGUE_REVEAL_INSTANT"), 0)     # GameManager.TextReveal.INSTANT
+	dialogue_reveal_option.add_item(tr("SETTINGS_DIALOGUE_REVEAL_PROGRESSIVE"), 1) # GameManager.TextReveal.PROGRESSIVE
+	dialogue_reveal_option.selected = selected if selected != -1 else int(GameManager.dialogue_text_reveal)
+
+
+# Índice 0 = Normal (1.0), 1 = Rápida (0.5), 2 = Instantânea (0.0) — não é o enum TextReveal, é o
+# multiplicador de duração das animações (SPEC §14.1).
+func _populate_dialogue_animation_options() -> void:
+	var selected := dialogue_animation_option.selected
+	dialogue_animation_option.clear()
+	dialogue_animation_option.add_item(tr("SETTINGS_DIALOGUE_ANIMATION_NORMAL"), 0)
+	dialogue_animation_option.add_item(tr("SETTINGS_DIALOGUE_ANIMATION_FAST"), 1)
+	dialogue_animation_option.add_item(tr("SETTINGS_DIALOGUE_ANIMATION_INSTANT"), 2)
+	dialogue_animation_option.selected = selected if selected != -1 else _animation_multiplier_to_index(GameManager.dialogue_animation_multiplier)
+
+
+func _on_dialogue_scale_changed(value: float) -> void:
+	GameManager.set_dialogue_preference(&"text_scale", value)
+
+
+func _on_dialogue_alt_font_toggled(enabled: bool) -> void:
+	GameManager.set_dialogue_preference(&"use_alt_font", enabled)
+
+
+func _on_dialogue_opacity_changed(value: float) -> void:
+	GameManager.set_dialogue_preference(&"panel_opacity", value)
+
+
+func _on_dialogue_reveal_selected(index: int) -> void:
+	GameManager.set_dialogue_preference(&"text_reveal", index as GameManager.TextReveal)
+
+
+func _on_dialogue_animation_selected(index: int) -> void:
+	GameManager.set_dialogue_preference(&"animation_multiplier", [1.0, 0.5, 0.0][index])
+
+
+func _animation_multiplier_to_index(multiplier: float) -> int:
+	if is_equal_approx(multiplier, 0.5):
+		return 1
+	if is_equal_approx(multiplier, 0.0):
+		return 2
+	return 0
+
+
 # --- Sair ---
 # Veja o comentário no topo do arquivo pra saber como conectar isso a outras cenas.
 
@@ -203,3 +275,10 @@ func _load_settings() -> void:
 	# O esquema de movimentação já veio carregado do disco pelo GameManager (Autoload),
 	# antes mesmo desta cena existir: aqui o dropdown só reflete o valor ativo.
 	movement_option.selected = int(GameManager.movement_scheme)
+	# As preferências de diálogo também já vieram carregadas pelo GameManager: os controles só
+	# refletem os valores ativos.
+	dialogue_scale_slider.value = GameManager.dialogue_text_scale
+	dialogue_alt_font_check.button_pressed = GameManager.dialogue_use_alt_font
+	dialogue_opacity_slider.value = GameManager.dialogue_panel_opacity
+	dialogue_reveal_option.selected = int(GameManager.dialogue_text_reveal)
+	dialogue_animation_option.selected = _animation_multiplier_to_index(GameManager.dialogue_animation_multiplier)

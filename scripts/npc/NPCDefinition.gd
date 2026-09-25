@@ -59,6 +59,8 @@ const ALL_WEEKDAYS: int = 127
 
 ## Chave de tradução do nome, em translations/translations.csv (ex.: NPC_NAME_ZE). É o que aparece
 ## acima da cabeça dele. Nunca escreva o nome direto aqui.
+## No diálogo o nome segue o padrão "Nome, Alcunha": a alcunha é a linha <name_key>_ALCUNHA do CSV
+## (ex.: NPC_NAME_ZE_ALCUNHA = "O Padeiro"). Não há campo para ela aqui.
 @export var name_key: StringName = &"":
 	set(value):
 		name_key = value
@@ -71,6 +73,24 @@ const ALL_WEEKDAYS: int = 127
 ## Velocidade de caminhada, em pixels de tela por segundo. Balanceamento por NPC: um velho anda
 ## mais devagar que uma criança.
 @export var walk_speed: float = 220.0
+
+@export_group("Diálogo")
+
+## Cor do nome do NPC na coluna de diálogo. Diferente de tint (que é placeholder de sprite): esta
+## precisa passar no contraste mínimo contra o fundo da coluna de diálogo.
+@export var dialogue_color: Color = Color("#E0C080"):
+	set(value):
+		dialogue_color = value
+		_refresh_summary()
+
+## Conversa aberta ao clicar no NPC (o id da conversa no catálogo de diálogo). Vazio = NPC não
+## conversa (NPCInteraction não pede nada ao clicar nele).
+@export var conversation_id: StringName = &""
+
+## Retrato mostrado numa moldura ao lado da coluna de diálogo enquanto este NPC conversa. Vazio =
+## o diálogo desenha uma silhueta na dialogue_color (PLACEHOLDER até a arte final). O slot é 3:4
+## (DialogueStyle.portrait_slot_size, 180x240): imagem em outra proporção é cortada embaixo.
+@export var portrait: Texture2D
 
 @export_group("Emoções")
 
@@ -211,6 +231,12 @@ func collect_issues() -> PackedStringArray:
 		issues.append("Sem emoção no slot 2.")
 	if get_routine(EmotionSlot.NEUTRAL, DayType.WORKDAY) == null:
 		issues.append("Sem rotina neutro/trabalho — ela é o último fallback de todos os outros slots.")
+
+	var dialogue_style: DialogueStyle = load("res://resources/dialogue/dialogue_style.tres")
+	if dialogue_style != null:
+		var ratio: float = DialogueContrast.worst_case_ratio(dialogue_color, 1.0, dialogue_style, 0.82)
+		if ratio < dialogue_style.min_contrast_ratio:
+			issues.append("Cor de diálogo com contraste %.1f:1 (mínimo %.1f:1)." % [ratio, dialogue_style.min_contrast_ratio])
 
 	for slot: int in EmotionSlot.values():
 		for day_type: int in DayType.values():

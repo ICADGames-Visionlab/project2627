@@ -1,0 +1,28 @@
+# Conversa de exemplo com DOIS NPCs na roda: o Zé e a Ana já estão discutindo quando o jogador
+# chega. Os dois apontam esta conversa no conversation_id, então clicar em qualquer um dos dois
+# abre a mesma conversa — muda só quem é o "initiator" (quem o jogador abordou).
+#
+# A linha abaixo é o elenco: é ela que faz os dois serem segurados, virarem pro jogador, entrarem
+# no enquadramento da câmera e terem retrato na tela.
+participants: ze ana
+
+== inicio ==
+ze: DIALOGUE_ZE_ANA_FEIRA_01
+ana: DIALOGUE_ZE_ANA_FEIRA_02
+
+- DIALOGUE_ZE_ANA_FEIRA_OPT_PRECO => preco
+- DIALOGUE_ZE_ANA_FEIRA_OPT_CHUVA => chuva
+- DIALOGUE_ZE_ANA_FEIRA_OPT_SAIR => END
+
+== preco ==
+ana: DIALOGUE_ZE_ANA_FEIRA_PRECO_01
+ze: DIALOGUE_ZE_ANA_FEIRA_PRECO_02
+=> fim
+
+== chuva ==
+ze: DIALOGUE_ZE_ANA_FEIRA_CHUVA_01
+ana: DIALOGUE_ZE_ANA_FEIRA_CHUVA_02
+=> fim
+
+== fim ==
+ana: DIALOGUE_ZE_ANA_FEIRA_FIM
