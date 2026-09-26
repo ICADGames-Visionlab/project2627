@@ -226,13 +226,15 @@ func _apply_routines(snap: bool) -> void:
 
 # Põe cada NPC na posição fixa de sonho, sem caminhar: ninguém atravessa a cidade para chegar a um
 # sonho. Quem não tem posição de sonho some — diferente do dia, em que o NPC sem rotina fica onde
-# está, porque no sonho "onde ele estava" é justamente o mundo acordado.
+# está, porque no sonho "onde ele estava" é justamente o mundo acordado. Some também quem o jogador
+# ainda não encontrou no mundo real: pelo GDD, o espírito só aparece depois de uma conversa (ver
+# ProfilingJournal.can_appear_in_dream).
 func _apply_dream_positions() -> void:
 	for definition: NPCDefinition in roster.npcs:
 		if definition == null:
 			continue
 
-		if definition.dream_entry == null:
+		if definition.dream_entry == null or not ProfilingJournal.can_appear_in_dream(definition.id):
 			var body: NPC = _bodies.get(definition.id) as NPC
 			if body != null:
 				_despawn(definition.id, body)

@@ -52,6 +52,7 @@ func run() -> void:
 	_test_blank_categories()
 	_test_marks()
 	_test_scheduled_emotion()
+	_test_real_world_meeting()
 	_test_pairs()
 	_test_markup_groups()
 
@@ -232,6 +233,27 @@ func _test_marks() -> void:
 	ProfilingJournal.set_mark(npc_id, word_id, GlossaryMark.Kind.STAR)
 	_expect_equal("Escolher a mesma marca de novo a remove",
 		ProfilingJournal.get_mark(npc_id, word_id), GlossaryMark.Kind.NONE)
+
+
+# O NPC só aparece no sonho depois de uma conversa no mundo real, e o encontro sobrevive ao save.
+# Chama o ouvinte direto, e não emite conversation_started: o evento de verdade travaria o Player de
+# quem rodou o autoteste pelo menu.
+func _test_real_world_meeting() -> void:
+	var npc_id: StringName = StringName(TEST_PREFIX + "npc_met")
+	ProfilingJournal.from_dict({})
+
+	_expect("NPC nunca encontrado não aparece no sonho", not ProfilingJournal.can_appear_in_dream(npc_id))
+
+	ProfilingJournal._on_conversation_started(StringName(TEST_PREFIX + "conversa"), npc_id)
+	if GameClock.is_dreaming():
+		_expect("Conversa dentro do sonho não conta como encontro",
+			not ProfilingJournal.can_appear_in_dream(npc_id))
+		return
+	_expect("Depois de conversar no mundo real, o NPC aparece no sonho",
+		ProfilingJournal.can_appear_in_dream(npc_id))
+
+	ProfilingJournal.from_dict(ProfilingJournal.to_dict())
+	_expect("O encontro volta do save", ProfilingJournal.can_appear_in_dream(npc_id))
 
 
 # A emoção escolhida no sonho só vale a partir do dia seguinte.

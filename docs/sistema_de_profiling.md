@@ -416,8 +416,12 @@ O que **não** é evento de bus, e por quê:
 - histórias resolvidas;
 - marcas de lixo/estrela;
 - a emoção escolhida pra cada NPC e o dia em que ela passa a valer;
-- se o jogador já encontrou o NPC no mundo real (hoje sempre sim — ver
-  [O que ainda não existe](#o-que-ainda-não-existe)).
+- quais NPCs o jogador já encontrou no mundo real. Toda conversa (`EventBus.conversation_started`
+  fora do sonho) marca o NPC que o jogador abordou — quem só participa da conversa não conta —, e só quem foi encontrado aparece no sonho
+  (`can_appear_in_dream()`, consultado pelo `NPCDirector` e pela `SpiritInteraction`). Um perfil
+  com `requires_real_world_meeting` desligado dispensa o encontro. No menu de debug, **Marcar NPC
+  como encontrado** leva ao sonho quem ainda não tem conversa escrita, e **Esquecer encontro com
+  NPC** desfaz (npc vazio = todos) sem apagar o resto do profiling.
 
 É isso que faz o GDD funcionar: preencher metade de uma página, sair do espírito, acordar, jogar um
 dia inteiro e voltar — as palavras continuam nas lacunas onde ele as deixou.
@@ -483,7 +487,6 @@ entram.
 | **História narrada pelo NPC** (o GDD sugere animatic) | A história resolvida aparece como texto na própria página. | `ProfilingScreen._reveal_solved()` |
 | **Música curta no acerto** | Não há música no projeto (`docs/AudioManager.md`). | comentário `MÚSICA` em `ProfilingScreen._reveal_solved()` |
 | **Diário do jogador** ("Pessoas Importantes", o glossário fora do sonho) | `GlossaryPanel` já funciona **sem história** — é assim que o diário vai usá-lo —, e `ProfilingStory.journal_entry_key` já guarda o texto da entrada. | instanciar `scenes/profiling/GlossaryPanel.tscn`; `ProfilingJournal.mark_story_solved()` |
-| **Espírito só aparece depois de conversar no mundo real** | A regra está escrita e ligada. Hoje `has_met()` responde sim pra todo mundo. | desligar `ProfilingJournal.ASSUME_MET_UNTIL_DIALOGUE_EXISTS` e fazer o diálogo chamar `mark_met()` |
 | **Convencer o NPC a sair da cidade** | `npc_profiling_completed` é emitido quando todas as emoções são entendidas — e esse tem ouvinte hoje (a tela, que acorda o jogador). | ouvinte de `EventBus.npc_profiling_completed` |
 
 ---
