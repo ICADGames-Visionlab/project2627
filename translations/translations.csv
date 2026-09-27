@@ -200,3 +200,15 @@ PLACEHOLDER_DIARY_PAGE_1_TITLE,"Placeholder - Page 1 (final content pending)","P
 PLACEHOLDER_DIARY_PAGE_1_TEXT,"Placeholder - This is the first page of the diary prototype. Real content will come from other systems calling Diary.add_page().","Placeholder - Esta é a primeira página do protótipo de diário. O conteúdo real virá de outros sistemas chamando Diary.add_page()."
 PLACEHOLDER_DIARY_PAGE_2_TITLE,"Placeholder - Page 2 (final content pending)","Placeholder - Página 2 (conteúdo final pendente)"
 PLACEHOLDER_DIARY_PAGE_2_TEXT,"Placeholder - Use J (or the Y button) to open and close the diary, and the left/right movement keys to flip pages.","Placeholder - Use J (ou o botão Y) para abrir e fechar o diário, e as teclas de movimento esquerda/direita para folhear as páginas."
+PLACEHOLDER_INTERACTABLE_PROPS,Placeholder - Interactable objects reuse Isometric City props (final art pending),Placeholder - Objetos interagíveis reaproveitam props do Isometric City (arte final pendente)
+PLACEHOLDER_EVIDENCE_TORN_NOTE_NAME,Placeholder - Torn note,Placeholder - Bilhete rasgado
+PLACEHOLDER_EVIDENCE_TORN_NOTE_DESC,"Placeholder - Half a note, still wet. The handwriting is shaky.","Placeholder - Jogue Aiocá."
+PLACEHOLDER_INSIGHT_CITY_MAILBOX,"Placeholder - The mailbox is stuffed full, but the slot was taped shut from the inside.","Placeholder - A caixa de correio está entupida, sobrou nada para o beta, B R U T A L."
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_01,Placeholder - An open cardboard box. Someone left in a hurry.,Placeholder - Uma caixa de papelão aberta. Alguém saiu com pressa.
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_02,Placeholder - Should I look inside?,Placeholder - Será que eu olho dentro?
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_OPT_LOOK,Placeholder - Look inside.,Placeholder - Olhar dentro.
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_OPT_NOTE,Placeholder - Compare with the torn note.,Placeholder - Comparar com o bilhete rasgado.
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_REASON_NOTE,Placeholder - You have not found the torn note yet.,Placeholder - Você ainda não achou o bilhete rasgado.
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_OPT_LEAVE,Placeholder - Leave it.,Placeholder - Deixar pra lá.
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_LOOK_01,Placeholder - Empty. Only a smell of the sea.,Placeholder - Vazia. Só um cheiro de mar.
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_NOTE_01,Placeholder - The torn edge of the note matches a scrap stuck to the box.,Placeholder - A borda rasgada do bilhete bate com um pedaço preso na caixa.

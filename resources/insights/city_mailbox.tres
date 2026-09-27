@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="InsightData" format=3 uid="uid://dxb0xaol1ypsh"]
+
+[ext_resource type="Script" uid="uid://cvjf5b70p3kvy" path="res://scripts/insights/InsightData.gd" id="1_insight"]
+
+[resource]
+script = ExtResource("1_insight")
+id = &"city_mailbox"
+text_key = "PLACEHOLDER_INSIGHT_CITY_MAILBOX"

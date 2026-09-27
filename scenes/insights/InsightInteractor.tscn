@@ -1,6 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://pcl2272op8ju"]
 
-[ext_resource type="Script" path="res://scripts/insights/InsightInteractor.gd" id="1_interactor"]
+[ext_resource type="Script" uid="uid://34yq54n5i8h7" path="res://scripts/insights/InsightInteractor.gd" id="1_interactor"]
 
-[node name="InsightInteractor" type="Node2D"]
+[node name="InsightInteractor" type="Node2D" unique_id=1103358089]
 script = ExtResource("1_interactor")

@@ -212,6 +212,13 @@ func _clear_path() -> void:
 	_blocked_time = 0.0
 
 
+# Descarta o destino pendente do esquema de clique. Público para quem move o jogador por script sem
+# travar o input (a aproximação de um Interactable): sem isto, um clique antigo ainda em andamento
+# seria retomado assim que a aproximação terminasse, e o jogador sairia andando para longe.
+func cancel_click_destination() -> void:
+	_clear_path()
+
+
 # Anda até "target" ignorando o esquema de movimento ativo e _is_input_locked (ver
 # _get_movement_direction()) — usado para abordar um NPC (NPCInteraction._start_conversation).
 # Emite conversation_approach_arrived ao chegar. _is_input_locked já precisa estar true antes de
