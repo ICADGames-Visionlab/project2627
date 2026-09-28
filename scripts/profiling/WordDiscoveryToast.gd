@@ -16,6 +16,9 @@
 ## Duas palavras descobertas juntas ([MARCOS]/[CASTRO]) geram DOIS avisos, porque são duas palavras —
 ## o texto do aviso é o da última, e as duas animações acontecem ao mesmo tempo.
 ##
+## DE ONDE A PALAVRA SAI: do mouse, porque quase sempre o jogador acabou de clicar nela. Quem colhe
+## palavra sem clique (o insight, quando a caixa fecha) usa discover_from() e diz o ponto de tela.
+##
 ## O guia completo está em docs/sistema_de_profiling.md.
 class_name WordDiscoveryToast
 extends CanvasLayer
@@ -30,6 +33,14 @@ extends CanvasLayer
 
 ## A cena da palavra que desce pro canto (FlyingWord.tscn).
 @export var flying_word_scene: PackedScene
+
+## Espaço para variáveis
+
+# Ponto da viewport de onde as palavras descobertas AGORA saem, ou null pra sair do mouse. Só vale
+# durante a chamada de discover_from(): o evento do bus é síncrono, então o aviso lê o ponto dentro
+# da mesma chamada, e o evento não precisa ganhar um parâmetro de tela que o ProfilingJournal (dono do
+# estado, não da tela) não tem como preencher.
+static var _launch_point: Variant = null
 
 ## Espaço para variáveis onready
 
@@ -48,6 +59,18 @@ func _ready() -> void:
 
 ## Espaço para funções personalizadas
 
+# Descobre palavras fazendo-as voar de um ponto da viewport, e não do mouse. É o caminho de quem colhe
+# sem clique. Devolve true se alguma palavra era nova.
+static func discover_from(viewport_position: Vector2, word_ids: Array[StringName],
+		npc_id: StringName = &"") -> bool:
+	_launch_point = viewport_position
+	var discovered_anything: bool = false
+	for word_id: StringName in word_ids:
+		discovered_anything = ProfilingJournal.discover_word(word_id, npc_id) or discovered_anything
+	_launch_point = null
+	return discovered_anything
+
+
 # Mostra o aviso de uma palavra nova: a palavra voando e a mensagem no canto.
 func show_word(npc_id: StringName, word_id: StringName) -> void:
 	var word: GlossaryWord = ProfilingCatalog.find_word(word_id)
@@ -65,8 +88,8 @@ func show_word(npc_id: StringName, word_id: StringName) -> void:
 	timer.timeout.connect(_on_message_timeout.bind(_message.text))
 
 
-# A palavra descendo pra o canto do diário. Ela nasce onde o mouse está: é lá que o jogador acabou de
-# clicar, então a animação sai da própria palavra que ele colheu.
+# A palavra descendo pra o canto do diário. Ela nasce onde o mouse está (é lá que o jogador acabou de
+# clicar, então a animação sai da própria palavra que ele colheu), ou no ponto de discover_from().
 func _fly_word(word: GlossaryWord) -> void:
 	if flying_word_scene == null:
 		push_error("[Profiling] - Aviso de palavra sem \"Flying Word Scene\" apontada")
@@ -84,7 +107,11 @@ func _fly_word(word: GlossaryWord) -> void:
 	# reset_size() antes de ler o tamanho: o Label só ganha tamanho no próximo layout, e sem isto o
 	# destino sairia deslocado meio retângulo.
 	flying.reset_size()
-	flying.position = _root.get_local_mouse_position()
+	if _launch_point is Vector2:
+		var launch: Vector2 = _root.get_global_transform_with_canvas().affine_inverse() * (_launch_point as Vector2)
+		flying.position = launch - flying.size * 0.5
+	else:
+		flying.position = _root.get_local_mouse_position()
 
 	var corner: Vector2 = _diary_icon.get_global_rect().get_center()
 	var destination: Vector2 = corner - _root.global_position - flying.size * 0.5
