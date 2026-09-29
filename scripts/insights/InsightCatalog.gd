@@ -1,5 +1,6 @@
-# InsightCatalog.gd — Varredura dos recursos do sistema de insights: todos os .tres de insight e de
-# cabeça, e as chaves declaradas no CSV de localização.
+# InsightCatalog.gd — Varredura dos recursos do sistema de insights: todos os .tres de insight, as
+# cabeças (a do jogador, em .tres, e a de cada NPC do roster) e as chaves declaradas no CSV de
+# localização.
 #
 # Existe porque três lugares diferentes precisam da mesma varredura e não podem divergir: o
 # HeadRegistry (que monta o elenco), o aviso de configuração da fonte (que confere text_key e
@@ -14,6 +15,7 @@ extends RefCounted
 
 const INSIGHTS_DIR: String = "res://resources/insights/"
 const HEADS_DIR: String = "res://resources/heads/"
+const NPC_ROSTER_PATH: String = "res://resources/npcs/npc_roster.tres"
 const TRANSLATIONS_CSV: String = "res://translations/translations.csv"
 
 # Cache das chaves do CSV: a varredura roda a cada aviso de configuração de cada fonte da cena, e
@@ -36,13 +38,30 @@ static func load_all_insights() -> Array[InsightData]:
 
 # Todas as cabeças do projeto, em ordem de id. A ordem também define o slot canônico de cada cabeça
 # na órbita do jogador (ver HeadOrbitLayer), então mexer nela move orbes de lugar.
+#
+# As de NPC não são arquivo: cada NPC do roster tem a sua, montada da definição dele (ver
+# HeadData.from_npc). NPC novo no roster já tem cabeça, sem ninguém criar .tres nenhum.
 static func load_all_heads() -> Array[HeadData]:
 	var result: Array[HeadData] = []
 	for resource: Resource in _load_folder(HEADS_DIR):
 		var head: HeadData = resource as HeadData
 		if head != null:
 			result.append(head)
+	result.append_array(_load_npc_heads())
 	result.sort_custom(_compare_head_ids)
+	return result
+
+
+# A cabeça de cada NPC do roster. Roster ausente não é erro daqui: sem roster não há NPC, e sem NPC
+# não há cabeça de NPC.
+static func _load_npc_heads() -> Array[HeadData]:
+	var result: Array[HeadData] = []
+	var roster: NPCRoster = ResourceLoader.load(NPC_ROSTER_PATH) as NPCRoster
+	if roster == null:
+		return result
+	for definition: NPCDefinition in roster.npcs:
+		if definition != null and definition.id != &"":
+			result.append(HeadData.from_npc(definition))
 	return result
 
 
