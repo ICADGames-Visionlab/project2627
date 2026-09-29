@@ -209,6 +209,13 @@ O anel só aparece no modo teclado/controle. Ele liga com as duas ações ou com
 analógico do controle, e desliga quando o mouse se move. Assim, quem joga de mouse não vê um anel
 pulando de orbe em orbe a cada passo.
 
+Mouse e teclado/controle nunca destacam orbes ao mesmo tempo. Enquanto o modo teclado/controle está
+ligado, o hover do mouse não conta: o orbe sob o cursor não cresce, não mostra o nome e não troca o
+cursor pela mãozinha. Sem isso, clicar num orbe e apertar Tab deixava dois orbes em destaque (o que
+ficou sob o cursor parado e o que recebeu o foco). O `InsightInteractor` liga e desliga isso em todos
+os orbes pelo grupo `insight_markers` (`InsightMarker.set_mouse_hover_suppressed()`). Ao mexer o
+mouse de novo, o modo teclado/controle desliga e o orbe sob o cursor volta ao destaque na hora.
+
 O acionamento passa por `InsightMarker.activate()`, o mesmo caminho do clique. A fonte e a órbita não
 sabem se o orbe foi clicado ou acionado por tecla.
 
