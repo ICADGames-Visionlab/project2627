@@ -99,10 +99,11 @@ lugar, vazado, e clicar nele mostra o texto de novo, sem emitir `insight_reveale
 ## As cabeças
 
 `HeadData` (`scripts/insights/HeadData.gd`), um `.tres` por cabeça em `res://resources/heads/`:
-`id`, `display_name_key` (chave do CSV), `origin` (`PLAYER` ou `NPC`), `color` e `glyph`.
+`id`, `display_name_key` (chave do CSV), `origin` (`PLAYER` ou `NPC`), `npc_id` (o NPC dono da cabeça), `color` e `glyph`.
 
-A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC só existem depois de
-`HeadRegistry.unlock_head()`. Hoje só a ação de debug chama essa função; no futuro, quem vai chamá-la
+A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC são desbloqueadas quando o profiling do `npc_id` dono é completado
+(`EventBus.npc_profiling_completed`, escutado pelo `HeadRegistry`) — é o que faz os insights do NPC
+passarem a orbitar o jogador — ou por `HeadRegistry.unlock_head()`. Hoje só a ação de debug chama essa função; no futuro, quem vai chamá-la
 é o sistema de derrota (ver [Costuras](#costuras)).
 
 ### Elenco atual

@@ -34,6 +34,8 @@ var _unlock_all: bool = false
 
 func _ready() -> void:
 	_load_heads()
+	# Completar o profiling de um NPC faz o jogador passar a conviver com a voz dele na cabeça.
+	EventBus.npc_profiling_completed.connect(_on_npc_profiling_completed)
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Insights": substituto da derrota de NPC (ver docs/insights.md).
 		DebugMenu.register_input(DEBUG_SECTION, "Desbloquear cabeça", _debug_unlock_head, [
@@ -132,6 +134,13 @@ func _load_heads() -> void:
 			_unlocked[head.id] = true
 	print("[Insights] - %d cabeça(s) no elenco, %d disponível(is) de início"
 		% [_heads.size(), _unlocked.size()])
+
+
+# Desbloqueia as cabeças do NPC que o jogador acabou de entender por completo.
+func _on_npc_profiling_completed(npc_id: StringName) -> void:
+	for head_id: StringName in _order:
+		if (_heads[head_id] as HeadData).npc_id == npc_id:
+			unlock_head(head_id)
 
 
 # [DEBUG] Desbloqueia uma cabeça pelo menu/console — o substituto da derrota de NPC enquanto ela não
