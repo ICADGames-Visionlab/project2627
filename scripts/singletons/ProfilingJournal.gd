@@ -31,10 +31,10 @@
 # reencontraria palavras que já descobriu) e um slot de emoção que volta como 1.0 não casa com o
 # enum, então as conversões na leitura (StringName(...) e int(...)) são obrigatórias, não estilo.
 #
-# ENQUANTO NÃO HÁ DONO DO SLOT ATIVO: igual ao InsightJournal — o jogo ainda não escolhe slot de
-# save, então este diário carrega e salva sozinho no slot 1. No dia em que o slot ativo existir, quem
-# for dono dele define save_slot_path e desliga o autosave; to_dict/from_dict já são a API desse
-# fluxo.
+# ENTRA NO SAVE PELO SaveManager: igual ao InsightJournal — este diário é o participante "profiling"
+# (to_dict/from_dict), registrado no _ready(). Quem escolhe o slot e abre a partida é o SaveManager;
+# toda mudança aqui só PEDE gravação (request_save), e carregar não pede. Gravar no sonho é normal: o
+# profiling acontece lá, e cada gesto vai para o disco.
 #
 # O guia completo está em docs/sistema_de_profiling.md.
 extends Node
@@ -68,27 +68,17 @@ const NEXT_DAY_KEY: String = "next_day"
 # inteira, sem mais nenhuma edição.
 const ASSUME_MET_UNTIL_DIALOGUE_EXISTS: bool = true
 
-# Slot em que o diário lê e grava. Público de propósito: é o gancho para o dia em que alguém for
-# dono do slot ativo.
-var save_slot_path: String = ""
-# Grava o diário no slot a cada mudança. Ver o bloco "ENQUANTO NÃO HÁ DONO DO SLOT ATIVO" acima.
-var autosave_enabled: bool = true
-
 var _discovered: Dictionary = {}    # StringName(npc) -> { StringName(palavra): true }
 var _fills: Dictionary = {}         # StringName(história) -> Array[String] (uma palavra por lacuna)
 var _solved: Dictionary = {}        # StringName(história) -> true
 var _marks: Dictionary = {}         # StringName(npc) -> { StringName(palavra): GlossaryMark.Kind }
 var _emotions: Dictionary = {}      # StringName(npc) -> { slot: int, next_slot: int, next_day: int }
 var _met: Dictionary = {}           # StringName(npc) -> true
-# Evita gravar o arquivo N vezes quando uma ação muda várias coisas no mesmo frame (descobrir uma
-# palavra em conjunto mexe em duas entradas).
-var _autosave_queued: bool = false
 
 
 func _ready() -> void:
-	if save_slot_path.is_empty():
-		save_slot_path = SaveManager.save_file_1
-	load_from_slot()
+	# Sem partida ativa no boot, isto só registra: quem entrega a seção salva é o continue_game.
+	SaveManager.register_participant(SAVE_KEY, to_dict, from_dict)
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Profiling" (ver docs/sistema_de_profiling.md).
 		_register_debug_entries()
@@ -390,8 +380,8 @@ func mark_met(npc_id: StringName) -> void:
 # Save
 # ------------------------------------------------------------------------------------
 
-# Esquece tudo. Existe para o debug e para o dia em que "novo jogo" precisar zerar o profiling sem
-# apagar o arquivo de save inteiro.
+# Esquece tudo. Existe para o debug: zera o profiling da partida ativa (e pede gravação) sem apagar o
+# slot. O novo jogo não passa por aqui: ele chega como from_dict({}).
 func reset() -> void:
 	_discovered.clear()
 	_fills.clear()
@@ -457,8 +447,9 @@ func to_dict() -> Dictionary:
 	}
 
 
-# Recarrega o diário a partir de um Dictionary vindo do save. As conversões explícitas pra
-# StringName e pra int são a armadilha documentada no topo deste arquivo.
+# Recarrega o diário a partir da seção "profiling" do save. {} é o novo jogo (diário zerado), nunca
+# erro: slot novo e save antigo sem a chave caem aqui. As conversões explícitas pra StringName e pra
+# int são a armadilha documentada no topo deste arquivo.
 func from_dict(data: Dictionary) -> void:
 	_discovered.clear()
 	_fills.clear()
@@ -500,28 +491,11 @@ func from_dict(data: Dictionary) -> void:
 	for raw_npc: Variant in data.get(MET_KEY, []):
 		_met[StringName(str(raw_npc))] = true
 
-	# Sem agendar gravação: carregar não é mudança, e salvar de volta o que se acabou de ler
-	# reescreveria o arquivo a cada boot do jogo por nada.
+	print("[Profiling] - Diário carregado do save (%d NPCs com palavras, %d histórias resolvidas)" % [
+		_discovered.size(), _solved.size()])
+	# Sem pedir gravação: carregar não é mudança, e gravar de volta o que se acabou de ler
+	# reescreveria o arquivo a cada partida aberta por nada.
 	_notify_changed(false)
-
-
-# Grava o profiling dentro do slot atual, preservando as outras chaves do arquivo: o save é de todos
-# os sistemas, e reescrevê-lo inteiro apagaria o que os outros já tinham guardado.
-func save_to_slot() -> void:
-	var data: Dictionary = SaveManager.load_game(save_slot_path)
-	data[SAVE_KEY] = to_dict()
-	SaveManager.save_game(data, save_slot_path)
-	print("[Profiling] - Diário salvo em \"%s\" (%d NPCs com palavras, %d histórias resolvidas)" % [
-		save_slot_path, _discovered.size(), _solved.size()])
-
-
-# Lê o profiling do slot atual. Slot sem a chave (save antigo, ou slot novo) devolve Dictionary
-# vazio e o diário simplesmente começa zerado — nunca é erro.
-func load_from_slot() -> void:
-	var data: Dictionary = SaveManager.load_game(save_slot_path)
-	from_dict(data.get(SAVE_KEY, {}) as Dictionary)
-	print("[Profiling] - Diário carregado de \"%s\" (%d NPCs com palavras, %d histórias resolvidas)" % [
-		save_slot_path, _discovered.size(), _solved.size()])
 
 
 # ------------------------------------------------------------------------------------
@@ -562,22 +536,14 @@ func _get_total_words(npc_id: StringName) -> int:
 	return profile.get_total_word_count()
 
 
-# Anuncia a mudança e agenda a gravação. A gravação é adiada para o fim do frame porque uma ação só
-# costuma mexer em duas ou três entradas em sequência (descobrir uma palavra em conjunto, resolver
-# uma história), e o arquivo não precisa ser escrito uma vez por entrada.
+# Anuncia a mudança e pede gravação ao SaveManager. Uma ação só costuma mexer em duas ou três
+# entradas em sequência (descobrir uma palavra em conjunto, resolver uma história); os pedidos viram
+# uma escrita só, porque o SaveManager junta tudo o que chega até o próximo frame. schedule_autosave
+# existe para a leitura do save (e o debug que só relê o catálogo) não pedir gravação.
 func _notify_changed(schedule_autosave: bool = true) -> void:
 	journal_changed.emit()
-	if not schedule_autosave or not autosave_enabled or _autosave_queued:
-		return
-	_autosave_queued = true
-	_flush_autosave.call_deferred()
-
-
-# Executa a gravação agendada por _notify_changed().
-func _flush_autosave() -> void:
-	_autosave_queued = false
-	if autosave_enabled:
-		save_to_slot()
+	if schedule_autosave:
+		SaveManager.request_save()
 
 
 # Ordena dois StringName em ordem alfabética de verdade. Existe pelo mesmo motivo do InsightJournal:
@@ -607,9 +573,6 @@ func _register_debug_entries() -> void:
 	DebugMenu.register_action(DEBUG_SECTION, "Autoteste do profiling", _debug_run_self_test)
 	DebugMenu.register_action(DEBUG_SECTION, "Recarregar catálogo", _debug_reload_catalog)
 	DebugMenu.register_action(DEBUG_SECTION, "Resetar profiling", reset, true)
-	DebugMenu.register_action(DEBUG_SECTION, "Salvar profiling", save_to_slot)
-	DebugMenu.register_action(DEBUG_SECTION, "Carregar profiling", load_from_slot)
-	DebugMenu.register_toggle(DEBUG_SECTION, "Salvar automático", _debug_set_autosave, autosave_enabled)
 
 
 # [DEBUG] Põe uma palavra no glossário sem precisar achá-la no mundo. É o que torna o profiling
@@ -780,9 +743,3 @@ func _debug_story_suggestions() -> PackedStringArray:
 			if story != null:
 				result.append(String(story.id))
 	return result
-
-
-# [DEBUG] Liga/desliga a gravação automática do diário.
-func _debug_set_autosave(enabled: bool) -> void:
-	autosave_enabled = enabled
-	print("[Profiling] - Salvamento automático do profiling %s" % ("ligado" if enabled else "desligado"))

@@ -422,10 +422,18 @@ O que **não** é evento de bus, e por quê:
 É isso que faz o GDD funcionar: preencher metade de uma página, sair do espírito, acordar, jogar um
 dia inteiro e voltar — as palavras continuam nas lacunas onde ele as deixou.
 
-O save usa a chave `profiling` dentro do arquivo do slot, preservando as chaves dos outros sistemas
-(`SaveManager`, ver `docs/SaveManager.md`), e grava a cada mudança. Como o `InsightJournal`, ele
-carrega e salva sozinho no **slot 1** enquanto não existir dono do slot ativo; `to_dict`/`from_dict`
-já são a API desse fluxo.
+O save usa a chave `profiling` do arquivo do slot, e as chaves dos outros sistemas ficam intactas
+(`SaveManager`, ver `docs/SaveManager.md`). Como o `InsightJournal`, o diário é um participante: registra
+`to_dict`/`from_dict` no `_ready()` e pede gravação com `request_save()` a cada mudança. Descobrir uma
+palavra em conjunto mexe em duas entradas, e os pedidos do mesmo frame viram uma escrita só.
+
+`from_dict({})` é o novo jogo: o diário volta vazio. Sem partida ativa (menu principal, ou uma cena
+rodada direto pelo editor com F6) ele começa vazio e nada é gravado; para jogar com progresso, F4 →
+Save → "Continuar slot".
+
+**Gravar no sonho é normal**: o profiling acontece lá, e cada gesto vai para o disco. Fechar o jogo no
+sonho e continuar devolve o jogador acordado no dia em que dormiu, com as palavras que já tinha e a
+emoção ainda agendada para o dia seguinte.
 
 > **Armadilha do JSON:** na volta do save, todo `StringName` vira `String` e todo `int` vira `float`.
 > As conversões na leitura (`StringName(...)`, `int(...)`) são obrigatórias, não estilo — sem elas o
@@ -451,8 +459,10 @@ Seção **Profiling** no menu (F4) e no console (F1):
 | *Validar conteúdo do profiling* | Varre o projeto: preenchimento dos recursos, chave que não existe no CSV, perfil de NPC fora do roster, história numa emoção que o NPC não tem. |
 | *Autoteste do profiling* | Roda `ProfilingSelfTest`. |
 | *Recarregar catálogo* | Descarta a varredura, pra editar um `.tres` e ver o resultado sem reabrir o jogo. |
-| *Resetar / Salvar / Carregar profiling* | Estado do diário. |
-| *Salvar automático* | Liga/desliga a gravação a cada mudança. |
+| *Resetar profiling* | Zera o diário da partida ativa e pede gravação. |
+
+Salvar, carregar e ligar ou desligar o salvamento automático ficam na seção **Save** (ver
+`docs/SaveManager.md`), e não mais aqui.
 
 ### O autoteste
 
@@ -543,7 +553,8 @@ acusa.
 ### Mudar o `id` de uma história
 
 O progresso é gravado **por id de história**. Renomear descarta as lacunas preenchidas e o "já
-resolvida" de quem já jogou.
+resolvida" de quem já jogou. Se isso importa, a renomeação pede um passo de migração no `SaveManager`
+(checklist "renomeei um id de conteúdo" no `docs/SaveManager.md`).
 
 ### Marcar o par nos dois `.tres`
 

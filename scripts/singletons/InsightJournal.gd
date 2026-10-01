@@ -8,10 +8,10 @@
 # String. Comparar StringName com String falha em silêncio e o jogador reencontra insights que já
 # leu, então a conversão na leitura (StringName(...)) é obrigatória, não estilo.
 #
-# ENQUANTO NÃO HÁ DONO DO SLOT ATIVO: o jogo ainda não tem fluxo de save de verdade (o menu vai
-# direto para a cidade, sem escolher slot), então o diário carrega e salva sozinho no slot 1. No dia
-# em que o slot ativo existir, quem for dono dele define save_slot_path e desliga o autosave — a
-# API pública (to_dict/from_dict) já é a que esse fluxo vai usar.
+# ENTRA NO SAVE PELO SaveManager: o diário é o participante "insights" (to_dict/from_dict), registrado
+# no _ready(). Quem escolhe o slot e abre a partida é o SaveManager; toda mudança aqui só PEDE
+# gravação (request_save), e carregar não pede. Sem partida ativa (menu, cena rodada pelo F6) o
+# diário começa vazio e nada é gravado.
 #
 # O guia completo está em docs/insights.md.
 extends Node
@@ -26,23 +26,14 @@ const SAVE_KEY: String = "insights"
 const READ_KEY: String = "read"
 const FLAGS_KEY: String = "flags"
 
-# Slot em que o diário lê e grava. Público de propósito: é o gancho para o dia em que alguém for
-# dono do slot ativo.
-var save_slot_path: String = ""
-# Grava o diário no slot a cada mudança. Ver o bloco "ENQUANTO NÃO HÁ DONO DO SLOT ATIVO" acima.
-var autosave_enabled: bool = true
-
 var _read_ids: Dictionary = {}    # StringName(id do insight) -> true
 var _flags: Dictionary = {}       # StringName(flag) -> true
-# Evita gravar o arquivo N vezes quando uma leitura marca o lido e concede a flag no mesmo frame.
-var _autosave_queued: bool = false
 
 
 func _ready() -> void:
-	if save_slot_path.is_empty():
-		save_slot_path = SaveManager.save_file_1
 	EventBus.insight_revealed.connect(_on_insight_revealed)
-	load_from_slot()
+	# Sem partida ativa no boot, isto só registra: quem entrega a seção salva é o continue_game.
+	SaveManager.register_participant(SAVE_KEY, to_dict, from_dict)
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Insights": estado do diário (ver docs/insights.md).
 		DebugMenu.register_action(DEBUG_SECTION, "Listar estado do diário", _print_journal)
@@ -51,9 +42,6 @@ func _ready() -> void:
 		])
 		DebugMenu.register_action(DEBUG_SECTION, "Resetar lidos", _debug_reset_read, true)
 		DebugMenu.register_action(DEBUG_SECTION, "Resetar diário", _debug_reset_all, true)
-		DebugMenu.register_action(DEBUG_SECTION, "Salvar diário", save_to_slot)
-		DebugMenu.register_action(DEBUG_SECTION, "Carregar diário", load_from_slot)
-		DebugMenu.register_toggle(DEBUG_SECTION, "Salvar automático", _debug_set_autosave, autosave_enabled)
 
 
 # Diz se o insight já foi lido alguma vez. É a consulta mais quente do sistema (roda por insight, a
@@ -105,8 +93,8 @@ func get_read_ids() -> Array[StringName]:
 	return result
 
 
-# Esquece tudo: lidos e flags. Existe para o debug e para o dia em que "novo jogo" precisar zerar o
-# diário sem apagar o arquivo de save inteiro.
+# Esquece tudo: lidos e flags. Existe para o debug: zera o diário da partida ativa (e pede gravação)
+# sem apagar o slot. O novo jogo não passa por aqui: ele chega como from_dict({}).
 func reset() -> void:
 	_read_ids.clear()
 	_flags.clear()
@@ -126,8 +114,9 @@ func to_dict() -> Dictionary:
 	return { READ_KEY: read_list, FLAGS_KEY: flag_list }
 
 
-# Recarrega o diário a partir de um Dictionary vindo do save. A conversão explícita para StringName
-# é a armadilha documentada no topo deste arquivo: sem ela, is_read() nunca mais acha nada.
+# Recarrega o diário a partir da seção "insights" do save. {} é o novo jogo (diário zerado), nunca
+# erro: slot novo e save antigo sem a chave caem aqui. A conversão explícita para StringName é a
+# armadilha documentada no topo deste arquivo: sem ela, is_read() nunca mais acha nada.
 func from_dict(data: Dictionary) -> void:
 	_read_ids.clear()
 	_flags.clear()
@@ -135,28 +124,10 @@ func from_dict(data: Dictionary) -> void:
 		_read_ids[StringName(str(raw_id))] = true
 	for raw_flag: Variant in data.get(FLAGS_KEY, []):
 		_flags[StringName(str(raw_flag))] = true
-	# Sem agendar gravação: carregar não é mudança, e salvar de volta o que se acabou de ler
-	# reescreveria o arquivo a cada boot do jogo por nada.
+	print("[Insights] - Diário carregado do save (%d lidos, %d flags)" % [_read_ids.size(), _flags.size()])
+	# Sem pedir gravação: carregar não é mudança, e gravar de volta o que se acabou de ler
+	# reescreveria o arquivo a cada partida aberta por nada.
 	_notify_changed(false)
-
-
-# Grava o diário dentro do slot atual, preservando as outras chaves do arquivo: o save é de todos os
-# sistemas, e reescrevê-lo inteiro apagaria o que os outros já tinham guardado.
-func save_to_slot() -> void:
-	var data: Dictionary = SaveManager.load_game(save_slot_path)
-	data[SAVE_KEY] = to_dict()
-	SaveManager.save_game(data, save_slot_path)
-	print("[Insights] - Diário salvo em \"%s\" (%d lidos, %d flags)"
-		% [save_slot_path, _read_ids.size(), _flags.size()])
-
-
-# Lê o diário do slot atual. Slot sem a chave de insights (save antigo, ou slot novo) devolve
-# Dictionary vazio e o diário simplesmente começa zerado — nunca é erro.
-func load_from_slot() -> void:
-	var data: Dictionary = SaveManager.load_game(save_slot_path)
-	from_dict(data.get(SAVE_KEY, {}) as Dictionary)
-	print("[Insights] - Diário carregado de \"%s\" (%d lidos, %d flags)"
-		% [save_slot_path, _read_ids.size(), _flags.size()])
 
 
 # Registra a leitura do insight. Só reage à primeira vez: releitura não muda estado nenhum, e
@@ -168,23 +139,14 @@ func _on_insight_revealed(event: InsightRevealedEvent) -> void:
 	mark_read(event.insight_id)
 
 
-# Anuncia a mudança e agenda a gravação. A gravação é adiada para o fim do frame porque uma leitura
-# costuma marcar o lido e conceder uma flag em sequência, e o arquivo não precisa ser escrito duas
-# vezes por causa disso. schedule_autosave existe para a leitura do save não gravar de volta o que
-# acabou de ler.
+# Anuncia a mudança e pede gravação ao SaveManager. Uma leitura costuma marcar o lido e conceder uma
+# flag em sequência; os dois pedidos viram uma escrita só, porque o SaveManager junta tudo o que
+# chega até o próximo frame. schedule_autosave existe para a leitura do save não pedir gravação do
+# que acabou de ler.
 func _notify_changed(schedule_autosave: bool = true) -> void:
 	journal_changed.emit()
-	if not schedule_autosave or not autosave_enabled or _autosave_queued:
-		return
-	_autosave_queued = true
-	_flush_autosave.call_deferred()
-
-
-# Executa a gravação agendada por _notify_changed().
-func _flush_autosave() -> void:
-	_autosave_queued = false
-	if autosave_enabled:
-		save_to_slot()
+	if schedule_autosave:
+		SaveManager.request_save()
 
 
 # [DEBUG] Imprime lidos e flags no log do jogo (visível no visualizador de log, F5).
@@ -243,12 +205,6 @@ func _debug_reset_read() -> void:
 	_notify_changed()
 
 
-# [DEBUG] Esquece tudo.
+# [DEBUG] Esquece tudo. Com partida ativa, o diário zerado vai para o slot na próxima gravação.
 func _debug_reset_all() -> void:
 	reset()
-
-
-# [DEBUG] Liga/desliga a gravação automática do diário.
-func _debug_set_autosave(enabled: bool) -> void:
-	autosave_enabled = enabled
-	print("[Insights] - Salvamento automático do diário %s" % ("ligado" if enabled else "desligado"))

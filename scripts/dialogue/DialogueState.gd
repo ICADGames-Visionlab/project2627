@@ -1,6 +1,10 @@
 # DialogueState.gd — Escolhas e nós já visitados, sobrevivendo à troca de cena sem Autoload
 # (V9 do SPEC): tudo "static". Se o Lead preferir Autoload no futuro, a API muda só de forma
 # (static -> instância), não de assinatura.
+#
+# SAVE: participante "dialogue" do SaveManager. Sem _ready(), o registro acontece na primeira consulta
+# (ensure_registered); com partida aberta, o registro tardio do SaveManager já entrega a seção salva
+# nessa hora. Toda mudança pede gravação (request_save); carregar (from_dict) não pede.
 class_name DialogueState
 extends RefCounted
 
@@ -8,55 +12,61 @@ const SAVE_KEY: String = "dialogue"
 const CHOSEN_KEY: String = "chosen"
 const VISITED_KEY: String = "visited"
 
-static var save_slot_path: String = ""  # vazio = SaveManager.save_file_1
-static var autosave_enabled: bool = true
-
 static var _chosen: Dictionary = {}
 static var _visited: Dictionary = {}
-static var _loaded: bool = false
-static var _autosave_queued: bool = false
+static var _registered: bool = false
 
 
-static func ensure_loaded() -> void:
-	if _loaded:
+# Entra no save na primeira consulta, porque script static não tem _ready(). Os Callables são sobre o
+# próprio script (métodos static), então valem pelo jogo inteiro e nunca precisam de unregister.
+static func ensure_registered() -> void:
+	if _registered:
 		return
-	_loaded = true
-	load_from_slot()
+	_registered = true
+	SaveManager.register_participant(SAVE_KEY, Callable(DialogueState, "to_dict"),
+		Callable(DialogueState, "from_dict"))
 
 
+# A escolha já foi feita alguma vez nesta partida?
 static func was_chosen(choice_id: StringName) -> bool:
-	ensure_loaded()
+	ensure_registered()
 	return _chosen.has(choice_id)
 
 
+# Marca a escolha e pede gravação. Idempotente: repetir não gera pedido à toa.
 static func mark_chosen(choice_id: StringName) -> void:
-	ensure_loaded()
+	ensure_registered()
 	if _chosen.has(choice_id):
 		return
 	_chosen[choice_id] = true
-	_queue_autosave()
+	SaveManager.request_save()
 
 
+# O nó da conversa já foi visitado alguma vez nesta partida?
 static func was_visited(node_id: StringName) -> bool:
-	ensure_loaded()
+	ensure_registered()
 	return _visited.has(node_id)
 
 
+# Marca o nó como visitado e pede gravação. Idempotente, como mark_chosen().
 static func mark_visited(node_id: StringName) -> void:
-	ensure_loaded()
+	ensure_registered()
 	if _visited.has(node_id):
 		return
 	_visited[node_id] = true
-	_queue_autosave()
+	SaveManager.request_save()
 
 
+# [DEBUG] Esquece escolhas e nós visitados da partida ativa (e grava). O novo jogo não passa por aqui:
+# ele chega como from_dict({}).
 static func reset_choices() -> void:
-	ensure_loaded()
+	ensure_registered()
 	_chosen.clear()
 	_visited.clear()
-	_queue_autosave()
+	SaveManager.request_save()
 
 
+# Seção "dialogue" do save: só String, que é o que o JSON devolve igual.
 static func to_dict() -> Dictionary:
 	var chosen_ids: Array[String] = []
 	for id: StringName in _chosen:
@@ -69,7 +79,8 @@ static func to_dict() -> Dictionary:
 	return { CHOSEN_KEY: chosen_ids, VISITED_KEY: visited_ids }
 
 
-# StringName(str(x)): o save serializa por JSON, que devolve String, nunca StringName de volta.
+# Recebe a seção "dialogue"; {} é o novo jogo. StringName(str(x)): o save serializa por JSON, que
+# devolve String, nunca StringName de volta.
 static func from_dict(data: Dictionary) -> void:
 	_chosen.clear()
 	_visited.clear()
@@ -77,34 +88,5 @@ static func from_dict(data: Dictionary) -> void:
 		_chosen[StringName(str(raw_id))] = true
 	for raw_id: Variant in data.get(VISITED_KEY, []):
 		_visited[StringName(str(raw_id))] = true
-	_loaded = true
-
-
-static func _resolve_slot_path() -> String:
-	return save_slot_path if save_slot_path != "" else SaveManager.save_file_1
-
-
-# Carrega o resto do arquivo e regrava só a própria chave: o save é de todos os sistemas.
-static func save_to_slot() -> void:
-	var path: String = _resolve_slot_path()
-	var data: Dictionary = SaveManager.load_game(path)
-	data[SAVE_KEY] = to_dict()
-	SaveManager.save_game(data, path)
-
-
-static func load_from_slot() -> void:
-	var path: String = _resolve_slot_path()
-	var data: Dictionary = SaveManager.load_game(path)
-	from_dict(data.get(SAVE_KEY, {}))
-
-
-static func _queue_autosave() -> void:
-	if not autosave_enabled or _autosave_queued:
-		return
-	_autosave_queued = true
-	Engine.get_main_loop().process_frame.connect(Callable(DialogueState, "_flush_autosave"), CONNECT_ONE_SHOT)
-
-
-static func _flush_autosave() -> void:
-	_autosave_queued = false
-	save_to_slot()
+	print("[Dialogue] - Estado de diálogo carregado do save (%d escolhas, %d nós visitados)" % [
+		_chosen.size(), _visited.size()])

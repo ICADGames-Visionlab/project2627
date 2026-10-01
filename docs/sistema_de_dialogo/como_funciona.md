@@ -79,8 +79,14 @@ Cada opção é um `Dictionary` com `id`, `text`, `next` e, se houver, `tag`, `i
 
 | Peça | Guarda | Onde salva |
 | --- | --- | --- |
-| `DialogueState` | Quais opções o jogador já escolheu e quais nós já visitou. | Chave `"dialogue"` de `user://save1.json`. |
+| `DialogueState` | Quais opções o jogador já escolheu e quais nós já visitou. | Chave `"dialogue"` da partida ativa, pelo `SaveManager`. |
 | `DialogueGameState` | Nada. É a fachada que os runners usam para ler e gravar flags. | O `InsightJournal`, no mesmo save. |
+
+O `DialogueState` é `static` e não tem `_ready()`, então entra no save na primeira consulta
+(`ensure_registered()`, chamado no começo de toda função pública). Com uma partida aberta, o `SaveManager`
+entrega a seção salva nessa hora. Escolha ou nó novo pede gravação (`request_save()`), e "Novo jogo" zera o
+`DialogueState` junto com o diário: `from_dict({})`, como em todo participante. Sem partida ativa (menu, ou
+uma cena rodada pelo editor com F6) o estado começa vazio e nada é gravado. Ver `docs/SaveManager.md`.
 
 `DialogueGameState` é o único ponto do sistema que conhece o `InsightJournal`. Se as flags forem extraídas para um sistema próprio, só esse arquivo muda.
 
@@ -192,4 +198,3 @@ Pendências para o Lead. Nenhuma bloqueou o trabalho, porque o `MemoryRunner` e 
 2. Decidir se o `DialogueState` continua estático, como está, ou vira um Autoload `DialogueJournal` (V9).
 3. Confirmar que as flags ficam no `InsightJournal`, atrás do `DialogueGameState`, na v1 (D3). Já está implementado assim.
 4. Decidir se a interação com NPC por teclado ou controle, que ficou fora da v1, entra no foco do `InsightInteractor` ou ganha foco próprio.
-5. "Novo Jogo" não zera o save: `DialogueState` e o diário sobrevivem a ele. Ninguém decidiu se deve zerar.

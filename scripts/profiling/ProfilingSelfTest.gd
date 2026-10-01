@@ -39,10 +39,10 @@ func run() -> void:
 	_lines.clear()
 
 	var snapshot: Dictionary = ProfilingJournal.to_dict()
-	var was_autosaving: bool = ProfilingJournal.autosave_enabled
-	# Autosave desligado por garantia: nenhum caso deveria gravar, mas um caso novo que resolva uma
-	# história pelo caminho normal escreveria o estado de teste no save do jogador.
-	ProfilingJournal.autosave_enabled = false
+	var was_autosaving: bool = SaveManager.autosave_enabled
+	# Autosave desligado: os casos mexem no diário pelo caminho normal, que pede gravação, e o estado
+	# de teste iria para o slot da partida aberta.
+	SaveManager.autosave_enabled = false
 
 	_test_evaluation()
 	_test_evaluation_limits()
@@ -56,7 +56,7 @@ func run() -> void:
 	_test_markup_groups()
 
 	ProfilingJournal.from_dict(snapshot)
-	ProfilingJournal.autosave_enabled = was_autosaving
+	SaveManager.autosave_enabled = was_autosaving
 
 
 # Relatório da última execução, pronto para print(): o resumo na primeira linha e um ✓/✗ por caso.

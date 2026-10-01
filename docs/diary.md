@@ -110,10 +110,13 @@ Diary.add_page(&"DIARY_MET_NPC_TEXT", &"", [tr(HeadRegistry.get_display_name_key
 
 ## Como escalar
 
-- **Persistência:** seguir o mesmo padrão do `InsightJournal` (`to_dict()`/`from_dict()` +
-  `SaveManager.save_game()`/`load_game()`, gravando dentro do slot ativo). Hoje o `Diary` guarda
-  `title_key`/`text_key`/`format_args` por página — dá pra serializar isso direto, sem precisar de
-  `StringName -> String` na volta do JSON pros `format_args` que forem número.
+- **Persistência:** o `Diary` **não** vira participante do `SaveManager`: as páginas são derivadas
+  de fatos que outros donos já guardam, como os insights lidos no
+  `InsightJournal`, então o caminho é reconstruí-las ao carregar. Gravar as páginas criaria duas fontes
+  de verdade para o mesmo fato. Só uma página sem dono (conteúdo que não vem de fato nenhum) precisaria
+  ser guardada, por quem a cria, com `SaveManager.register_participant()` (ver `docs/SaveManager.md`).
+  Nesse caso, hoje o `Diary` guarda `title_key`/`text_key`/`format_args` por página, e dá pra serializar
+  isso direto; só os `format_args` que forem número pedem o `int()` na volta do JSON.
 - **Categorias/capítulos:** hoje é uma lista única. Pra separar em seções (ex: "Missões",
   "Personagens"), o caminho mais simples é adicionar um campo `category: StringName` em
   `DiaryPage` e a `DiaryOverlay` filtrar por aba, no mesmo espírito da coluna de seções do

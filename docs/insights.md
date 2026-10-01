@@ -253,20 +253,27 @@ ação Disparar insight, que é a ação registrada à mão que o `docs/debug_me
 `InsightJournal` guarda o que já foi lido e quais flags o mundo concedeu. Ele escuta
 `insight_revealed` e se atualiza sozinho; nenhum outro script escreve nele.
 
-O diário entra no save pela chave `insights` do Dictionary do slot, sem mexer nas outras chaves do
-arquivo. A conversão de volta é explícita (`StringName(...)`) por causa de uma armadilha do
-`SaveManager`: ele serializa com `JSON.stringify`, e na leitura todo `StringName` vira `String` e
-todo número vira `float`. Comparar `StringName` com `String` falha sem erro nenhum, e o sintoma é o
-jogador reencontrar insights que já leu.
+O diário é um participante do `SaveManager` (ver `docs/SaveManager.md`): registra `to_dict()`/
+`from_dict()` no `_ready()` com a chave `insights` (campos `read` e `flags`) e pede gravação com
+`request_save()` a cada mudança. Ler um insight marca o lido e concede uma flag, dois pedidos no mesmo
+frame, e o `SaveManager` os junta numa escrita só. A conversão de volta é explícita (`StringName(...)`)
+por causa de uma armadilha do JSON: na leitura todo `StringName` vira `String` e todo número vira
+`float`. Comparar `StringName` com `String` falha sem erro nenhum, e o sintoma é o jogador reencontrar
+insights que já leu.
 
-Enquanto ninguém é dono do slot ativo, o jogo vai do menu direto para a cidade, sem escolher slot, e
-o diário carrega e grava sozinho no slot 1. Quando o fluxo de save existir, quem for dono do slot
-define `InsightJournal.save_slot_path`, desliga `autosave_enabled` e chama `to_dict()`/`from_dict()`
-de dentro do save do jogo. A API já está pronta para isso.
+Quem escolhe o slot e abre a partida é o `SaveManager`; o diário só entrega e recebe a seção.
+`from_dict({})` é o novo jogo: o diário volta vazio. Sem partida ativa (menu principal, ou uma cena
+rodada direto pelo editor com F6) o diário começa vazio e nada é gravado. Para jogar com progresso,
+F4 → Save → "Continuar slot".
+
+Um id de insight ou de flag que já foi gravado e mudou de nome deixa de casar: o insight reaparece para
+quem já o leu. Se isso importa, a renomeação pede uma migração (checklist "renomeei um id de conteúdo"
+no `docs/SaveManager.md`).
 
 As cabeças desbloqueadas ainda não são salvas. Quem sabe persistir "este NPC foi derrotado" é o
 sistema de derrota, que ainda não existe, e duplicar isso no `HeadRegistry` criaria duas fontes de
-verdade para o mesmo fato.
+verdade para o mesmo fato. Quando entrarem, o `HeadRegistry` vira mais um participante, sem mexer no
+`SaveManager`.
 
 ---
 
@@ -288,11 +295,12 @@ console aceita o sufixo mais curto que seja único, então `diagnostico_da_cena`
 | Teto de orbes de cabeça | Calibra o teto olhando a tela |
 | Listar estado do diário | Imprime lidos e flags |
 | Conceder flag `<flag>` | Abre uma porta sem reproduzir a condição de jogo |
-| Resetar lidos / Resetar diário | Zera só os lidos, ou lidos e flags |
-| Salvar / Carregar diário | Round-trip manual pelo slot atual |
-| Salvar automático | Liga/desliga a gravação a cada mudança |
+| Resetar lidos / Resetar diário | Zera só os lidos, ou lidos e flags, da partida ativa (e pede gravação) |
 
 Os relatórios saem por `print()`, então aparecem no visualizador de log (F5) sem o editor aberto.
+
+Salvar, carregar e ligar ou desligar o salvamento automático **não** são mais entradas desta seção:
+ficam na seção **Save** (ver `docs/SaveManager.md`).
 
 O diagnóstico responde com cinco tipos de linha, que cobrem todos os casos de "sumiu e não sei por
 quê":
@@ -320,8 +328,8 @@ ninguém está olhando.
 
 Ele roda contra o `InsightDirector` real, não contra uma cópia da regra. Os insights de teste são
 criados em memória (ids com prefixo `__selftest_`). O diário do jogador é guardado antes e devolvido
-no fim, e o salvamento automático fica desligado durante a execução, então rodar o autoteste no meio
-de uma sessão de jogo não altera nada.
+no fim, e o salvamento automático (`SaveManager.autosave_enabled`) fica desligado durante a execução,
+então rodar o autoteste no meio de uma sessão de jogo não altera nada.
 
 Ele também roda pela linha de comando, sem abrir o jogo, e sai com código 1 quando algum caso falha:
 

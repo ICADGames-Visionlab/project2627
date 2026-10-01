@@ -121,10 +121,13 @@ hoje), cai em `current_scene` só para evitar crash.
   hoje — não há "inventário cheio" nem overflow para uma segunda pilha). Para suportar múltiplas pilhas
   do mesmo item (ex: itens não empilháveis em quantidade, ou um limite de peso/slots total), `_stacks`
   precisa virar `Dictionary[StringName, Array[ItemStack]]`, e a UI, iterar pilhas em vez de itens.
-- **Sem persistência.** O inventário não é salvo pelo `SaveManager` ainda — reiniciar o jogo o esvazia.
-  Para adicionar: serializar `get_stacks()` para `{item_id: amount}` e usar o mesmo fluxo documentado em
-  `docs/SaveManager.md` (a instância de `Inventory`, e não um Singleton, é quem chamaria
-  `SaveManager.save_game()`/`load_game()` — provavelmente no `_ready()`/antes de trocar de cena).
+- **Sem persistência.** O inventário ainda não é participante do `SaveManager` — reiniciar o jogo o
+  esvazia. Para adicionar, sem mexer no `SaveManager`: serializar `get_stacks()` para `{item_id: amount}`
+  (`to_dict()`/`from_dict()`, com o `int()` na volta do JSON) e registrar a instância de `Inventory`
+  (um nó de cena, não um Singleton) com `SaveManager.register_participant("inventory", ...)` no
+  `_ready()`, saindo com `unregister_participant("inventory")` no `_exit_tree()`. Cada `add_item`,
+  `drop_item` e `destroy_item` bem-sucedido chama `SaveManager.request_save()`. O passo a passo está em
+  `docs/SaveManager.md` ("Como um sistema novo entra no save").
 - **Sem catálogo global de itens.** Cada `ItemData` existe como `.tres` avulso; não há um registro central
   de "todos os itens do jogo". Se isso for necessário (ex: uma enciclopédia de evidências, ou spawn por
   id sem arrastar o Resource manualmente), vale um Autoload leve que só indexa os `.tres` de
