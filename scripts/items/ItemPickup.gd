@@ -6,6 +6,11 @@
 ##
 ## Se "item" ficar vazio (null) — instância mal configurada — o pickup se destrói sozinho no
 ## _ready() e avisa no console; é mais seguro que deixar um objeto fantasma sem efeito no mundo.
+##
+## CAMADAS (ItemPickup.tscn): collision_mask = 2, a camada "Agentes", onde o Player e os NPCs estão.
+## Com a máscara padrão (1, "world") a Area2D não enxerga o Player e o item largado nunca mais volta
+## pro inventário. collision_layer = 0 porque ninguém precisa detectar o pickup. NPC também está na
+## camada 2, mas _on_body_entered filtra por Player.
 class_name ItemPickup
 extends Area2D
 
