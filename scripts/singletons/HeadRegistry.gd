@@ -41,6 +41,8 @@ func _ready() -> void:
 	# quando este _ready() roda. A chamada adiada cai no fim do frame, com todos os Autoloads prontos
 	# (mesmo cuidado do InsightDirector._connect_state_sources).
 	_connect_profiling.call_deferred()
+	# Completar o profiling de um NPC faz o jogador passar a conviver com a voz dele na cabeça.
+	EventBus.npc_profiling_completed.connect(_on_npc_profiling_completed)
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Insights": atalho para a derrota de NPC (ver docs/insights.md).
 		DebugMenu.register_input(DEBUG_SECTION, "Desbloquear cabeça", _debug_unlock_head, [
@@ -150,6 +152,15 @@ func _on_profiling_changed() -> void:
 
 # [DEBUG] Desbloqueia uma cabeça pelo menu/console sem completar o profiling do NPC — testar conteúdo
 # sem precisar derrotar ninguém.
+# Desbloqueia as cabeças do NPC que o jogador acabou de entender por completo.
+func _on_npc_profiling_completed(npc_id: StringName) -> void:
+	for head_id: StringName in _order:
+		if (_heads[head_id] as HeadData).npc_id == npc_id:
+			unlock_head(head_id)
+
+
+# [DEBUG] Desbloqueia uma cabeça pelo menu/console — o substituto da derrota de NPC enquanto ela não
+# existe. Continua útil depois: testar conteúdo sem precisar derrotar ninguém.
 func _debug_unlock_head(head_id: String) -> void:
 	var id: StringName = StringName(head_id)
 	if not _heads.has(id):

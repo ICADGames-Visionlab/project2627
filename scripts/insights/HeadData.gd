@@ -20,6 +20,9 @@ enum Origin { PLAYER, NPC }
 # Chave do translations.csv com o nome exibido: nome de cabeça aparece na tela de diálogo.
 @export var display_name_key: String = ""
 @export var origin: Origin = Origin.NPC
+# Dono da cabeça: o id do NPC (NPCDefinition.id) cujo profiling completo desbloqueia esta cabeça.
+# Vazio em cabeça sem dono (a do jogador) ou que só o debug desbloqueia.
+@export var npc_id: StringName = &""
 
 @export_group("Aparência")
 @export var color: Color = Color.WHITE

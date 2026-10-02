@@ -15,6 +15,9 @@
 #   - O anel só aparece no "modo teclado/controle": ele liga com a tecla de interagir, a de ciclo ou
 #     qualquer botão/analógico do controle, e desliga quando o mouse se move. Quem joga de mouse não
 #     vê um anel pulando entre orbes a cada passo.
+#   - Enquanto o modo teclado/controle está ligado, o hover do mouse não destaca orbe nenhum. Sem
+#     isso, clicar num orbe e apertar Tab deixava o orbe sob o cursor parado "em hover" ao lado do
+#     orbe em foco — dois destaques e a mãozinha presa.
 #
 # Clique do mouse: com a movimentação por clique ligada, o clique esquerdo num orbe precisa abrir o
 # insight e NÃO mover o personagem. Ver _handle_orb_click().
@@ -58,6 +61,9 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	_set_focused_marker(null)
+	# O estado de hover dos orbes é estático: sair da árvore em modo teclado/controle (troca de cena)
+	# não pode deixar a próxima cena com o hover do mouse desligado.
+	InsightMarker.set_mouse_hover_suppressed(false, get_tree())
 
 
 func _input(event: InputEvent) -> void:
@@ -200,13 +206,15 @@ func _update_focus(targets: Array[InsightMarker]) -> void:
 	_set_focused_marker(targets[0] if not targets.is_empty() else null)
 
 
-# Liga ou desliga o modo teclado/controle. Desligado, nenhum orbe fica com anel e o processamento
-# por quadro para.
+# Liga ou desliga o modo teclado/controle. Ligado, o hover do mouse deixa de destacar orbes (só o foco
+# destaca). Desligado, nenhum orbe fica com anel, o hover volta a valer e o processamento por quadro
+# para.
 func _set_focus_mode(enabled: bool) -> void:
 	if _is_focus_mode == enabled:
 		return
 	_is_focus_mode = enabled
 	set_process(enabled)
+	InsightMarker.set_mouse_hover_suppressed(enabled, get_tree())
 	if enabled:
 		_update_focus(_collect_targets())
 	else:

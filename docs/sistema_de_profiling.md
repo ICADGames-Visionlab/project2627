@@ -243,6 +243,21 @@ A marcação no texto é a **mesma legenda do GDD**, e vale no CSV:
 | `Achei uma [FACA] no beco.` | Uma palavra clicável. |
 | `O nome dele era [MARCOS]/[CASTRO].` | Duas palavras; clicar em qualquer uma adiciona **as duas**. |
 
+O id entre colchetes é o `GlossaryWord.id` **em maiúsculas** (é o que distingue a marcação do
+BBCode `[i]`/`[b]`), e é o mesmo em todos os idiomas: a coluna `en` também escreve `[FACA]`, e a
+tela mostra o texto traduzido da palavra.
+
+A mesma marcação vale em três lugares, cada um com o seu jeito de colher:
+
+| Onde o texto aparece | Como a palavra vai pro glossário |
+| --- | --- |
+| Fala de diálogo (`.dlg` → chave no CSV) | Sublinhada até o jogador **clicar**. O clique não pula a revelação nem avança a conversa. (`DialogueEntry`) |
+| Caixa de insight de ambiente | Sublinhada, **sem clique**: quando a caixa fecha, todas as palavras marcadas voam da caixa pro diário. (`InsightBubble`) |
+| História resolvida na página de profiling | Clique, como no diálogo. (`ClickableWordText`) |
+
+O `.dlg` não muda: ele só tem chaves, e a marcação mora no texto do CSV. Insight **de personagem**
+abre a tela de diálogo, então lá a palavra é colhida por clique, como numa fala.
+
 Quem desenha isso é o `ClickableWordText`, e quem liga o par são as `paired_words` do
 `GlossaryWord` — apontadas **num sentido só** (marcar `CASTRO` em `MARCOS` basta). O grupo é
 resolvido nos dois sentidos em código (`ProfilingCatalog.find_pair_group`), justamente pra não
@@ -416,8 +431,12 @@ O que **não** é evento de bus, e por quê:
 - histórias resolvidas;
 - marcas de lixo/estrela;
 - a emoção escolhida pra cada NPC e o dia em que ela passa a valer;
-- se o jogador já encontrou o NPC no mundo real (hoje sempre sim — ver
-  [O que ainda não existe](#o-que-ainda-não-existe)).
+- quais NPCs o jogador já encontrou no mundo real. Toda conversa (`EventBus.conversation_started`
+  fora do sonho) marca o NPC que o jogador abordou — quem só participa da conversa não conta —, e só quem foi encontrado aparece no sonho
+  (`can_appear_in_dream()`, consultado pelo `NPCDirector` e pela `SpiritInteraction`). Um perfil
+  com `requires_real_world_meeting` desligado dispensa o encontro. No menu de debug, **Marcar NPC
+  como encontrado** leva ao sonho quem ainda não tem conversa escrita, e **Esquecer encontro com
+  NPC** desfaz (npc vazio = todos) sem apagar o resto do profiling.
 
 É isso que faz o GDD funcionar: preencher metade de uma página, sair do espírito, acordar, jogar um
 dia inteiro e voltar — as palavras continuam nas lacunas onde ele as deixou.
@@ -478,12 +497,10 @@ entram.
 | O que falta | O que já está de pé | Onde ele entra |
 | --- | --- | --- |
 | **Evidências / inventário** | A descoberta de palavra é uma função pública. | `ProfilingJournal.discover_word(word_id, npc_id)` |
-| **Diálogo** | O texto com palavras clicáveis (`ClickableWordText`) e a marcação `[FACA]` já funcionam; a tela de diálogo troca o Label dela por esse nó. | `ClickableWordText.set_marked_text()` |
 | **Opções de diálogo liberadas por emoção concluída** | Todo acerto passa por um funil só. | `ProfilingJournal.mark_story_solved()` |
 | **História narrada pelo NPC** (o GDD sugere animatic) | A história resolvida aparece como texto na própria página. | `ProfilingScreen._reveal_solved()` |
 | **Música curta no acerto** | Não há música no projeto (`docs/AudioManager.md`). | comentário `MÚSICA` em `ProfilingScreen._reveal_solved()` |
 | **Diário do jogador** ("Pessoas Importantes", o glossário fora do sonho) | `GlossaryPanel` já funciona **sem história** — é assim que o diário vai usá-lo —, e `ProfilingStory.journal_entry_key` já guarda o texto da entrada. | instanciar `scenes/profiling/GlossaryPanel.tscn`; `ProfilingJournal.mark_story_solved()` |
-| **Espírito só aparece depois de conversar no mundo real** | A regra está escrita e ligada. Hoje `has_met()` responde sim pra todo mundo. | desligar `ProfilingJournal.ASSUME_MET_UNTIL_DIALOGUE_EXISTS` e fazer o diálogo chamar `mark_met()` |
 | **Convencer o NPC a sair da cidade** | `npc_profiling_completed` é emitido quando todas as emoções são entendidas — e esse tem ouvinte hoje (a tela, que acorda o jogador). | ouvinte de `EventBus.npc_profiling_completed` |
 
 ---

@@ -7,5 +7,6 @@ script = ExtResource("1_head")
 id = &"old_fisherman"
 display_name_key = "HEAD_OLD_FISHERMAN_NAME"
 origin = 1
+npc_id = &"ze"
 color = Color(1, 0.608, 0.259, 1)
 glyph = "F"
