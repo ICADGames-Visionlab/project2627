@@ -13,8 +13,8 @@
 #   - quais histórias já foram resolvidas
 #   - as marcas de lixo/estrela das palavras (a organização que o jogador faz do glossário)
 #   - a emoção que o jogador escolheu pra cada NPC, e a partir de que dia ela vale
-#   - se o jogador já encontrou o NPC no mundo real (hoje sempre sim — ver
-#     ASSUME_MET_UNTIL_DIALOGUE_EXISTS)
+#   - quais NPCs o jogador já encontrou no mundo real (conversou com eles) — só esses aparecem no
+#     sonho, ver can_appear_in_dream()
 #
 # POR QUE É AUTOLOAD (o guideline pede justificar): este estado tem que atravessar troca de cena e
 # de dia, e tem que estar no save. É a mesma situação do InsightJournal, e a decisão é a mesma —
@@ -61,13 +61,6 @@ const SLOT_KEY: String = "slot"
 const NEXT_SLOT_KEY: String = "next_slot"
 const NEXT_DAY_KEY: String = "next_day"
 
-# SUPORTE AO FUTURO: o GDD diz que o espírito de um NPC só aparece no sonho depois de o jogador ter
-# conversado com ele no mundo real. O sistema de diálogo está sendo feito em outra branch e nada
-# marca esse encontro ainda, então has_met() responde sim pra todo mundo enquanto esta constante
-# estiver ligada. No dia em que o diálogo chamar mark_met(), desligar isto liga a regra do GDD
-# inteira, sem mais nenhuma edição.
-const ASSUME_MET_UNTIL_DIALOGUE_EXISTS: bool = true
-
 # Slot em que o diário lê e grava. Público de propósito: é o gancho para o dia em que alguém for
 # dono do slot ativo.
 var save_slot_path: String = ""
@@ -89,6 +82,7 @@ func _ready() -> void:
 	if save_slot_path.is_empty():
 		save_slot_path = SaveManager.save_file_1
 	load_from_slot()
+	EventBus.conversation_started.connect(_on_conversation_started)
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Profiling" (ver docs/sistema_de_profiling.md).
 		_register_debug_entries()
@@ -365,25 +359,38 @@ func get_scheduled_slot(npc_id: StringName) -> int:
 
 
 # ------------------------------------------------------------------------------------
-# Encontro no mundo real (suporte ao sistema de diálogo)
+# Encontro no mundo real
 # ------------------------------------------------------------------------------------
 
-# Diz se o jogador já encontrou este NPC no mundo real — o que, pelo GDD, é o que faz o espírito
-# dele existir no sonho. Ver ASSUME_MET_UNTIL_DIALOGUE_EXISTS no topo do arquivo.
-func has_met(npc_id: StringName) -> bool:
-	if ASSUME_MET_UNTIL_DIALOGUE_EXISTS:
+# Diz se o NPC existe no mundo dos sonhos. Pelo GDD, o espírito de um NPC só aparece no sonho depois
+# de o jogador ter conversado com ele no mundo real; o perfil pode dispensar o encontro
+# (NPCProfile.requires_real_world_meeting). NPC sem perfil segue a regra do GDD.
+# Quem pergunta: NPCDirector (o corpo nasce no sonho ou não) e SpiritInteraction (dá pra investigar).
+func can_appear_in_dream(npc_id: StringName) -> bool:
+	if _met.has(npc_id):
 		return true
-	return _met.has(npc_id)
+	var profile: NPCProfile = ProfilingCatalog.find_profile(npc_id)
+	return profile != null and not profile.requires_real_world_meeting
 
 
-# Marca que o jogador encontrou o NPC no mundo real. O sistema de diálogo vai chamar isto quando
-# existir; hoje só o menu de debug chama.
+# Marca que o jogador encontrou o NPC no mundo real. Quem chama é a abertura de uma conversa (ver
+# _on_conversation_started) e o menu de debug.
 func mark_met(npc_id: StringName) -> void:
 	if npc_id == &"" or _met.has(npc_id):
 		return
 	_met[npc_id] = true
 	print("[Profiling] - Jogador encontrou \"%s\" no mundo real" % npc_id)
 	_notify_changed()
+
+
+# Uma conversa abriu: conta como encontrado só o NPC que o jogador abordou. Quem apenas fala na
+# conversa (o Zé, quando o jogador clica na Ana em ze_ana_feira) não conta — ele precisa ser
+# abordado também. Conversa sem NPC de origem (gatilho, debug) não marca ninguém, e conversa dentro
+# do sonho não é encontro no mundo real.
+func _on_conversation_started(_conversation_id: StringName, initiator_id: StringName) -> void:
+	if GameClock.is_dreaming():
+		return
+	mark_met(initiator_id)
 
 
 # ------------------------------------------------------------------------------------
@@ -602,6 +609,10 @@ func _register_debug_entries() -> void:
 		DebugParam.string_value("historia", "", _debug_story_suggestions)])
 	DebugMenu.register_input(DEBUG_SECTION, "Abrir espírito", _debug_open_spirit, [
 		DebugParam.string_value("npc", "", _debug_npc_suggestions)])
+	DebugMenu.register_input(DEBUG_SECTION, "Marcar NPC como encontrado", _debug_mark_met, [
+		DebugParam.string_value("npc", "", _debug_npc_suggestions)])
+	DebugMenu.register_input(DEBUG_SECTION, "Esquecer encontro com NPC", _debug_forget_met, [
+		DebugParam.string_value("npc", "", _debug_npc_suggestions)])
 	DebugMenu.register_action(DEBUG_SECTION, "Listar estado do profiling", _debug_print_state)
 	DebugMenu.register_action(DEBUG_SECTION, "Validar conteúdo do profiling", _debug_validate)
 	DebugMenu.register_action(DEBUG_SECTION, "Autoteste do profiling", _debug_run_self_test)
@@ -652,14 +663,34 @@ func _debug_open_spirit(npc_id: String) -> void:
 	EventBus.profiling_requested.emit(StringName(npc_id))
 
 
+# [DEBUG] Faz o NPC contar como encontrado no mundo real sem conversar com ele — o único jeito de
+# levar ao sonho quem ainda não tem conversa escrita. Vale a partir do próximo sonho: quem já está
+# sonhando não vê o NPC surgir.
+func _debug_mark_met(npc_id: String) -> void:
+	mark_met(StringName(npc_id))
+
+
+# [DEBUG] O contrário de _debug_mark_met: o NPC volta a não ter sido encontrado, sem mexer no resto
+# do profiling (o "Resetar profiling" apaga palavras e histórias junto). npc vazio esquece todos.
+# Também vale a partir do próximo sonho.
+func _debug_forget_met(npc_id: String) -> void:
+	if npc_id.is_empty():
+		_met.clear()
+	elif not _met.erase(StringName(npc_id)):
+		print("[Profiling] - \"%s\" já não estava marcado como encontrado" % npc_id)
+		return
+	print("[Profiling] - Encontro esquecido: %s" % (npc_id if not npc_id.is_empty() else "todos os NPCs"))
+	_notify_changed()
+
+
 # [DEBUG] Imprime o estado do diário no log do jogo (visível no visualizador de log, F5).
 func _debug_print_state() -> void:
 	for profile: NPCProfile in ProfilingCatalog.load_all_profiles():
-		print("[Profiling] - \"%s\": %d/%d palavras, %d/%d histórias resolvidas, slot hoje: %s" % [
+		print("[Profiling] - \"%s\": %d/%d palavras, %d/%d histórias resolvidas, slot hoje: %s, encontrado: %s" % [
 			profile.npc_id,
 			count_discovered_words(profile.npc_id), profile.get_total_word_count(),
 			count_solved_stories(profile.npc_id), profile.get_story_count(),
-			_describe_slot(profile.npc_id)])
+			_describe_slot(profile.npc_id), "sim" if _met.has(profile.npc_id) else "não"])
 		for story: ProfilingStory in profile.stories:
 			if story == null:
 				continue

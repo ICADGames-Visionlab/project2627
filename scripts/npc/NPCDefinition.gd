@@ -173,6 +173,8 @@ const ALL_WEEKDAYS: int = 127
 ## Onde este NPC fica enquanto o jogador sonha: a cena e o waypoint, no mesmo formato de uma entrada
 ## de rotina. O HORÁRIO DA ENTRADA É IGNORADO — no sonho o relógio está travado (ver
 ## TimeSettings.dream_hour) e o NPC não sai do lugar. Vazio = o NPC não aparece no sonho.
+## Preenchido, ele só aparece depois de o jogador conversar com ele no mundo real (ver
+## ProfilingJournal.can_appear_in_dream).
 @export var dream_entry: NPCRoutineEntry:
 	set(value):
 		dream_entry = value

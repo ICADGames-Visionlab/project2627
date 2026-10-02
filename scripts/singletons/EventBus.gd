@@ -147,7 +147,8 @@ signal conversation_requested(conversation_id: StringName, initiator_id: StringN
 # Emitido quando uma conversa abre.
 # Emissor: DialogueScreen. Ouvintes: Player (trava movimento, redundante se já veio de
 # conversation_approach_started), NPCDirector (segura os NPCs da conversa e vira eles pro jogador),
-# InsightInteractor (desliga orbes, idem Player).
+# InsightInteractor (desliga orbes, idem Player), ProfilingJournal (marca o NPC abordado como
+# encontrado no mundo real, o que faz ele aparecer no sonho).
 signal conversation_started(conversation_id: StringName, initiator_id: StringName)
 
 # Emitido quando uma conversa fecha, com o nó onde terminou.
