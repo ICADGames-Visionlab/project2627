@@ -76,7 +76,7 @@ func resolve(speaker_id: StringName) -> Resolved:
 	if _roster != null:
 		var npc: NPCDefinition = _roster.find(speaker_id)
 		if npc != null:
-			return Resolved.new(Kind.NPC, String(npc.name_key), npc.dialogue_color, false, npc)
+			return Resolved.new(Kind.NPC, String(npc.name_key), npc.color, false, npc)
 
 	var head_resolved: Resolved = _head_resolved(speaker_id)
 	if head_resolved != null:

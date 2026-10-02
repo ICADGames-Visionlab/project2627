@@ -1,23 +1,20 @@
 # HeadRegistry.gd — Autoload: o elenco de cabeças e quais delas o jogador já tem.
 #
-# É o único lugar que responde "de que cor é a cabeça X" e "o jogador já tem a cabeça X". Uma cabeça
-# nova é um .tres novo em res://resources/heads/, sem tocar em código de marcador nenhum.
+# É o único lugar que responde "de que cor é a cabeça X" e "o jogador já tem a cabeça X". O elenco é
+# a cabeça do jogador (.tres em res://resources/heads/) mais uma cabeça por NPC do roster, montada
+# da definição dele (ver InsightCatalog.load_all_heads): NPC novo no roster já tem cabeça.
 #
-# COSTURA COM A DERROTA DE NPC: o sistema de derrota ainda não existe, e declarar npc_defeated no
-# EventBus agora seria criar evento sem ouvinte de verdade — o que docs/event_bus.md desaconselha
-# explicitamente. Então, por enquanto, unlock_head() é chamada só por uma ação de debug. No dia em
-# que a derrota existir, ela declara npc_defeated(npc_id) no bus e este registro passa a escutar: a
-# mudança aqui é uma linha de connect() no _ready(), e nada mais do sistema de insights muda.
-#
-# O desbloqueio ainda não é salvo: quem for dono da derrota de NPC é quem sabe persistir "este NPC
-# foi derrotado", e duplicar isso aqui criaria duas verdades sobre o mesmo fato.
+# DERROTA DE NPC: derrotar um NPC é completar o profiling dele, e é isso que dá ao jogador a cabeça
+# desse NPC. Este registro não guarda quem foi derrotado: ele PERGUNTA ao ProfilingJournal
+# (is_profile_complete), que já é o dono do fato e já está no save. Guardar uma cópia aqui criaria
+# duas verdades sobre o mesmo fato, e a cópia teria que ser salva à parte.
 #
 # O guia completo está em docs/insights.md.
 extends Node
 
-# Emitido quando uma cabeça é desbloqueada (ou quando o debug destrava todas). Não é evento de bus:
-# o único interessado é o InsightDirector, que reavalia os orbes — ver a mesma justificativa em
-# InsightJournal.journal_changed.
+# Emitido quando o conjunto de cabeças do jogador muda: um profiling completo, um save carregado ou
+# o debug. Não é evento de bus: o único interessado é o InsightDirector, que reavalia os orbes — ver
+# a mesma justificativa em InsightJournal.journal_changed.
 signal heads_changed
 
 const DEBUG_SECTION: StringName = &"Insights"
@@ -26,7 +23,13 @@ var _heads: Dictionary = {}          # StringName(id) -> HeadData
 # Ordem canônica das cabeças (ids em ordem alfabética). É ela que define o slot fixo de cada cabeça
 # na órbita do jogador, então mexer nela move orbes de lugar.
 var _order: Array[StringName] = []
-var _unlocked: Dictionary = {}       # StringName(id) -> true
+# Cabeças disponíveis na última conferência. O ProfilingJournal avisa toda mudança (palavra
+# descoberta, marca no glossário...), e comparar com isto é o que faz só a mudança de cabeça
+# reavaliar os orbes.
+var _last_unlocked: Array[StringName] = []
+# [DEBUG] Cabeças destravadas à mão pelo menu, sem completar o profiling. Não vai para o save: é
+# atalho de teste, não progresso do jogador.
+var _debug_unlocked: Dictionary = {}  # StringName(id) -> true
 # [DEBUG] Destrava tudo sem desbloquear de verdade: serve para ver o conteúdo de uma cena inteira
 # sem antes derrotar ninguém.
 var _unlock_all: bool = false
@@ -34,10 +37,14 @@ var _unlock_all: bool = false
 
 func _ready() -> void:
 	_load_heads()
+	# Adiado de propósito: o ProfilingJournal é declarado depois deste Autoload e ainda não existe
+	# quando este _ready() roda. A chamada adiada cai no fim do frame, com todos os Autoloads prontos
+	# (mesmo cuidado do InsightDirector._connect_state_sources).
+	_connect_profiling.call_deferred()
 	# Completar o profiling de um NPC faz o jogador passar a conviver com a voz dele na cabeça.
 	EventBus.npc_profiling_completed.connect(_on_npc_profiling_completed)
 	if OS.has_feature("editor") or OS.is_debug_build():
-		# [DEBUG] Seção "Insights": substituto da derrota de NPC (ver docs/insights.md).
+		# [DEBUG] Seção "Insights": atalho para a derrota de NPC (ver docs/insights.md).
 		DebugMenu.register_input(DEBUG_SECTION, "Desbloquear cabeça", _debug_unlock_head, [
 			DebugParam.string_value("head_id", "", _debug_head_suggestions)
 		])
@@ -45,16 +52,19 @@ func _ready() -> void:
 
 
 # Diz se o jogador pode ouvir esta cabeça agora. É a porta do canal de personagem: cabeça bloqueada
-# não gera orbe nenhum.
+# não gera orbe nenhum. A do jogador vem de fábrica; a de um NPC, com o profiling completo dele.
 func has_head(head_id: StringName) -> bool:
-	if _unlock_all:
-		return _heads.has(head_id)
-	return _unlocked.has(head_id)
+	var head: HeadData = get_head(head_id)
+	if head == null:
+		return false
+	if _unlock_all or head.starts_unlocked() or _debug_unlocked.has(head_id):
+		return true
+	return ProfilingJournal.is_profile_complete(head_id)
 
 
-# Devolve o recurso da cabeça, ou null quando o id não corresponde a nenhum .tres. Quem chama trata
-# o null: id errado num .tres de insight é erro de conteúdo, e o sistema precisa continuar de pé
-# para o aviso de configuração poder apontá-lo.
+# Devolve a cabeça, ou null quando o id não corresponde a nenhuma (nem ao jogador, nem a um NPC do
+# roster). Quem chama trata o null: id errado num .tres de insight é erro de conteúdo, e o sistema
+# precisa continuar de pé para o aviso de configuração poder apontá-lo.
 func get_head(head_id: StringName) -> HeadData:
 	return _heads.get(head_id, null) as HeadData
 
@@ -77,18 +87,6 @@ func get_glyph(head_id: StringName) -> String:
 func get_display_name_key(head_id: StringName) -> String:
 	var head: HeadData = get_head(head_id)
 	return head.display_name_key if head != null else ""
-
-
-# Desbloqueia uma cabeça para o jogador. Hoje só o debug chama; amanhã, quem tratar npc_defeated.
-func unlock_head(head_id: StringName) -> void:
-	if not _heads.has(head_id):
-		push_warning("[Insights] - AVISO: cabeça \"%s\" não existe em %s" % [head_id, InsightCatalog.HEADS_DIR])
-		return
-	if _unlocked.has(head_id):
-		return
-	_unlocked[head_id] = true
-	print("[Insights] - Cabeça \"%s\" desbloqueada" % head_id)
-	heads_changed.emit()
 
 
 # Posição canônica da cabeça na lista de elenco. É o slot preferido dela na órbita do jogador: com
@@ -115,9 +113,7 @@ func get_unlocked_ids() -> Array[StringName]:
 	return result
 
 
-# Carrega o elenco de res://resources/heads/ e já destrava as cabeças que nascem com o jogador (a
-# dele mesmo). Sem isso o canal de personagem só existiria depois da primeira derrota, e não haveria
-# como testar nada.
+# Carrega o elenco: a cabeça do jogador e a de cada NPC do roster.
 func _load_heads() -> void:
 	_heads.clear()
 	_order.clear()
@@ -130,12 +126,32 @@ func _load_heads() -> void:
 			continue
 		_heads[head.id] = head
 		_order.append(head.id)
-		if head.starts_unlocked():
-			_unlocked[head.id] = true
-	print("[Insights] - %d cabeça(s) no elenco, %d disponível(is) de início"
-		% [_heads.size(), _unlocked.size()])
+	print("[Insights] - %d cabeça(s) no elenco" % _heads.size())
 
 
+# Passa a ouvir o ProfilingJournal e tira a primeira foto das cabeças disponíveis, já com o save
+# carregado.
+func _connect_profiling() -> void:
+	ProfilingJournal.journal_changed.connect(_on_profiling_changed)
+	_last_unlocked = get_unlocked_ids()
+	print("[Insights] - %d cabeça(s) disponível(is): %s" % [_last_unlocked.size(), _last_unlocked])
+
+
+# Reage a qualquer mudança do profiling, mas só avisa quando o conjunto de cabeças mudou: é assim
+# que um profiling completo (ou um save carregado) faz o orbe da cabeça nova aparecer na hora.
+func _on_profiling_changed() -> void:
+	var unlocked: Array[StringName] = get_unlocked_ids()
+	if unlocked == _last_unlocked:
+		return
+	for head_id: StringName in unlocked:
+		if not _last_unlocked.has(head_id):
+			print("[Insights] - Cabeça \"%s\" desbloqueada: profiling completo" % head_id)
+	_last_unlocked = unlocked
+	heads_changed.emit()
+
+
+# [DEBUG] Desbloqueia uma cabeça pelo menu/console sem completar o profiling do NPC — testar conteúdo
+# sem precisar derrotar ninguém.
 # Desbloqueia as cabeças do NPC que o jogador acabou de entender por completo.
 func _on_npc_profiling_completed(npc_id: StringName) -> void:
 	for head_id: StringName in _order:
@@ -146,7 +162,16 @@ func _on_npc_profiling_completed(npc_id: StringName) -> void:
 # [DEBUG] Desbloqueia uma cabeça pelo menu/console — o substituto da derrota de NPC enquanto ela não
 # existe. Continua útil depois: testar conteúdo sem precisar derrotar ninguém.
 func _debug_unlock_head(head_id: String) -> void:
-	unlock_head(StringName(head_id))
+	var id: StringName = StringName(head_id)
+	if not _heads.has(id):
+		push_warning("[Insights] - AVISO: cabeça \"%s\" não existe (nem jogador, nem NPC do roster)" % id)
+		return
+	if _debug_unlocked.has(id):
+		return
+	_debug_unlocked[id] = true
+	_last_unlocked = get_unlocked_ids()
+	print("[Insights] - Cabeça \"%s\" desbloqueada pelo debug" % id)
+	heads_changed.emit()
 
 
 # [DEBUG] Sugere ao autocomplete do console os ids de cabeça que existem no projeto.
@@ -160,5 +185,6 @@ func _debug_head_suggestions() -> PackedStringArray:
 # [DEBUG] Destrava (ou volta a trancar) o elenco inteiro de uma vez.
 func _debug_set_unlock_all(enabled: bool) -> void:
 	_unlock_all = enabled
+	_last_unlocked = get_unlocked_ids()
 	print("[Insights] - Desbloqueio total de cabeças %s" % ("ligado" if enabled else "desligado"))
 	heads_changed.emit()

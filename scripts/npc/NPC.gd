@@ -42,6 +42,8 @@ const ARRIVAL_DISTANCE: float = 8.0
 const BLOCKED_SPEED_FRACTION: float = 0.1
 const BLOCKED_GRACE_SECONDS: float = 0.4
 
+const INSIGHT_SOURCE_SCENE: PackedScene = preload("res://scenes/insights/InsightSource.tscn")
+
 ## Espaço para variáveis exportadas
 
 ## Achatamento do eixo Y que alinha a direção do movimento aos eixos do losango isométrico. Mesmo
@@ -66,6 +68,10 @@ const BLOCKED_GRACE_SECONDS: float = 0.4
 ## Espessura do contorno branco de hover (SPEC §11.4), em texels da textura de origem — ver
 ## resources/shaders/sprite_outline.gdshader. A NPCInteraction liga e desliga com o mouse.
 @export var hover_outline_width: float = 1.0
+
+## Distância em que as cabeças do jogador passam a ter algo a dizer sobre este NPC (os insights do
+## NPCDefinition). Mesmo significado do interaction_radius da InsightSource.
+@export var insight_radius: float = 260.0
 
 ## Espaço para variáveis
 
@@ -145,17 +151,18 @@ func _draw() -> void:
 
 ## Espaço para funções personalizadas
 
-# Dá ao corpo a identidade do NPC: nome, cor e velocidade. Chamado pelo NPCDirector logo depois de
-# instanciar, antes de qualquer ordem de movimento.
+# Dá ao corpo a identidade do NPC: nome, cor, velocidade e os insights. Chamado pelo NPCDirector logo
+# depois de instanciar, antes de qualquer ordem de movimento.
 func configure(p_definition: NPCDefinition, emotion: EmotionDefinition = null) -> void:
 	definition = p_definition
 	_speed = definition.walk_speed
 
 	# PLACEHOLDER: enquanto todos os NPCs usam o spritesheet do Player, a cor é o que diferencia um
 	# do outro (ver a chave PLACEHOLDER_NPC_BODY no CSV).
-	_animated_sprite.modulate = definition.tint
+	_animated_sprite.modulate = definition.color
 	_name_label.text = definition.get_display_name()
 	set_emotion(emotion)
+	_create_insight_source()
 
 	print("[NPC] - \"%s\" entrou em cena" % definition.id)
 
@@ -241,6 +248,27 @@ func disappear() -> void:
 
 func is_walking() -> bool:
 	return not _path.is_empty()
+
+
+# Põe no corpo a fonte dos insights de personagem deste NPC. Ela é criada aqui, e não colocada no
+# NPC.tscn, porque o NPC.tscn é o mesmo corpo para todos os NPCs: o que muda de um para outro é o
+# dado, e o dado só chega em configure(). NPC sem insight não ganha fonte, e o InsightDirector não
+# fica com uma fonte muda registrada.
+#
+# A fonte só decide QUANDO as cabeças falam (o jogador dentro do raio). O orbe nasce na órbita do
+# jogador, acima da cabeça dele; aqui fica só a ponta da linha tracejada que liga o orbe ao NPC.
+func _create_insight_source() -> void:
+	var insights: Array[InsightData] = definition.get_character_insights()
+	if insights.size() != definition.insights.size():
+		push_warning("[NPC] - AVISO: \"%s\" tem insight vazio ou de ambiente no NPCDefinition; ficou de fora (ver o resumo)" % definition.id)
+	if insights.is_empty():
+		return
+
+	var source: InsightSource = INSIGHT_SOURCE_SCENE.instantiate() as InsightSource
+	source.name = "InsightSource"
+	source.insights = insights
+	source.interaction_radius = insight_radius
+	add_child(source)
 
 
 # Pede ao Pathfinder o caminho até o destino atual.

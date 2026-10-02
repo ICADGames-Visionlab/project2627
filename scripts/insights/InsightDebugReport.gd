@@ -91,12 +91,33 @@ static func project_report() -> String:
 			if not granted_flags.has(flag):
 				problems.append("%s %s: porta morta — a flag \"%s\" não é concedida por nenhum insight." % [CROSS, label, flag])
 
+	var glyph_owners: Dictionary = {}
 	for head: HeadData in heads:
 		if head.display_name_key.is_empty():
 			problems.append("%s cabeça %s: display_name_key vazio." % [CROSS, head.id])
 		elif not InsightCatalog.has_translation_key(head.display_name_key):
 			problems.append("%s cabeça %s: display_name_key \"%s\" não existe no translations.csv."
 				% [CROSS, head.id, head.display_name_key])
+		# A letra é o que distingue os orbes para quem não distingue as cores: repetida, não distingue.
+		if head.glyph.is_empty():
+			problems.append("%s cabeça %s: sem letra (glyph)." % [CROSS, head.id])
+		elif glyph_owners.has(head.glyph):
+			problems.append("%s cabeça %s: letra \"%s\" repetida da cabeça %s."
+				% [CROSS, head.id, head.glyph, glyph_owners[head.glyph]])
+		else:
+			glyph_owners[head.glyph] = head.id
+
+	# NPC só tem insight de personagem: um de ambiente na lista dele é ignorado em jogo, sem aviso na
+	# tela. É o mesmo silêncio de todas as outras portas, então a validação acusa.
+	var roster: NPCRoster = ResourceLoader.load(InsightCatalog.NPC_ROSTER_PATH) as NPCRoster
+	if roster != null:
+		for definition: NPCDefinition in roster.npcs:
+			if definition == null:
+				continue
+			for insight: InsightData in definition.insights:
+				if insight != null and not insight.is_character():
+					problems.append("%s NPC %s: insight \"%s\" é de ambiente — NPC só tem insight de personagem."
+						% [CROSS, definition.id, insight.id])
 
 	if problems.is_empty():
 		lines.append("  %s Nenhum problema encontrado." % CHECK)
@@ -137,7 +158,9 @@ static func _closed_reason(insight: InsightData) -> String:
 	if InsightDirector.is_ignoring_gates():
 		return ""
 	if insight.is_character() and not HeadRegistry.has_head(insight.head_id):
-		return "cabeça \"%s\" não desbloqueada" % insight.head_id
+		if HeadRegistry.get_head(insight.head_id) == null:
+			return "cabeça \"%s\" não existe" % insight.head_id
+		return "cabeça \"%s\" bloqueada: profiling de \"%s\" incompleto" % [insight.head_id, insight.head_id]
 	for flag: StringName in insight.required_flags:
 		if not InsightJournal.has_flag(flag):
 			return "falta a flag \"%s\"" % flag

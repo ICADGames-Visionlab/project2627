@@ -1,8 +1,9 @@
 # InsightSource.gd — O ponto do mundo que tem algo a dizer.
 #
 # É a única coisa que o designer manipula para criar conteúdo: arrasta a cena pronta para dentro do
-# objeto (ou do NPC), posiciona, e preenche a lista de InsightData. Forma, camadas e marcador já vêm
-# configurados; nenhum passo exige abrir um script.
+# objeto, posiciona, e preenche a lista de InsightData. Forma, camadas e marcador já vêm
+# configurados; nenhum passo exige abrir um script. NPC é a exceção: ninguém arrasta a fonte para
+# ele, o próprio corpo cria a sua a partir do NPCDefinition (ver NPC._create_insight_source).
 #
 # Ela é o gatilho dos DOIS canais — é ela que sabe que existe algo a dizer sobre aquele ponto. O que
 # muda entre os canais é onde o orbe é desenhado: o de ambiente nasce aqui, no objeto; o de
@@ -235,8 +236,8 @@ func _on_insight_revealed(event: InsightRevealedEvent) -> void:
 		refresh_marker()
 
 
-# Entrada do jogador no raio. O teste de tipo existe porque a máscara da Area2D pega qualquer corpo
-# da camada do mundo, e prédio não é jogador.
+# Entrada do jogador no raio. A máscara da cena é a camada 2 ("Agentes"), a do Player — e também a
+# dos NPCs, e por isso o teste de tipo: NPC passando perto não é o jogador chegando.
 func _on_body_entered(body: Node2D) -> void:
 	if body is Player:
 		_set_player_in_range(true)

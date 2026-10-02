@@ -29,7 +29,7 @@ func _ready() -> void:
 func show_npc(npc: NPCDefinition, style: DialogueStyle) -> void:
 	_style = style
 	_texture = npc.portrait
-	_tint = npc.dialogue_color
+	_tint = npc.color
 	if _texture == null and not _warned_placeholder.has(npc.id):
 		_warned_placeholder[npc.id] = true
 		print("[Dialogue] - PLACEHOLDER: NPC \"%s\" sem portrait; o diálogo usa uma silhueta (NPCDefinition, grupo Diálogo)" % npc.id)
