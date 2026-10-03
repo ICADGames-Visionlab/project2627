@@ -101,10 +101,10 @@ lugar, vazado, e clicar nele mostra o texto de novo, sem emitir `insight_reveale
 `HeadData` (`scripts/insights/HeadData.gd`), um `.tres` por cabeça em `res://resources/heads/`:
 `id`, `display_name_key` (chave do CSV), `origin` (`PLAYER` ou `NPC`), `npc_id` (o NPC dono da cabeça), `color` e `glyph`.
 
-A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC são desbloqueadas quando o profiling do `npc_id` dono é completado
-(`EventBus.npc_profiling_completed`, escutado pelo `HeadRegistry`) — é o que faz os insights do NPC
-passarem a orbitar o jogador — ou por `HeadRegistry.unlock_head()`. Hoje só a ação de debug chama essa função; no futuro, quem vai chamá-la
-é o sistema de derrota (ver [Costuras](#costuras)).
+A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC ficam disponíveis quando o
+profiling do NPC é completado: o `HeadRegistry` pergunta a `ProfilingJournal.is_profile_complete()` e
+reavalia a cada `ProfilingJournal.journal_changed` — é o que faz os insights do NPC passarem a orbitar
+o jogador. A ação de debug "Desbloquear cabeça" destrava uma cabeça sem completar o profiling.
 
 ### Elenco atual
 
@@ -363,7 +363,7 @@ definida para que, quando chegar, nenhum arquivo de `scripts/insights/` precise 
 
 | Falta | Substituto de hoje | Some quando |
 | --- | --- | --- |
-| Derrota de NPC | Ação de debug "Desbloquear cabeça" chamando `HeadRegistry.unlock_head()` | O sistema de derrota emitir `npc_defeated` e o `HeadRegistry` conectar |
+| Derrota de NPC | Profiling completo (`ProfilingJournal.is_profile_complete()`) e a ação de debug "Desbloquear cabeça" | O sistema de derrota emitir `npc_defeated` e o `HeadRegistry` conectar |
 
 Trocar a derrota custa uma linha. Quando `npc_defeated(npc_id: StringName)` existir no bus, com
 ouvintes reais (cabeças, missões, som), o `HeadRegistry` se conecta a ele no `_ready()`. A ação de
