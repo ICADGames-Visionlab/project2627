@@ -254,7 +254,7 @@ permanente.
 | `profiling` | `ProfilingJournal` | Autoload | `discovered`, `fills`, `solved`, `marks`, `emotions`, `met` |
 | `dialogue` | `DialogueState` | static, primeira consulta | `chosen`, `visited` |
 | `world` | `GameSession` | nó de cena | `location` (id do local), `position` `[x, y]` |
-| `pickups` | `GameSession` | nó de cena | por local: `collected` (itens da cena já pegos), `dropped` (largados) |
+| `pickups` | `GameSession` | nó de cena | por local: `collected` (itens e evidências da cena já pegos), `dropped` (largados) |
 | `inventory` | `Inventory` (do `Player`) | nó de cena | `items` (`{id do item: quantidade}`) |
 
 ### Antes de abrir PR com um participante novo
@@ -314,7 +314,7 @@ arquivo real sai com um item por linha):
 | `world.location` | String | Id do local, não caminho de cena: renomear o `.tscn` não quebra o save |
 | `world.position` | [float, float] | Última posição segura. `Vector2` não sobrevive ao JSON |
 | `inventory.items` | Dictionary | Id do item → quantidade. O `ItemData` volta pelo `ItemCatalog` |
-| `pickups.<local>.collected` | [String] | Itens postos na cena que o jogador já pegou, pelo caminho do nó na cena |
+| `pickups.<local>.collected` | [String] | `ItemPickup` e `Interactable` de evidência postos na cena que o jogador já pegou, pelo caminho do nó na cena |
 | `pickups.<local>.dropped` | [Dictionary] | Itens que o jogador largou: `item` (id), `amount`, `position` |
 
 O rótulo do slot ("Dia 5, Sexta, 14:20 — Cidade") é **derivado** de `clock` e `world` na hora de
@@ -422,8 +422,8 @@ func _migrate_v1_to_v2(sections: Dictionary) -> Dictionary:     # 3. escreve o p
 
 Id de conteúdo vive dentro dos saves: ids de insight (`insights.read`), flags (`insights.flags`), NPC,
 palavra e história (`profiling`), escolha e nó de diálogo (`dialogue`), local (`world.location` e as chaves
-de `pickups`), item (`inventory`, `pickups.*.dropped`) e o caminho na cena de um `ItemPickup` posto
-no editor (`pickups.*.collected`). Se você vai renomear um que já pode estar gravado:
+de `pickups`), item (`inventory`, `pickups.*.dropped`) e o caminho na cena de um `ItemPickup` ou de
+um `Interactable` de evidência posto no editor (`pickups.*.collected`). Se você vai renomear um que já pode estar gravado:
 
 - [ ] **Alguém tem esse id num save?** Se ele só existe na sua branch, renomeie e siga.
 - [ ] **Sem migração**, o dono ignora o id velho (sem erro): o insight reaparece, a palavra some da

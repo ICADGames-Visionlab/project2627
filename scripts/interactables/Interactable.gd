@@ -13,6 +13,10 @@
 ## O objeto não lê teclado nem mouse: quem decide o que está no campo de visão, o que está sob o
 ## cursor e quando brilhar é o InteractableInteractor, filho do Player. Aqui mora só o que é do
 ## objeto: a aparência do contorno e o que acontece quando ele é acionado.
+##
+## NO SAVE: uma evidência já coletada não volta ao recarregar. Quem lembra disso é a GameSession
+## (seção "pickups"), pelo caminho do nó na cena; o objeto em si não sabe de save nenhum. Renomear ou
+## mover no editor um Interactable de evidência faz ele reaparecer para quem já o tinha coletado.
 @tool
 class_name Interactable
 extends Node2D

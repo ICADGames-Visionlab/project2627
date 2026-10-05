@@ -127,17 +127,19 @@ O inventário e os itens no chão entram no save sem nenhum caso especial no `Sa
   quantidade é presa em `1..max_stack`. Todo `add_item`, `drop_item` e `destroy_item` que muda algo pede
   gravação. Como o `Player` nasce de novo em cada cena, é a seção do save que leva o inventário de uma
   cena para a outra; sem partida ativa (F6), ele recomeça vazio.
-- **Itens no chão** são da `GameSession` (participante `"pickups"`), que acha todo `ItemPickup` pelo grupo
-  `ItemPickup.GROUP`. Por local, ela guarda os itens **postos na cena** que o jogador já pegou (pelo
-  caminho do nó na cena) e os que ele **largou** (id, quantidade e posição). Na volta, os pegos saem da
-  cena e os largados são recriados. Sem isso, salvar o inventário duplicaria item: o jogador pegava,
-  recarregava, e o item estava no chão de novo.
+- **Itens no chão** são da `GameSession` (participante `"pickups"`). Por local, ela guarda o que foi
+  **posto na cena** e o jogador já pegou (pelo caminho do nó na cena) e os itens que ele **largou** (id,
+  quantidade e posição). "Posto na cena" é todo `ItemPickup` (achado pelo grupo `ItemPickup.GROUP`) e
+  todo `Interactable` de evidência, que também vai para o inventário e some do mundo. Na volta, os
+  pegos saem da cena e os largados são recriados. Sem isso, salvar o inventário duplicaria item: o
+  jogador pegava, recarregava, e o item estava no mundo de novo.
 
 Inventário e chão são gravados no mesmo instante, como retrato da cena: pegar ou largar nunca deixa o
 item nos dois lugares, nem em nenhum.
 
-> **Cuidado ao editar uma cena:** renomear ou mover no editor um `ItemPickup` que pode já ter sido pego
-> num save faz ele reaparecer para esse jogador (o id dele é o caminho do nó). Se isso importa, é um
+> **Cuidado ao editar uma cena:** renomear ou mover no editor um `ItemPickup` ou um `Interactable` de
+> evidência que pode já ter sido pego num save faz ele reaparecer para esse jogador (o id dele é o
+> caminho do nó). Se isso importa, é um
 > passo de migração no `SaveManager` (checklist "renomeei um id de conteúdo" no `docs/SaveManager.md`).
 
 ## Limitações atuais / como escalar

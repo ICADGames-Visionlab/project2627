@@ -21,12 +21,13 @@
 ## grupo, então a cena não precisa ligar nada no Inspector. LOCATION_SCENES é a única tabela de
 ## locais do jogo: o menu de slots escolhe a cena e o nome do local por ela.
 ##
-## A SEÇÃO "pickups" DO SAVE: os itens no chão de cada local (ItemPickup, achados pelo grupo). Fica
-## fora de "world" porque guarda TODOS os locais, não só o atual: o que o jogador largou na cidade
-## continua lá enquanto ele está em outro lugar. Por local, duas listas:
-##   - collected: itens postos na cena no editor que o jogador já pegou, pelo caminho do nó a partir
-##     da raiz da cena. Na volta, eles são tirados da cena. Renomear ou mover um desses nós faz ele
-##     reaparecer para quem já o pegou.
+## A SEÇÃO "pickups" DO SAVE: o que some do mundo quando o jogador pega, em cada local. Fica fora de
+## "world" porque guarda TODOS os locais, não só o atual: o que o jogador largou na cidade continua lá
+## enquanto ele está em outro lugar. Por local, duas listas:
+##   - collected: o que foi posto na cena no editor e o jogador já pegou (ItemPickup, e Interactable
+##     de evidência, que vai para o inventário e some), pelo caminho do nó a partir da raiz da cena.
+##     Na volta, eles são tirados da cena. Renomear ou mover um desses nós faz ele reaparecer para
+##     quem já o pegou.
 ##   - dropped: itens que o jogador largou, inteiros (id do item, quantidade e posição). Na volta,
 ##     são recriados.
 ## A gravação é um retrato da cena no instante em que o SaveManager grava, junto com o inventário:
@@ -74,10 +75,10 @@ const AMOUNT_KEY: String = "amount"
 # Seção "pickups" como chegou do save. Só os OUTROS locais são lidos daqui na gravação: o deste é
 # sempre retrato da cena.
 var _pickups_by_location: Dictionary = {}
-# Itens postos nesta cena que estavam no chão quando a partida carregou: caminho -> ItemPickup. Um
-# que saiu da árvore desde então foi pego.
-var _placed_pickups: Dictionary = {}
-# Caminhos dos itens postos nesta cena que o jogador já tinha pego antes de a partida carregar.
+# O que foi posto nesta cena e ainda estava no mundo quando a partida carregou: caminho -> nó
+# (ItemPickup ou Interactable de evidência). Um que saiu da árvore desde então foi pego.
+var _placed_collectibles: Dictionary = {}
+# Caminhos do que foi posto nesta cena e o jogador já tinha pego antes de a partida carregar.
 var _collected_ids: Array[String] = []
 
 ## Espaço para funções nativas
@@ -161,12 +162,12 @@ func _from_save(data: Dictionary) -> void:
 # largados são todos os pickups criados com o jogo rodando que ainda estão no chão.
 func _pickups_to_save() -> Dictionary:
 	var collected: Array[String] = _collected_ids.duplicate()
-	for pickup_id: String in _placed_pickups:
-		# Variant antes do tipo: um pickup pego já foi liberado, e atribuir objeto liberado a uma
+	for collectible_id: String in _placed_collectibles:
+		# Variant antes do tipo: um nó pego já foi liberado, e atribuir objeto liberado a uma
 		# variável tipada é erro.
-		var node: Variant = _placed_pickups[pickup_id]
-		if not is_instance_valid(node) or not _is_on_the_ground(node as ItemPickup):
-			collected.append(pickup_id)
+		var node: Variant = _placed_collectibles[collectible_id]
+		if not is_instance_valid(node) or not _is_on_the_ground(node as Node):
+			collected.append(collectible_id)
 	collected.sort()
 
 	var dropped: Array[Dictionary] = []
@@ -184,8 +185,8 @@ func _pickups_to_save() -> Dictionary:
 	return result
 
 
-# Recebe a seção "pickups". {} é o novo jogo: todo item posto na cena fica no chão e nada largado
-# volta. Tira da cena os itens que o jogador já pegou e recria os que ele largou. Os largados que já
+# Recebe a seção "pickups". {} é o novo jogo: tudo o que foi posto na cena fica no mundo e nada
+# largado volta. Tira da cena o que o jogador já pegou e recria o que ele largou. Os largados que já
 # estivessem na cena saem antes: só existem se a mesma cena receber a seção de novo, e ficariam em
 # dobro.
 func _pickups_from_save(data: Dictionary) -> void:
@@ -197,18 +198,19 @@ func _pickups_from_save(data: Dictionary) -> void:
 		for raw_id: Variant in saved_collected:
 			_collected_ids.append(str(raw_id))
 
-	_placed_pickups.clear()
-	var removed: int = 0
 	for pickup: ItemPickup in _find_pickups():
 		if not pickup.is_placed_in_scene():
 			pickup.queue_free()
-			continue
-		var pickup_id: String = _pickup_id(pickup)
-		if _collected_ids.has(pickup_id):
-			pickup.queue_free()
+
+	_placed_collectibles.clear()
+	var removed: int = 0
+	for collectible: Node in _find_placed_collectibles():
+		var collectible_id: String = _collectible_id(collectible)
+		if _collected_ids.has(collectible_id):
+			collectible.queue_free()
 			removed += 1
 		else:
-			_placed_pickups[pickup_id] = pickup
+			_placed_collectibles[collectible_id] = collectible
 
 	var saved_dropped: Variant = entry.get(DROPPED_KEY, [])
 	var dropped: Array = saved_dropped if saved_dropped is Array else []
@@ -261,16 +263,32 @@ func _find_pickups() -> Array[ItemPickup]:
 	return result
 
 
-# O pickup ainda está no chão: na árvore e não pego (pegar chama queue_free, e o nó só sai no fim do
+# O que foi posto na cena e some do mundo quando o jogador pega: os ItemPickup e os Interactable de
+# evidência. O Interactable é achado pela árvore, e não pelo grupo dele: ele só entra no grupo no
+# _ready, que ainda não rodou se ele vier depois desta GameSession na árvore. As outras consequências
+# do Interactable (insight, diálogo) não tiram o objeto do mundo e ficam de fora.
+func _find_placed_collectibles() -> Array[Node]:
+	var result: Array[Node] = []
+	for pickup: ItemPickup in _find_pickups():
+		if pickup.is_placed_in_scene():
+			result.append(pickup)
+	for node: Node in _scene_root().find_children("*", "Interactable", true, true):
+		var interactable: Interactable = node as Interactable
+		if interactable.outcome == Interactable.Outcome.EVIDENCE and _is_on_the_ground(interactable):
+			result.append(interactable)
+	return result
+
+
+# O nó ainda está no mundo: na árvore e não pego (pegar chama queue_free, e o nó só sai no fim do
 # frame).
-static func _is_on_the_ground(pickup: ItemPickup) -> bool:
-	return pickup != null and pickup.is_inside_tree() and not pickup.is_queued_for_deletion()
+static func _is_on_the_ground(node: Node) -> bool:
+	return node != null and node.is_inside_tree() and not node.is_queued_for_deletion()
 
 
-# Id de um item posto na cena: o caminho do nó a partir da raiz da cena do local
+# Id de algo posto na cena: o caminho do nó a partir da raiz da cena do local
 # ("YSort/Evidencias/Bilhete"). Estável enquanto ninguém renomear nem mover o nó no editor.
-func _pickup_id(pickup: ItemPickup) -> String:
-	return String(_scene_root().get_path_to(pickup))
+func _collectible_id(node: Node) -> String:
+	return String(_scene_root().get_path_to(node))
 
 
 # Raiz da cena do local: o owner desta GameSession, que é posta direto na cena. A cena atual só
