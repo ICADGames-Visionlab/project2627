@@ -35,6 +35,11 @@
 [ext_resource type="PackedScene" uid="uid://dkf8okr741w41" path="res://scenes/profiling/ProfilingScreen.tscn" id="23_profiling"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/DreamHud.tscn" id="24_dream_hud"]
 [ext_resource type="PackedScene" uid="uid://d1io3majq41f6" path="res://scenes/profiling/WordDiscoveryToast.tscn" id="25_word_toast"]
+[ext_resource type="PackedScene" uid="uid://ckqoq5t266xk2" path="res://scenes/interactables/Interactable.tscn" id="40_interactable"]
+[ext_resource type="Resource" uid="uid://dmydivkicc0vh" path="res://items/TornNote.tres" id="41_torn_note"]
+[ext_resource type="Resource" uid="uid://dxb0xaol1ypsh" path="res://resources/insights/city_mailbox.tres" id="42_mailbox_insight"]
+[ext_resource type="Texture2D" uid="uid://bccxrcxs5sr5m" path="res://images/placeholder/Isometric City/Props/prop_dropbox_a.png" id="43_mailbox_tex"]
+[ext_resource type="Texture2D" uid="uid://cb8433nq72yd" path="res://images/placeholder/Isometric City/Props/prop_box_cardboard_open.png" id="44_box_tex"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -107,9 +112,29 @@ scale = Vector2(0.16778524, 0.16778524)
 color = Color(0.88763225, 0.63657296, 1.5016794e-05, 1)
 dream_color = Color(1, 0.43452293, 0.5070191, 1)
 
+[node name="TornNoteEvidence" parent="YSort" unique_id=530841092 instance=ExtResource("40_interactable")]
+position = Vector2(-260, 190)
+scale = Vector2(4, 4)
+outcome = 2
+evidence = ExtResource("41_torn_note")
+grants_flag = &"found_torn_note"
+
+[node name="MailboxInsight" parent="YSort" unique_id=612417724 instance=ExtResource("40_interactable")]
+position = Vector2(-140, -140)
+scale = Vector2(4.5, 4.5)
+texture = ExtResource("43_mailbox_tex")
+insight = ExtResource("42_mailbox_insight")
+
+[node name="CardboardBoxDialogue" parent="YSort" unique_id=1514770706 instance=ExtResource("40_interactable")]
+position = Vector2(170, 200)
+scale = Vector2(5, 5)
+texture = ExtResource("44_box_tex")
+outcome = 1
+conversation_id = &"city_cardboard_box"
+
 [node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_oxvur")]
 
-[node name="InventoryUI" parent="." unique_id=988204647 instance=ExtResource("18_inventory_ui")]
+[node name="InventoryUI" parent="." unique_id=2030378045 instance=ExtResource("18_inventory_ui")]
 
 [node name="Pathfinder" type="Node2D" parent="." unique_id=1145640535]
 script = ExtResource("8_rmeea")
@@ -203,7 +228,7 @@ position = Vector2(1017, -334)
 insights = Array[ExtResource("17_fp5nc")]([ExtResource("15_windows")])
 marker_offset = Vector2(0, -230)
 
-[node name="DialogueCamera" type="Node2D" parent="." unique_id=125099544 groups=["dialogue_camera"]]
+[node name="DialogueCamera" type="Node2D" parent="." unique_id=2086301539 groups=["dialogue_camera"]]
 script = ExtResource("19_dialogue_camera")
 follow_mode = 3
 

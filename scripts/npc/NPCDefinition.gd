@@ -66,9 +66,18 @@ const ALL_WEEKDAYS: int = 127
 		name_key = value
 		_refresh_summary()
 
-## PLACEHOLDER: cor que tinge o sprite do NPC. Enquanto todos usam o mesmo spritesheet do Player, é
-## o que diferencia um do outro (ver a chave PLACEHOLDER_NPC_BODY no CSV).
-@export var tint: Color = Color.WHITE
+## A cor do NPC, a mesma em todo lugar em que ele aparece: o nome dele na coluna de diálogo, a
+## silhueta do retrato vazio e o orbe da cabeça dele nos insights (ver InsightCatalog.load_all_heads).
+## Precisa passar no contraste mínimo contra o fundo da coluna de diálogo — o resumo avisa quando não
+## passa.
+##
+## PLACEHOLDER: enquanto todos os NPCs usam o spritesheet do Player, ela também tinge o sprite, e é o
+## que diferencia um corpo do outro (ver a chave PLACEHOLDER_NPC_BODY no CSV). Quando a arte chegar,
+## só essa parte some.
+@export var color: Color = Color.WHITE:
+	set(value):
+		color = value
+		_refresh_summary()
 
 ## O retrato do NPC: a arte que representa a CARA dele, usada por quem precisa mostrá-lo sem ele
 ## estar em cena. Hoje quem usa é a tela de profiling no mundo dos sonhos (a metade direita da
@@ -78,7 +87,7 @@ const ALL_WEEKDAYS: int = 127
 ## sistema só.
 ##
 ## Vazio não quebra nada: cada tela desenha o seu placeholder (o profiling, um retângulo com o nome
-## do NPC; o diálogo, uma silhueta na dialogue_color). Basta arrastar a textura aqui no dia em que a
+## do NPC; o diálogo, uma silhueta na cor do NPC). Basta arrastar a textura aqui no dia em que a
 ## arte existir.
 @export var portrait: Texture2D
 
@@ -94,13 +103,6 @@ const ALL_WEEKDAYS: int = 127
 @export var walk_speed: float = 220.0
 
 @export_group("Diálogo")
-
-## Cor do nome do NPC na coluna de diálogo. Diferente de tint (que é placeholder de sprite): esta
-## precisa passar no contraste mínimo contra o fundo da coluna de diálogo.
-@export var dialogue_color: Color = Color("#E0C080"):
-	set(value):
-		dialogue_color = value
-		_refresh_summary()
 
 ## Conversa aberta ao clicar no NPC (o id da conversa no catálogo de diálogo). Vazio = NPC não
 ## conversa (NPCInteraction não pede nada ao clicar nele).
@@ -173,10 +175,31 @@ const ALL_WEEKDAYS: int = 127
 ## Onde este NPC fica enquanto o jogador sonha: a cena e o waypoint, no mesmo formato de uma entrada
 ## de rotina. O HORÁRIO DA ENTRADA É IGNORADO — no sonho o relógio está travado (ver
 ## TimeSettings.dream_hour) e o NPC não sai do lugar. Vazio = o NPC não aparece no sonho.
+## Preenchido, ele só aparece depois de o jogador conversar com ele no mundo real (ver
+## ProfilingJournal.can_appear_in_dream).
 @export var dream_entry: NPCRoutineEntry:
 	set(value):
 		dream_entry = value
 		_refresh_summary()
+
+@export_group("Insights")
+
+## O que as cabeças do jogador têm a dizer sobre este NPC quando o jogador chega perto dele. O orbe
+## aparece acima da cabeça do JOGADOR, na cor da cabeça que fala — nunca em cima do NPC.
+##
+## Só insights do canal de personagem: NPC não tem insight de ambiente (o orbe verde ficaria em cima
+## dele, disputando o clique que abre a conversa). Um de ambiente aqui é ignorado, e o resumo avisa.
+## Os .tres ficam em res://resources/insights/, como todos os outros, para a validação em lote
+## conferir id, text_key e head_id.
+@export var insights: Array[InsightData] = []:
+	set(value):
+		insights = value
+		_refresh_summary()
+
+## A letra desenhada dentro do orbe da cabeça deste NPC — a cabeça que o jogador ganha ao completar o
+## profiling dele. Vazio = a inicial do id. Precisa ser diferente da letra de todas as outras
+## cabeças: é o que distingue os orbes para quem não distingue as cores.
+@export var head_glyph: String = ""
 
 @export_group("")
 
@@ -240,6 +263,23 @@ func describe_slot(slot: EmotionSlot) -> String:
 	return "%s (%s)" % [SLOT_NAMES[slot], emotion.id]
 
 
+# Os insights deste NPC que valem: só os do canal de personagem. Entrada vazia e insight de ambiente
+# ficam de fora (ver o campo insights); quem aponta o erro é o collect_issues().
+func get_character_insights() -> Array[InsightData]:
+	var result: Array[InsightData] = []
+	for insight: InsightData in insights:
+		if insight != null and insight.is_character():
+			result.append(insight)
+	return result
+
+
+# A letra do orbe da cabeça deste NPC: a escolhida no Inspector, ou a inicial do id.
+func get_head_glyph() -> String:
+	if not head_glyph.is_empty():
+		return head_glyph
+	return String(id).left(1).to_upper()
+
+
 # Problemas da definição, uma frase por problema. Compartilhado entre o resumo do Inspector e o
 # comando "Validar rotinas" do menu de debug.
 func collect_issues() -> PackedStringArray:
@@ -260,9 +300,16 @@ func collect_issues() -> PackedStringArray:
 
 	var dialogue_style: DialogueStyle = load("res://resources/dialogue/dialogue_style.tres")
 	if dialogue_style != null:
-		var ratio: float = DialogueContrast.worst_case_ratio(dialogue_color, 1.0, dialogue_style, 0.82)
+		var ratio: float = DialogueContrast.worst_case_ratio(color, 1.0, dialogue_style, 0.82)
 		if ratio < dialogue_style.min_contrast_ratio:
-			issues.append("Cor de diálogo com contraste %.1f:1 (mínimo %.1f:1)." % [ratio, dialogue_style.min_contrast_ratio])
+			issues.append("Cor do NPC com contraste %.1f:1 no diálogo (mínimo %.1f:1)." % [ratio, dialogue_style.min_contrast_ratio])
+
+	for index: int in insights.size():
+		var insight: InsightData = insights[index]
+		if insight == null:
+			issues.append("Insight %d está vazio." % index)
+		elif not insight.is_character():
+			issues.append("Insight \"%s\" é de ambiente: NPC só tem insight de personagem, e este é ignorado." % insight.id)
 
 	for slot: int in EmotionSlot.values():
 		for day_type: int in DayType.values():

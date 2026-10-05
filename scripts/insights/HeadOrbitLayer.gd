@@ -1,8 +1,12 @@
 # HeadOrbitLayer.gd — A órbita de cabeças do jogador: onde nascem os orbes do canal de personagem.
 #
 # Vive como filho do Player, então os orbes acompanham o personagem. O gatilho continua sendo a
-# fonte no mundo — é ela que sabe que há algo a dizer sobre aquele ponto —, mas a âncora é o
-# jogador: posição diz o canal (no objeto ou aqui), cor diz quem está falando.
+# fonte no mundo — é ela que sabe que há algo a dizer sobre aquele ponto, seja uma parede ou um NPC
+# —, mas a âncora é SEMPRE o jogador: os orbes ficam numa fileira acima da cabeça dele, nunca em
+# cima da fonte. Posição diz o canal (no objeto ou aqui), cor diz quem está falando.
+#
+# O nome "órbita" ficou do primeiro desenho, em arco em volta do jogador. O arco punha as cabeças
+# das pontas ao lado da cabeça dele, e não acima; a fileira resolve isso sem mudar mais nada.
 #
 # Duas regras que a decisão do orbe flutuante cobra, e que economizam retrabalho:
 #   - Slot derivado da cabeça, não da ordem de chegada. Uma cabeça calar não faz as outras pularem
@@ -25,11 +29,11 @@ const MARKER_SCENE_PATH: String = "res://scenes/insights/InsightMarker.tscn"
 # Quantos orbes de cabeça podem aparecer ao mesmo tempo.
 @export var max_visible_orbs: int = 3:
 	set = _set_max_visible_orbs
-@export var orbit_radius: float = 110.0
-# Ângulo do centro do arco, em graus, com -90 apontando para cima do jogador.
-@export var orbit_center_degrees: float = -90.0
-# Abertura do arco em que os slots são distribuídos.
-@export var orbit_arc_degrees: float = 120.0
+# Altura da fileira, relativa a este nó (que o Player põe na altura do peito). Negativo é para cima.
+@export var row_height: float = -110.0
+# Distância horizontal entre dois orbes vizinhos. Abaixo de duas vezes o hit_radius do marcador, as
+# áreas de clique se sobrepõem.
+@export var row_spacing: float = 64.0
 
 @export_group("Ligação com a fonte")
 @export var link_width: float = 2.0
@@ -79,8 +83,9 @@ func _draw() -> void:
 	draw_arc(target, link_target_radius, 0.0, TAU, 24, color, link_width, true)
 
 
-# Recebe as ofertas já escolhidas e ordenadas pelo InsightDirector e arruma os orbes em volta do
-# jogador. A órbita não decide nada sobre conteúdo: só desenha o que recebeu, no slot de cada cabeça.
+# Recebe as ofertas já escolhidas e ordenadas pelo InsightDirector e arruma os orbes acima da cabeça
+# do jogador. A órbita não decide nada sobre conteúdo: só desenha o que recebeu, no slot de cada
+# cabeça.
 func show_offers(offers: Array[InsightOffer]) -> void:
 	var visible_offers: Array[InsightOffer] = offers.slice(0, max_visible_orbs)
 	var slots: Dictionary = _assign_slots(visible_offers)
@@ -135,15 +140,12 @@ func _assign_slots(offers: Array[InsightOffer]) -> Dictionary:
 	return result
 
 
-# Posição de um slot no arco em volta do jogador. Com um slot só, ele fica no centro do arco; com
-# vários, eles se distribuem igualmente entre as pontas.
+# Posição de um slot na fileira acima da cabeça do jogador. A fileira é centrada nele: com um slot
+# só, o orbe fica bem em cima; com vários, eles se espalham igualmente para os dois lados.
 func _slot_position(slot: int) -> Vector2:
 	var slot_count: int = maxi(max_visible_orbs, 1)
-	var angle_degrees: float = orbit_center_degrees
-	if slot_count > 1:
-		var step: float = orbit_arc_degrees / float(slot_count - 1)
-		angle_degrees = orbit_center_degrees - orbit_arc_degrees * 0.5 + step * float(slot)
-	return Vector2.RIGHT.rotated(deg_to_rad(angle_degrees)) * orbit_radius
+	var offset: float = float(slot) - float(slot_count - 1) * 0.5
+	return Vector2(offset * row_spacing, row_height)
 
 
 # Instancia o orbe de uma cabeça. Os signals carregam o head_id por bind() porque a oferta muda a

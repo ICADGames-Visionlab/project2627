@@ -99,11 +99,12 @@ lugar, vazado, e clicar nele mostra o texto de novo, sem emitir `insight_reveale
 ## As cabeças
 
 `HeadData` (`scripts/insights/HeadData.gd`), um `.tres` por cabeça em `res://resources/heads/`:
-`id`, `display_name_key` (chave do CSV), `origin` (`PLAYER` ou `NPC`), `color` e `glyph`.
+`id`, `display_name_key` (chave do CSV), `origin` (`PLAYER` ou `NPC`), `npc_id` (o NPC dono da cabeça), `color` e `glyph`.
 
-A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC só existem depois de
-`HeadRegistry.unlock_head()`. Hoje só a ação de debug chama essa função; no futuro, quem vai chamá-la
-é o sistema de derrota (ver [Costuras](#costuras)).
+A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC ficam disponíveis quando o
+profiling do NPC é completado: o `HeadRegistry` pergunta a `ProfilingJournal.is_profile_complete()` e
+reavalia a cada `ProfilingJournal.journal_changed` — é o que faz os insights do NPC passarem a orbitar
+o jogador. A ação de debug "Desbloquear cabeça" destrava uma cabeça sem completar o profiling.
 
 ### Elenco atual
 
@@ -209,6 +210,21 @@ O anel só aparece no modo teclado/controle. Ele liga com as duas ações ou com
 analógico do controle, e desliga quando o mouse se move. Assim, quem joga de mouse não vê um anel
 pulando de orbe em orbe a cada passo.
 
+Mouse e teclado/controle nunca destacam orbes ao mesmo tempo. Enquanto o modo teclado/controle está
+ligado, o hover do mouse não conta: o orbe sob o cursor não cresce, não mostra o nome e não troca o
+cursor pela mãozinha. Sem isso, clicar num orbe e apertar Tab deixava dois orbes em destaque (o que
+ficou sob o cursor parado e o que recebeu o foco). O `InsightInteractor` liga e desliga isso em todos
+os orbes pelo grupo `insight_markers` (`InsightMarker.set_mouse_hover_suppressed()`). Ao mexer o
+mouse de novo, o modo teclado/controle desliga e o orbe sob o cursor volta ao destaque na hora.
+
+O Tab é também o atalho padrão da ação embutida `ui_focus_next` do Godot (e Shift+Tab o de
+`ui_focus_prev`), que passa o foco de teclado entre os `Control`s da tela. A GUI trata essa ação antes
+do `_unhandled_input` do `InsightInteractor`: com os padrões da engine, apertar Tab pegava o primeiro
+botão focável da tela e desenhava nele o estilo de foco, que parece um hover, e o ciclo de orbes nem
+chegava a rodar. Por isso as duas ações estão sobrescritas no `project.godot` sem nenhuma tecla. A
+navegação de menus por teclado e controle continua pelas setas e pelo D-pad (`ui_up`, `ui_down`,
+`ui_left`, `ui_right`). Não devolva o Tab a `ui_focus_next` sem trocar a tecla de `insight_cycle`.
+
 O acionamento passa por `InsightMarker.activate()`, o mesmo caminho do clique. A fonte e a órbita não
 sabem se o orbe foi clicado ou acionado por tecla.
 
@@ -270,10 +286,10 @@ Um id de insight ou de flag que já foi gravado e mudou de nome deixa de casar: 
 quem já o leu. Se isso importa, a renomeação pede uma migração (checklist "renomeei um id de conteúdo"
 no `docs/SaveManager.md`).
 
-As cabeças desbloqueadas ainda não são salvas. Quem sabe persistir "este NPC foi derrotado" é o
-sistema de derrota, que ainda não existe, e duplicar isso no `HeadRegistry` criaria duas fontes de
-verdade para o mesmo fato. Quando entrarem, o `HeadRegistry` vira mais um participante, sem mexer no
-`SaveManager`.
+As cabeças de NPC atravessam o save sem seção própria: o `HeadRegistry` não guarda quem foi
+derrotado, ele pergunta ao `ProfilingJournal` (`is_profile_complete()`), que já é participante. Ao
+abrir uma partida, o `ProfilingJournal` recebe a seção dele e avisa a mudança, e o `HeadRegistry`
+reconfere as cabeças. O "Desbloquear cabeça" do debug não é salvo.
 
 ---
 
@@ -355,7 +371,7 @@ definida para que, quando chegar, nenhum arquivo de `scripts/insights/` precise 
 
 | Falta | Substituto de hoje | Some quando |
 | --- | --- | --- |
-| Derrota de NPC | Ação de debug "Desbloquear cabeça" chamando `HeadRegistry.unlock_head()` | O sistema de derrota emitir `npc_defeated` e o `HeadRegistry` conectar |
+| Derrota de NPC | Profiling completo (`ProfilingJournal.is_profile_complete()`) e a ação de debug "Desbloquear cabeça" | O sistema de derrota emitir `npc_defeated` e o `HeadRegistry` conectar |
 
 Trocar a derrota custa uma linha. Quando `npc_defeated(npc_id: StringName)` existir no bus, com
 ouvintes reais (cabeças, missões, som), o `HeadRegistry` se conecta a ele no `_ready()`. A ação de

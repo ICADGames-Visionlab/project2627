@@ -39,9 +39,12 @@ static func run(style: DialogueStyle) -> Array[Result]:
 	if roster != null:
 		for definition: NPCDefinition in roster.npcs:
 			if definition != null:
-				_check_with_past(results, style, definition.dialogue_color, "%s.dialogue_color" % definition.id)
+				_check_with_past(results, style, definition.color, "%s.color" % definition.id)
 
 	for head: HeadData in HeadRegistry.get_all_heads():
+		# A cabeça de um NPC tem a cor dele, já conferida no laço de cima.
+		if head.origin == HeadData.Origin.NPC:
+			continue
 		_check_with_past(results, style, head.color, "head:%s.color" % head.id)
 
 	for speaker: DialogueSpeaker in DialogueCatalog.get_speakers().values():

@@ -488,6 +488,7 @@ abre normalmente, como versão 0, e vira v1 na próxima gravação.
 | O quê | Por quê | O que acontece ao abrir uma partida |
 | --- | --- | --- |
 | Páginas do `Diary` | Derivam de fatos que outros donos guardam; gravá-las criaria duas fontes de verdade | Recomeça pelo `session_opened`; página derivada de fato se refaz ali |
+| Cabeças de NPC (`HeadRegistry`) | Derivam do profiling completo, que o `ProfilingJournal` já salva | O `HeadRegistry` reconfere quando o `ProfilingJournal` carrega |
 | Tempo jogado, screenshot do slot | Ficaram de fora de propósito | — |
 | Estado de NPC | A rotina sai do relógio, que já é salvo | O `NPCDirector` recalcula pelo `clock` |
 
