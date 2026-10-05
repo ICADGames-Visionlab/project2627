@@ -12,6 +12,11 @@
 ## necessária. Quem precisa da instância sem ter um caminho direto na árvore (hoje só a
 ## InventoryUI) encontra pelo grupo GROUP_NAME — o mesmo padrão do exemplo "Wallet" documentado em
 ## docs/event_bus.md, seção "Escutar direito". Ver docs/Inventory.md para a documentação completa.
+##
+## ENTRA NO SAVE PELO SaveManager: é o participante de cena "inventory", registrado no _ready() e
+## tirado no _exit_tree(). Guarda só {id do item: quantidade}; o ItemData volta pelo ItemCatalog.
+## Como o Player nasce de novo a cada cena, é o save que leva o inventário de uma cena para a outra.
+## Os itens largados no chão são da GameSession (seção "pickups"), não daqui.
 class_name Inventory
 extends Node
 
@@ -35,6 +40,11 @@ signal item_destroyed(item: ItemData, amount: int)
 # Nome do grupo em que toda instância de Inventory entra (ver _enter_tree). É assim que a
 # InventoryUI encontra o inventário do jogador sem precisar de uma referência exportada.
 const GROUP_NAME: StringName = &"inventory"
+
+# Chave da seção no save. É contrato do arquivo: renomear pede um passo de migração no SaveManager.
+const SAVE_KEY: String = "inventory"
+# Campo da seção: {id do item (String): quantidade}.
+const ITEMS_KEY: String = "items"
 
 # Caminho da cena instanciada no chão quando um item é largado (drop_item). Carregado sob demanda
 # com load() dentro de drop_item() — e NÃO com preload() no topo do script — de propósito:
@@ -84,7 +94,15 @@ func _enter_tree() -> void:
 
 
 func _ready() -> void:
+	# Com partida aberta, o registro já entrega a seção "inventory" (registro tardio do SaveManager).
+	SaveManager.register_participant(SAVE_KEY, to_dict, from_dict)
 	_register_debug_commands()
+
+
+func _exit_tree() -> void:
+	# A seção fica no SaveManager como estava na última gravação: é dela que o Player da próxima cena
+	# recebe o inventário.
+	SaveManager.unregister_participant(SAVE_KEY)
 
 ## Espaço para funções personalizadas
 
@@ -113,6 +131,7 @@ func add_item(item: ItemData, amount: int = 1) -> void:
 
 	item_added.emit(item, added)
 	print("[Inventory] - Item \"%s\" adicionado (x%d, total %d)" % [item.id, added, stack.amount])
+	SaveManager.request_save()
 
 
 # Diz se o inventário tem ao menos amount unidades do item indicado.
@@ -153,6 +172,9 @@ func drop_item(item_id: StringName, amount: int = 1) -> bool:
 	_remove_from_stack(stack, amount)
 	item_dropped.emit(item, amount)
 	print("[Inventory] - Item \"%s\" largado (x%d)" % [item_id, amount])
+	# A mesma gravação leva o item saindo daqui e o pickup novo no chão (seção "pickups" da
+	# GameSession): os dois retratos são do mesmo instante, então o item nunca some nem duplica.
+	SaveManager.request_save()
 	return true
 
 
@@ -171,7 +193,40 @@ func destroy_item(item_id: StringName, amount: int = 1) -> bool:
 
 	item_destroyed.emit(item, amount)
 	print("[Inventory] - Item \"%s\" destruído (x%d)" % [item_id, amount])
+	SaveManager.request_save()
 	return true
+
+
+# --- Save ---
+
+# Inventário como Dictionary, no formato que o SaveManager sabe serializar: {id: quantidade}, com o
+# id como String (é o que sobrevive ao JSON). Nunca o ItemData: recurso não volta do JSON.
+func to_dict() -> Dictionary:
+	var items: Dictionary = {}
+	for stack: ItemStack in get_stacks():
+		items[String(stack.item.id)] = stack.amount
+	return { ITEMS_KEY: items }
+
+
+# Recarrega o inventário a partir da seção "inventory" do save. {} é o novo jogo: inventário vazio.
+# Item que o ItemCatalog não acha mais é ignorado; a quantidade volta do JSON como float e é presa em
+# 1..max_stack (o .tres pode ter baixado o limite desde a gravação). Não emite item_added: carregar
+# não é coletar, e quem escuta aquele sinal conta coleta. A InventoryUI se refaz ao abrir.
+func from_dict(data: Dictionary) -> void:
+	_stacks.clear()
+	var saved: Variant = data.get(ITEMS_KEY, {})
+	if saved is Dictionary:
+		var saved_items: Dictionary = saved
+		for raw_id: Variant in saved_items:
+			var item_id: StringName = StringName(str(raw_id))
+			var item: ItemData = ItemCatalog.find_item(item_id)
+			var raw_amount: Variant = saved_items[raw_id]
+			if item == null or not (raw_amount is float or raw_amount is int):
+				print("[Inventory] - Item salvo \"%s\" não existe mais ou está inválido; ignorado" % item_id)
+				continue
+			_stacks[item.id] = ItemStack.new(item, clampi(int(raw_amount), 1, item.max_stack))
+	print("[Inventory] - Inventário carregado do save (%d item(ns))" % _stacks.size())
+	# Sem pedir gravação: carregar não é mudança.
 
 
 # --- Internos ---

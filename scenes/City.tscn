@@ -25,6 +25,9 @@
 [ext_resource type="Script" uid="uid://cvjf5b70p3kvy" path="res://scripts/insights/InsightData.gd" id="17_fp5nc"]
 [ext_resource type="Resource" path="res://resources/insights/city_building3_gutter.tres" id="17_gutter"]
 [ext_resource type="PackedScene" path="res://scenes/world/DayNightCycle.tscn" id="18_daynight"]
+[ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueScreen.tscn" id="18_dialogue_screen"]
+[ext_resource type="PackedScene" path="res://scenes/ui/InventoryUI.tscn" id="18_inventory_ui"]
+[ext_resource type="Script" uid="uid://b5qc4mcppmwpl" path="res://scripts/dialogue/DialogueCamera.gd" id="19_dialogue_camera"]
 [ext_resource type="PackedScene" uid="uid://dalu0ftdftp31" path="res://scenes/world/NightLight.tscn" id="19_nightlight"]
 [ext_resource type="PackedScene" uid="uid://ccctarlfxibdl" path="res://scenes/world/Bed.tscn" id="20_bed"]
 [ext_resource type="PackedScene" uid="uid://bm77g7wpn6avw" path="res://scenes/ui/ActionPrompt.tscn" id="21_prompt"]
@@ -32,9 +35,6 @@
 [ext_resource type="PackedScene" uid="uid://dkf8okr741w41" path="res://scenes/profiling/ProfilingScreen.tscn" id="23_profiling"]
 [ext_resource type="PackedScene" path="res://scenes/profiling/DreamHud.tscn" id="24_dream_hud"]
 [ext_resource type="PackedScene" uid="uid://d1io3majq41f6" path="res://scenes/profiling/WordDiscoveryToast.tscn" id="25_word_toast"]
-[ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueScreen.tscn" id="18_dialogue_screen"]
-[ext_resource type="Script" path="res://scripts/dialogue/DialogueCamera.gd" id="19_dialogue_camera"]
-[ext_resource type="PackedScene" path="res://scenes/ui/InventoryUI.tscn" id="18_inventory_ui"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_jyhfs"]
 texture = ExtResource("2_nldhm")
@@ -109,7 +109,7 @@ dream_color = Color(1, 0.43452293, 0.5070191, 1)
 
 [node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_oxvur")]
 
-[node name="InventoryUI" parent="." instance=ExtResource("18_inventory_ui")]
+[node name="InventoryUI" parent="." unique_id=988204647 instance=ExtResource("18_inventory_ui")]
 
 [node name="Pathfinder" type="Node2D" parent="." unique_id=1145640535]
 script = ExtResource("8_rmeea")
@@ -203,10 +203,9 @@ position = Vector2(1017, -334)
 insights = Array[ExtResource("17_fp5nc")]([ExtResource("15_windows")])
 marker_offset = Vector2(0, -230)
 
-[node name="DialogueCamera" type="Node2D" parent="." groups=["dialogue_camera"]]
+[node name="DialogueCamera" type="Node2D" parent="." unique_id=125099544 groups=["dialogue_camera"]]
 script = ExtResource("19_dialogue_camera")
 follow_mode = 3
-auto_zoom = false
 
 [node name="DialogueScreen" parent="." unique_id=824431202 instance=ExtResource("18_dialogue_screen")]
 

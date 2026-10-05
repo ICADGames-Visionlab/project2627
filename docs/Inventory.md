@@ -92,7 +92,8 @@ hoje), cai em `current_scene` só para evitar crash.
    e `description_key` (chaves de tradução — crie as linhas correspondentes em
    `translations/translations.csv`, ver `docs/localizacao_Godot.md`), `icon`, `max_stack` e
    `destructible`. `description_key` aparece como tooltip do slot na `InventoryUI`.
-3. Salve como `.tres` dentro de `res://items/`.
+3. Salve como `.tres` direto em `res://items/` (não numa subpasta): é ali que o `ItemCatalog` procura o
+   item quando o save o traz de volta. Item fora dessa pasta some do inventário ao continuar a partida.
 4. Para o item aparecer largado no mundo: instancie `scenes/items/ItemPickup.tscn`, preencha `item` e
    `amount` no Inspector. Para o jogador testar sem precisar posicionar nada no mapa, arraste o `.tres`
    para `debug_item_catalog` do nó `Inventory` do `Player` e use o comando de debug (abaixo).
@@ -115,24 +116,43 @@ hoje), cai em `current_scene` só para evitar crash.
 
 ---
 
+## Save
+
+O inventário e os itens no chão entram no save sem nenhum caso especial no `SaveManager` (ver
+`docs/SaveManager.md`, "Quem já participa"):
+
+- **`Inventory`** é o participante de cena `"inventory"`: registra no `_ready()`, sai no `_exit_tree()` e
+  guarda só `{id do item: quantidade}`. Na volta, o `ItemData` sai do `ItemCatalog`
+  (`scripts/items/ItemCatalog.gd`, que varre `res://items/`); item que não existe mais é ignorado e a
+  quantidade é presa em `1..max_stack`. Todo `add_item`, `drop_item` e `destroy_item` que muda algo pede
+  gravação. Como o `Player` nasce de novo em cada cena, é a seção do save que leva o inventário de uma
+  cena para a outra; sem partida ativa (F6), ele recomeça vazio.
+- **Itens no chão** são da `GameSession` (participante `"pickups"`), que acha todo `ItemPickup` pelo grupo
+  `ItemPickup.GROUP`. Por local, ela guarda os itens **postos na cena** que o jogador já pegou (pelo
+  caminho do nó na cena) e os que ele **largou** (id, quantidade e posição). Na volta, os pegos saem da
+  cena e os largados são recriados. Sem isso, salvar o inventário duplicaria item: o jogador pegava,
+  recarregava, e o item estava no chão de novo.
+
+Inventário e chão são gravados no mesmo instante, como retrato da cena: pegar ou largar nunca deixa o
+item nos dois lugares, nem em nenhum.
+
+> **Cuidado ao editar uma cena:** renomear ou mover no editor um `ItemPickup` que pode já ter sido pego
+> num save faz ele reaparecer para esse jogador (o id dele é o caminho do nó). Se isso importa, é um
+> passo de migração no `SaveManager` (checklist "renomeei um id de conteúdo" no `docs/SaveManager.md`).
+
 ## Limitações atuais / como escalar
 
 - **Uma pilha por item.** `add_item` satura em `item.max_stack` (o excedente é descartado silenciosamente
   hoje — não há "inventário cheio" nem overflow para uma segunda pilha). Para suportar múltiplas pilhas
   do mesmo item (ex: itens não empilháveis em quantidade, ou um limite de peso/slots total), `_stacks`
   precisa virar `Dictionary[StringName, Array[ItemStack]]`, e a UI, iterar pilhas em vez de itens.
-- **Sem persistência.** O inventário ainda não é participante do `SaveManager` — reiniciar o jogo o
-  esvazia. Para adicionar, sem mexer no `SaveManager`: serializar `get_stacks()` para `{item_id: amount}`
-  (`to_dict()`/`from_dict()`, com o `int()` na volta do JSON) e registrar a instância de `Inventory`
-  (um nó de cena, não um Singleton) com `SaveManager.register_participant("inventory", ...)` no
-  `_ready()`, saindo com `unregister_participant("inventory")` no `_exit_tree()`. Cada `add_item`,
-  `drop_item` e `destroy_item` bem-sucedido chama `SaveManager.request_save()`. O passo a passo está em
-  `docs/SaveManager.md` ("Como um sistema novo entra no save").
-- **Sem catálogo global de itens.** Cada `ItemData` existe como `.tres` avulso; não há um registro central
-  de "todos os itens do jogo". Se isso for necessário (ex: uma enciclopédia de evidências, ou spawn por
-  id sem arrastar o Resource manualmente), vale um Autoload leve que só indexa os `.tres` de
-  `res://items/` por id — isso SERIA um bom caso de Singleton (dados estáticos, sem estado por
-  personagem), diferente do `Inventory` em si.
+- **Um inventário só no save.** A chave `"inventory"` é constante, então só uma instância pode
+  participar. Se um NPC ganhar um `Inventory`, ele precisa de outra chave (ou de não entrar no save),
+  senão os dois se sobrescrevem.
+- **Catálogo só por id.** O `ItemCatalog` acha um `ItemData` pelo id (é o que o save usa), mas não lista
+  "todos os itens do jogo". Se isso for necessário (ex: uma enciclopédia de evidências), é uma função
+  `static` a mais nele, sobre o mesmo cache. Não precisa de Autoload: são dados estáticos, sem estado
+  por personagem nem por partida. Item novo precisa morar em `res://items/` para o save achá-lo.
 - **Coleta automática por contato.** Não há tecla de "interagir" — hoje o jogador pega tudo que encosta.
   Se algum item não dever ser pego automaticamente (ex: evidência que precisa de uma escolha do
   jogador), o `ItemPickup` precisa de uma segunda forma de coleta (tecla de interação em vez de

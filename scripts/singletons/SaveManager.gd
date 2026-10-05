@@ -25,6 +25,15 @@
 # O guia de uso está em docs/SaveManager.md.
 extends Node
 
+## Espaço para sinais
+
+# Emitido quando uma partida abre (novo jogo ou continuar), depois de TODOS os participantes
+# receberem a sua seção. É para quem não guarda nada no save mas não pode levar estado de uma
+# partida para a outra (o Diary): ele recomeça aqui, já com os fatos da partida nova carregados.
+# Não é evento de bus: é a relação direta e permanente entre o dono da sessão e quem depende dela,
+# que docs/event_bus.md manda resolver com signal direto.
+signal session_opened(slot: int)
+
 ## Espaço para constantes
 
 const SLOT_COUNT: int = 3
@@ -426,7 +435,8 @@ func _migrate_v0_to_v1(sections: Dictionary) -> Dictionary:
 
 
 # Abre a sessão em memória e entrega a seção de cada participante registrado. Um participante que não
-# tem seção recebe {}, que é o novo jogo dele.
+# tem seção recebe {}, que é o novo jogo dele. Só depois avisa session_opened, para quem recomeça ali
+# já encontrar os fatos da partida nova.
 func _open_session(slot: int, sections: Dictionary, from_main: bool) -> void:
 	_active_slot = slot
 	_sections = sections
@@ -441,6 +451,7 @@ func _open_session(slot: int, sections: Dictionary, from_main: bool) -> void:
 			_drop_invalid_participant(key)
 			continue
 		loader.call(get_section(key))
+	session_opened.emit(slot)
 
 
 # Fecha a sessão sem gravar. Zera o pedido pendente junto: o flush já agendado sai sem fazer nada.
