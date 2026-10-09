@@ -88,13 +88,14 @@ Diary.add_page(&"DIARY_MET_NPC_TEXT", &"", [tr(HeadRegistry.get_display_name_key
   `PlaceholderDialogueScreen`).
 - Estado que precisa ser consultado por lógica de jogo (ex: "o jogador já leu isso?", flags que
   abrem porta) — isso é o `InsightJournal`, não este sistema. `Diary` não sabe nada sobre "lido"
-  nem persiste nada por enquanto (ver "Como escalar").
+  nem grava nada no save (ver "Como escalar").
 
 ## Prós e contras de ser um Autoload
 
 **Prós**
 - Qualquer script chama `Diary.add_page(...)` sem precisar de referência nem saber se a UI existe.
 - Sobrevive a trocas de cena — o diário não esvazia ao trocar de tela, igual ao `InsightJournal`.
+  Só recomeça quando uma partida abre (ver "Como escalar", **Persistência**).
 - UI instanciada sob demanda (só na primeira vez que a tecla é apertada): enquanto ninguém abre o
   diário, ele não custa nada além do array de páginas em memória.
 - Tecla funciona em qualquer cena de gameplay sem precisar instanciar `DiaryOverlay.tscn` à mão
@@ -105,15 +106,22 @@ Diary.add_page(&"DIARY_MET_NPC_TEXT", &"", [tr(HeadRegistry.get_display_name_key
   não há deduplicação nem validação de conteúdo hoje.
 - `_overlay` nunca é destruído depois de criado (mesma armadilha documentada no `AudioManager.md`):
   não é um problema sério aqui (é só um punhado de `Label`/`Button`), mas vale saber.
-- Sem persistência: fechar e reabrir o jogo apaga as páginas adicionadas em runtime (ver "Como
-  escalar").
+- Sem persistência: as páginas adicionadas em runtime somem ao abrir uma partida, e fechar e reabrir
+  o jogo também as apaga (ver "Como escalar").
 
 ## Como escalar
 
-- **Persistência:** seguir o mesmo padrão do `InsightJournal` (`to_dict()`/`from_dict()` +
-  `SaveManager.save_game()`/`load_game()`, gravando dentro do slot ativo). Hoje o `Diary` guarda
-  `title_key`/`text_key`/`format_args` por página — dá pra serializar isso direto, sem precisar de
-  `StringName -> String` na volta do JSON pros `format_args` que forem número.
+- **Persistência:** o `Diary` **não** vira participante do `SaveManager`: as páginas são derivadas
+  de fatos que outros donos já guardam, como os insights lidos no
+  `InsightJournal`, então o caminho é reconstruí-las ao carregar. Gravar as páginas criaria duas fontes
+  de verdade para o mesmo fato. O ponto de recomeço já existe: o `Diary` escuta
+  `SaveManager.session_opened`, que chega quando uma partida abre (novo jogo ou continuar) e depois de
+  todos os participantes do save receberem a sua seção. Hoje ele só esvazia e repõe as páginas de
+  exemplo do debug, para as páginas de uma partida não aparecerem na seguinte. Página derivada de fato
+  entra em `_on_session_opened()`, lida do dono do fato, que a essa altura já está carregado. Só uma página sem dono (conteúdo que não vem de fato nenhum) precisaria
+  ser guardada, por quem a cria, com `SaveManager.register_participant()` (ver `docs/SaveManager.md`).
+  Nesse caso, hoje o `Diary` guarda `title_key`/`text_key`/`format_args` por página, e dá pra serializar
+  isso direto; só os `format_args` que forem número pedem o `int()` na volta do JSON.
 - **Categorias/capítulos:** hoje é uma lista única. Pra separar em seções (ex: "Missões",
   "Personagens"), o caminho mais simples é adicionar um campo `category: StringName` em
   `DiaryPage` e a `DiaryOverlay` filtrar por aba, no mesmo espírito da coluna de seções do

@@ -288,7 +288,7 @@ tem desfazer. Use isto como regra de revisão de PR: **a ação destrutiva foi m
 por importância?**
 
 ```gdscript
-DebugMenu.register_action(&"Save", "Resetar save", _reset_save, true)
+DebugMenu.register_action(&"Insights", "Resetar diário", _reset_journal, true)
 ```
 
 - `register_toggle()` **não** recebe este parâmetro de propósito: um interruptor é reversível por definição.
@@ -356,6 +356,33 @@ desatualizada porque é a mesma declaração que o menu usa para desenhar o widg
   `Expression` do Godot avaliada livremente (`> get_tree().paused = true`). **Desligado por padrão**: uma
   expressão não passa pelo registro, então não tem tipo declarado, linha de uso nem confirmação, e não
   aparece no menu. Serve para o caso que ninguém previu, não para ser o jeito normal de usar o console.
+
+---
+
+## Seção "Save"
+
+O `SaveManager` é dono da própria seção, como qualquer ferramenta com estado. O registro é adiado
+(`call_deferred()`) pelo mesmo motivo dos Eventos: ele é o primeiro Autoload, e registrar direto poria
+"Save" antes de "Sistema". Só aparece no editor e em build de debug.
+
+| Entrada | Comando |
+| --- | --- |
+| Estado da sessão | `save.estado_da_sessao` |
+| Listar slots | `save.listar_slots` |
+| Salvar agora | `save.salvar_agora` |
+| Continuar slot | `save.continuar_slot <slot>` |
+| ⚠ Novo jogo no slot | `save.novo_jogo_no_slot <slot>` |
+| ⚠ Apagar slot | `save.apagar_slot <slot>` |
+| Salvar automático (toggle) | `save.salvar_automatico <ligado>` |
+
+- **O toggle "Salvar automático" mora aqui**, e vale para o jogo todo. Os diários (Insights e Profiling)
+  perderam as entradas "Salvar …", "Carregar …" e "Salvar automático": quem grava e carrega agora é o
+  `SaveManager`. "Resetar lidos", "Resetar diário" e "Resetar profiling" continuam nas seções deles e
+  zeram a **partida ativa**.
+- **Rodar a cena por F6 no editor não carrega mais o slot 1**: a cena abre sem partida ativa. Para jogar
+  com progresso, F4 → Save → "Continuar slot" (abre o slot e recarrega a cena).
+
+O que cada entrada faz, e o resto do sistema, está em `docs/SaveManager.md`.
 
 ---
 
