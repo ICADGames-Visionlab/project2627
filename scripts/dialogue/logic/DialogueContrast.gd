@@ -46,3 +46,11 @@ static func worst_case_ratio(text: Color, text_alpha: float, style: DialogueStyl
 	var background: Color = worst_case_background(style, min_panel_alpha)
 	var foreground: Color = blend(Color(text.r, text.g, text.b, text_alpha), background)
 	return ratio(foreground, background)
+
+
+# O pior dos dois estados em que o nome de um falante aparece no log: a fala atual (alfa cheio) e a
+# fala passada (style.past_alpha). É o mesmo par que o "Validar estilo" confere (§9.3) — o resumo
+# do Inspector que olhasse só o primeiro aprovaria uma cor que a validação reprova.
+static func worst_speaker_ratio(color: Color, style: DialogueStyle, min_panel_alpha: float) -> float:
+	return minf(worst_case_ratio(color, 1.0, style, min_panel_alpha),
+		worst_case_ratio(color, style.past_alpha, style, min_panel_alpha))

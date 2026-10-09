@@ -98,8 +98,16 @@ lugar, vazado, e clicar nele mostra o texto de novo, sem emitir `insight_reveale
 
 ## As cabeças
 
-`HeadData` (`scripts/insights/HeadData.gd`), um `.tres` por cabeça em `res://resources/heads/`:
-`id`, `display_name_key` (chave do CSV), `origin` (`PLAYER` ou `NPC`), `npc_id` (o NPC dono da cabeça), `color` e `glyph`.
+`HeadData` (`scripts/insights/HeadData.gd`): `id`, `display_name_key` (chave do CSV), `origin`
+(`PLAYER` ou `NPC`), `color` e `glyph`. Há dois jeitos de uma cabeça existir:
+
+- **Cabeça de NPC do roster**: não tem arquivo. O `InsightCatalog` monta uma por NPC a partir do
+  `NPCDefinition` (`HeadData.from_npc`): mesmo `id`, nome, `color` e a letra `head_glyph` (vazia = a
+  inicial do id). Por isso o orbe da cabeça, o nome no diálogo e o sprite do NPC têm sempre a mesma
+  cor. Para mudar a cor, mude o `NPCDefinition`.
+- **Cabeça em `.tres`** em `res://resources/heads/`: a do jogador e as avulsas, que não são de nenhum NPC
+  do roster (`old_fisherman`). Elas têm cor própria. Um `.tres` com o `id` de um NPC do roster é
+  ignorado, com aviso no log, porque a cabeça daquele NPC é a montada da definição dele.
 
 A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC ficam disponíveis quando o
 profiling do NPC é completado: o `HeadRegistry` pergunta a `ProfilingJournal.is_profile_complete()` e
@@ -108,10 +116,13 @@ o jogador. A ação de debug "Desbloquear cabeça" destrava uma cabeça sem comp
 
 ### Elenco atual
 
-| id | Nome | Cor | Glifo |
-| --- | --- | --- | --- |
-| `player` | `HEAD_PLAYER_NAME` | `#5B9EFF` azul | `P` |
-| `old_fisherman` | `HEAD_OLD_FISHERMAN_NAME` | `#FF9B42` laranja | `F` |
+| id | Origem | Nome | Cor | Glifo |
+| --- | --- | --- | --- | --- |
+| `player` | `.tres` | `HEAD_PLAYER_NAME` | `#5B9EFF` azul | `P` |
+| `old_fisherman` | `.tres` (avulsa) | `HEAD_OLD_FISHERMAN_NAME` | `#FF9B42` laranja | `F` |
+| `ze` | NPC | `NPC_NAME_ZE` | `#87BDFF` azul-claro | `Z` |
+| `ana` | NPC | `NPC_NAME_ANA` | `#FFB380` pêssego | `A` |
+| `policial` | NPC | `NPC_NAME_POLICIAL` | `#998CFF` lilás | `P` |
 
 ### A paleta reservada
 
