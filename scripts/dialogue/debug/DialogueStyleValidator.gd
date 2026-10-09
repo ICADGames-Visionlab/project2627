@@ -36,14 +36,18 @@ static func run(style: DialogueStyle) -> Array[Result]:
 		"option_hover_text_color sobre option_chosen_color")
 
 	var roster: NPCRoster = load(DialogueCatalog.NPC_ROSTER_PATH)
+	var npc_ids: Dictionary = {}
 	if roster != null:
 		for definition: NPCDefinition in roster.npcs:
 			if definition != null:
+				npc_ids[definition.id] = true
 				_check_with_past(results, style, definition.color, "%s.color" % definition.id)
 
 	for head: HeadData in HeadRegistry.get_all_heads():
-		# A cabeça de um NPC tem a cor dele, já conferida no laço de cima.
-		if head.origin == HeadData.Origin.NPC:
+		# A cabeça de um NPC do roster tem a cor dele, já conferida no laço de cima. O filtro é pelo
+		# roster, e não por origin: uma cabeça avulsa (.tres com origin NPC, como old_fisherman) tem
+		# cor própria e também aparece no diálogo.
+		if npc_ids.has(head.id):
 			continue
 		_check_with_past(results, style, head.color, "head:%s.color" % head.id)
 

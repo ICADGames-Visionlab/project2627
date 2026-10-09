@@ -105,7 +105,7 @@ Um NPC conversa quando `NPCDefinition.conversation_id` não está vazio. O `Play
 
 Tudo destrava quando `conversation_ended` chega. A `DialogueScreen` emite `conversation_started` e `conversation_ended`; o `NPCDirector`, o `Player`, o `InsightInteractor` e a `DialogueCamera` ouvem `conversation_ended`, e os três primeiros também ouvem `conversation_approach_started`.
 
-O `NPCDefinition` também avisa no Inspector (`collect_issues()`) quando `dialogue_color` não passa no contraste mínimo contra o fundo da coluna de diálogo.
+O `NPCDefinition` também avisa no Inspector (`collect_issues()`) quando a `color` do NPC não passa no contraste mínimo contra o fundo da coluna de diálogo, contando a fala atual e a fala passada (a mesma conta do "Validar estilo"), ou quando ela é igual à cor do nome do jogador.
 
 ### Dois NPCs na mesma conversa
 
