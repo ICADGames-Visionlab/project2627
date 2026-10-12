@@ -15,8 +15,13 @@ signal dialogue_preferences_changed
 ## Espaço para variáveis
 
 # Esquemas de movimentação que o jogador pode escolher nas configurações. A ordem importa: é a
-# mesma em que as opções aparecem no OptionButton da tela de Settings.
-enum MovementScheme { KEYBOARD, CLICK }
+# mesma em que as opções aparecem no OptionButton da tela de Settings, e o número de cada um é o que
+# vai para o arquivo de configurações (por isso um esquema novo entra sempre no fim).
+#   KEYBOARD  só WASD/setas/analógico.
+#   CLICK     só point and click.
+#   BOTH      os dois ao mesmo tempo: o teclado assume enquanto alguma direção estiver apertada, e o
+#             clique vale no resto do tempo (ver Player._get_movement_direction).
+enum MovementScheme { KEYBOARD, CLICK, BOTH }
 
 # Modo de revelação do texto de diálogo (SPEC §14): instantâneo mostra a fala inteira de uma vez;
 # progressivo é o typewriter (DialogueScreen._await_entry_then_continue).
@@ -78,6 +83,17 @@ func _ready() -> void:
 
 
 ## Espaço para funções personalizadas
+
+# Diz se o esquema ativo aceita o teclado (WASD/setas/analógico). Ponto único para essa pergunta,
+# para quem lê o esquema não precisar listar à mão quais esquemas incluem o teclado.
+func is_keyboard_movement_enabled() -> bool:
+	return movement_scheme == MovementScheme.KEYBOARD or movement_scheme == MovementScheme.BOTH
+
+
+# Diz se o esquema ativo aceita o point and click. Ver is_keyboard_movement_enabled().
+func is_click_movement_enabled() -> bool:
+	return movement_scheme == MovementScheme.CLICK or movement_scheme == MovementScheme.BOTH
+
 
 # Troca o esquema de movimentação e persiste a escolha. Usar sempre este método (nunca a
 # variável movement_scheme direto) quando a troca vier do jogador.

@@ -161,6 +161,7 @@ func _populate_movement_options() -> void:
 	movement_option.clear()
 	movement_option.add_item(tr("MENU_MOVEMENT_KEYBOARD"), 0) # índice 0 = MovementScheme.KEYBOARD
 	movement_option.add_item(tr("MENU_MOVEMENT_CLICK"), 1)    # índice 1 = MovementScheme.CLICK
+	movement_option.add_item(tr("MENU_MOVEMENT_BOTH"), 2)     # índice 2 = MovementScheme.BOTH
 	movement_option.selected = selected if selected != -1 else int(GameManager.movement_scheme)
 
 # Repassa o esquema escolhido pro GameManager, que aplica e persiste a escolha

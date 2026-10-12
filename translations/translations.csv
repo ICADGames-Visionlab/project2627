@@ -9,6 +9,7 @@ MENU_LANG_PT_BR,Português (Brasil),Português (Brasil)
 MENU_MOVEMENT,Movement,Movimentação
 MENU_MOVEMENT_KEYBOARD,Keyboard (WASD),Teclado (WASD)
 MENU_MOVEMENT_CLICK,Mouse click,Clique do mouse
+MENU_MOVEMENT_BOTH,Keyboard + mouse click,Teclado + clique do mouse
 MENU_PAUSED,Paused,Pausado
 MENU_RESUME,Resume,Continuar
 MENU_MAIN_MENU,Main Menu,Menu Principal
