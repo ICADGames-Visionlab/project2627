@@ -15,6 +15,10 @@
 # GUIDELINE_PROGRAMACAO.md, "Strings e Localização"). Quem chama add_page() passa a chave do CSV, e
 # a DiaryOverlay resolve com tr() só na hora de desenhar.
 #
+# EVIDÊNCIAS: a evidência que o jogador fecha no EvidenceViewer vira página aqui (add_evidence). O
+# Diary é o dono desse fato ("o jogador já leu esta evidência") e é o único pedaço dele que vai para o
+# save (seção "evidences", só os ids). As páginas em si nunca são gravadas: refazem-se dos ids.
+#
 # NÃO CONFUNDIR COM O InsightJournal: aquele autoload é apelidado de "diário" só nos comentários
 # internos dele (scripts/singletons/InsightJournal.gd) e cuida de outra coisa — quais insights o
 # jogador já leu, sem UI própria. Este Diary é a peça de UI navegável (livro com páginas) pedida na
@@ -62,6 +66,11 @@ const OVERLAY_SCENE_PATH: String = "res://scenes/ui/DiaryOverlay.tscn"
 
 const DEBUG_SECTION: StringName = &"Diário"
 
+# Chave da seção no save. É contrato do arquivo: renomear pede um passo de migração no SaveManager.
+const SAVE_KEY: String = "evidences"
+# Campo da seção: ids das evidências lidas (ItemData.id), na ordem em que entraram no diário.
+const EVIDENCE_IDS_KEY: String = "ids"
+
 # Se abrir o diário também pausa a árvore (get_tree().paused). Ligado por padrão: ler o diário
 # enquanto o mundo continua se movendo atrás normalmente não é o efeito desejado. É @export (e não
 # uma const) porque é uma decisão de design que faz sentido revisitar por build/protótipo — ver
@@ -77,9 +86,14 @@ var _paused_by_diary: bool = false
 
 var _overlay: DiaryOverlay = null
 
+# Evidências que já viraram página, na ordem em que entraram. É o que vai para o save.
+var _evidence_ids: Array[StringName] = []
+
 
 func _ready() -> void:
 	SaveManager.session_opened.connect(_on_session_opened)
+	# Sem partida ativa no boot, isto só registra: quem entrega a seção salva é o continue_game.
+	SaveManager.register_participant(SAVE_KEY, to_dict, from_dict)
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Diário": ver docs/diary.md.
 		DebugMenu.register_action(DEBUG_SECTION, "Abrir/fechar diário", toggle_diary)
@@ -108,6 +122,17 @@ func add_page(text_key: StringName, title_key: StringName = &"", format_args: Ar
 	print("[Diary] - Página \"%s\" adicionada (índice %d)" % [text_key, index])
 	pages_changed.emit()
 	return index
+
+
+# Põe uma evidência no diário: título = nome dela, texto = o que está escrito nela. Chamado pelo
+# EvidenceViewer quando o jogador fecha a evidência. Abrir a mesma evidência de novo (ela continua no
+# mundo) não cria página repetida.
+func add_evidence(item: ItemData) -> void:
+	if item == null or _evidence_ids.has(item.id):
+		return
+	_evidence_ids.append(item.id)
+	_add_evidence_page(item)
+	SaveManager.request_save()
 
 
 # Insere uma página numa posição específica, empurrando as seguintes. Existe pro dia em que o
@@ -236,17 +261,49 @@ func close_diary() -> void:
 	print("[Diary] - Diário fechado")
 
 
+# --- Save ---
+
+# Seção "evidences" do save: só os ids, como String (é o que sobrevive ao JSON).
+func to_dict() -> Dictionary:
+	var ids: Array[String] = []
+	for item_id: StringName in _evidence_ids:
+		ids.append(String(item_id))
+	return { EVIDENCE_IDS_KEY: ids }
+
+
+# Recebe a seção "evidences". {} é o novo jogo: nenhuma evidência lida. Não mexe nas páginas: quem as
+# refaz é _on_session_opened, que chega depois de todas as seções entregues.
+func from_dict(data: Dictionary) -> void:
+	_evidence_ids.clear()
+	var saved: Variant = data.get(EVIDENCE_IDS_KEY, [])
+	if saved is Array:
+		for raw_id: Variant in saved:
+			_evidence_ids.append(StringName(str(raw_id)))
+	print("[Diary] - Evidências carregadas do save (%d)" % _evidence_ids.size())
+	# Sem pedir gravação: carregar não é mudança.
+
+
 # --- Partida ---
 
-# Toda partida aberta (novo jogo ou continuar) começa com o diário do boot. As páginas não vão para o
-# save: elas derivam de fatos que outros donos já guardam (ver docs/diary.md, "Persistência"). Sem
-# isto, as páginas de uma partida apareceriam na seguinte. Quando houver página derivada de fato
-# (insight lido, por exemplo), é aqui que ela se refaz a partir do dono do fato, que a esta altura
-# já recebeu a seção dele.
+# Toda partida aberta (novo jogo ou continuar) começa com o diário do boot mais as evidências que ela
+# já tinha. As páginas não vão para o save: elas derivam de fatos (ver docs/diary.md, "Persistência"),
+# e é aqui que se refazem, depois de from_dict já ter recebido os ids. Sem isto, as páginas de uma
+# partida apareceriam na seguinte. Evidência que o ItemCatalog não acha mais (removida ou renomeada)
+# fica de fora, sem erro.
 func _on_session_opened(slot: int) -> void:
 	clear()
 	_add_placeholder_pages()
+	for item_id: StringName in _evidence_ids:
+		var item: ItemData = ItemCatalog.find_item(item_id)
+		if item == null:
+			print("[Diary] - Evidência salva \"%s\" não existe mais; ignorada" % item_id)
+			continue
+		_add_evidence_page(item)
 	print("[Diary] - Diário recomeçado para a partida do slot %d" % slot)
+
+
+func _add_evidence_page(item: ItemData) -> void:
+	add_page(item.description_key, item.display_name_key)
 
 
 # --- Debug ---

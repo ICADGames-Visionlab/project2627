@@ -41,6 +41,7 @@ a referência global (mesma regra do AudioManager, ver `docs/AudioManager.md`).
 | `add_page(text_key, title_key = "", format_args = []) -> int` | Adiciona uma página ao final e devolve o índice dela. Não muda a página que o jogador está lendo. |
 | `insert_page(index, text_key, title_key = "", format_args = [])` | Insere numa posição específica, empurrando as seguintes. |
 | `remove_page(index)` | Remove a página do índice (silencioso se o índice for inválido). |
+| `add_evidence(item: ItemData)` | Põe uma evidência no diário (título = nome, texto = o que está escrito nela). Chamado pelo `EvidenceViewer` ao fechar; a mesma evidência não entra duas vezes. Vai para o save. |
 | `clear()` | Esvazia o diário inteiro. |
 | `get_page_count() -> int` | Número de páginas atuais. |
 | `get_page(index) -> Diary.DiaryPage` | Devolve a página (ou `null` se o índice for inválido). |
@@ -106,22 +107,20 @@ Diary.add_page(&"DIARY_MET_NPC_TEXT", &"", [tr(HeadRegistry.get_display_name_key
   não há deduplicação nem validação de conteúdo hoje.
 - `_overlay` nunca é destruído depois de criado (mesma armadilha documentada no `AudioManager.md`):
   não é um problema sério aqui (é só um punhado de `Label`/`Button`), mas vale saber.
-- Sem persistência: as páginas adicionadas em runtime somem ao abrir uma partida, e fechar e reabrir
-  o jogo também as apaga (ver "Como escalar").
+- Só as evidências persistem: as outras páginas adicionadas em runtime somem ao abrir uma partida, e
+  fechar e reabrir o jogo também as apaga (ver "Como escalar").
 
 ## Como escalar
 
-- **Persistência:** o `Diary` **não** vira participante do `SaveManager`: as páginas são derivadas
-  de fatos que outros donos já guardam, como os insights lidos no
-  `InsightJournal`, então o caminho é reconstruí-las ao carregar. Gravar as páginas criaria duas fontes
-  de verdade para o mesmo fato. O ponto de recomeço já existe: o `Diary` escuta
+- **Persistência:** as **páginas** nunca vão para o save: elas derivam de fatos, e gravar as duas
+  coisas criaria duas fontes de verdade. O único fato que o próprio `Diary` guarda é "o jogador já
+  fechou esta evidência" (seção `evidences`, só os ids, ver `docs/evidencias.md`): ele é o dono desse
+  fato porque a evidência fica no mundo e não tem outro lugar onde morar. O ponto de recomeço é
   `SaveManager.session_opened`, que chega quando uma partida abre (novo jogo ou continuar) e depois de
-  todos os participantes do save receberem a sua seção. Hoje ele só esvazia e repõe as páginas de
-  exemplo do debug, para as páginas de uma partida não aparecerem na seguinte. Página derivada de fato
-  entra em `_on_session_opened()`, lida do dono do fato, que a essa altura já está carregado. Só uma página sem dono (conteúdo que não vem de fato nenhum) precisaria
-  ser guardada, por quem a cria, com `SaveManager.register_participant()` (ver `docs/SaveManager.md`).
-  Nesse caso, hoje o `Diary` guarda `title_key`/`text_key`/`format_args` por página, e dá pra serializar
-  isso direto; só os `format_args` que forem número pedem o `int()` na volta do JSON.
+  todos os participantes do save receberem a sua seção: ali o `Diary` esvazia, repõe as páginas de
+  exemplo do debug e refaz uma página por evidência salva. Página derivada de outro fato (insight lido,
+  por exemplo) entra no mesmo `_on_session_opened()`, lida do dono do fato, que a essa altura já está
+  carregado.
 - **Categorias/capítulos:** hoje é uma lista única. Pra separar em seções (ex: "Missões",
   "Personagens"), o caminho mais simples é adicionar um campo `category: StringName` em
   `DiaryPage` e a `DiaryOverlay` filtrar por aba, no mesmo espírito da coluna de seções do

@@ -26,7 +26,6 @@
 [ext_resource type="Resource" path="res://resources/insights/city_building3_gutter.tres" id="17_gutter"]
 [ext_resource type="PackedScene" path="res://scenes/world/DayNightCycle.tscn" id="18_daynight"]
 [ext_resource type="PackedScene" path="res://scenes/dialogue/DialogueScreen.tscn" id="18_dialogue_screen"]
-[ext_resource type="PackedScene" path="res://scenes/ui/InventoryUI.tscn" id="18_inventory_ui"]
 [ext_resource type="Script" uid="uid://b5qc4mcppmwpl" path="res://scripts/dialogue/DialogueCamera.gd" id="19_dialogue_camera"]
 [ext_resource type="PackedScene" uid="uid://dalu0ftdftp31" path="res://scenes/world/NightLight.tscn" id="19_nightlight"]
 [ext_resource type="PackedScene" uid="uid://ccctarlfxibdl" path="res://scenes/world/Bed.tscn" id="20_bed"]
@@ -133,8 +132,6 @@ outcome = 1
 conversation_id = &"city_cardboard_box"
 
 [node name="PauseMenu" parent="." unique_id=1659107943 instance=ExtResource("7_oxvur")]
-
-[node name="InventoryUI" parent="." unique_id=2030378045 instance=ExtResource("18_inventory_ui")]
 
 [node name="Pathfinder" type="Node2D" parent="." unique_id=1145640535]
 script = ExtResource("8_rmeea")

@@ -1,0 +1,96 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/EvidenceViewer.gd" id="1_viewer"]
+[ext_resource type="Script" path="res://scripts/profiling/ClickableWordText.gd" id="2_clickable"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.93, 0.9, 0.82, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45, 0.38, 0.28, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="EvidenceViewer" type="CanvasLayer"]
+layer = 45
+script = ExtResource("1_viewer")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.75)
+
+[node name="Card" type="PanelContainer" parent="Root"]
+layout_mode = 0
+mouse_filter = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Margin" type="MarginContainer" parent="Root/Card"]
+layout_mode = 2
+mouse_filter = 1
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+
+[node name="Layout" type="VBoxContainer" parent="Root/Card/Margin"]
+layout_mode = 2
+mouse_filter = 1
+theme_override_constants/separation = 24
+
+[node name="Image" type="TextureRect" parent="Root/Card/Margin/Layout"]
+unique_name_in_owner = true
+texture_filter = 1
+custom_minimum_size = Vector2(560, 400)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Text" type="RichTextLabel" parent="Root/Card/Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(560, 0)
+layout_mode = 2
+mouse_filter = 1
+theme_override_colors/default_color = Color(0.12, 0.1, 0.08, 1)
+theme_override_font_sizes/normal_font_size = 30
+theme_override_font_sizes/bold_font_size = 30
+theme_override_font_sizes/italics_font_size = 30
+scroll_active = false
+script = ExtResource("2_clickable")
+clickable_color = Color(0.93, 0.11, 0.14, 1)
+discovered_color = Color(0.45, 0.42, 0.4, 1)
+
+[node name="CloseButton" type="Button" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -96.0
+offset_right = 120.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 28
+text = "EVIDENCE_CLOSE"

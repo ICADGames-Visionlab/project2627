@@ -19,14 +19,7 @@ MENU_CONTINUE,Continue,Continuar
 DYNAMIC_EXAMPLE,%s testes!,testes %s!
 PLACEHOLDER_CITY_GROUND,Placeholder - City ground (final art pending),Placeholder - Chão da cidade (arte final pendente)
 PLACEHOLDER_CITY_BUILDING,Placeholder - Building (final art pending),Placeholder - Prédio (arte final pendente)
-INVENTORY_TITLE,Evidence,Evidências
-INVENTORY_EMPTY,No evidence collected yet.,Nenhuma evidência coletada ainda.
-INVENTORY_DROP,Drop,Largar
-INVENTORY_DESTROY,Destroy,Destruir
-INVENTORY_CLOSE,Close,Fechar
-INVENTORY_SLOT_LABEL,{name} x{amount},{name} ({amount})
-EVIDENCE_EXAMPLE_NAME,Mysterious Note,Bilhete Misterioso
-EVIDENCE_EXAMPLE_DESC,A crumpled note found at the scene. Its content is still unclear.,Um bilhete amassado encontrado na cena. Seu conteúdo ainda não está claro.
+EVIDENCE_CLOSE,Close,Fechar
 TIME_FORMAT,%02d:%02d,%02d:%02d
 DAY_LABEL,Day %d,Dia %d
 WEEKDAY_MON,Monday,Segunda
@@ -221,7 +214,7 @@ PAUSE_SAVE_AND_QUIT,Save and quit to menu,Salvar e sair para o menu
 LOCATION_CITY,City,Cidade
 PLACEHOLDER_INTERACTABLE_PROPS,Placeholder - Interactable objects reuse Isometric City props (final art pending),Placeholder - Objetos interagíveis reaproveitam props do Isometric City (arte final pendente)
 PLACEHOLDER_EVIDENCE_TORN_NOTE_NAME,Placeholder - Torn note,Placeholder - Bilhete rasgado
-PLACEHOLDER_EVIDENCE_TORN_NOTE_DESC,"Placeholder - Half a note, still wet. The handwriting is shaky.","Placeholder - Jogue Aiocá."
+PLACEHOLDER_EVIDENCE_TORN_NOTE_DESC,"Placeholder - Half a note, still wet. Signed by [MARCOS] [CASTRO], something about a [FACA].","Placeholder - Metade de um bilhete, ainda molhado. Assinado por [MARCOS] [CASTRO], algo sobre uma [FACA]."
 PLACEHOLDER_INSIGHT_CITY_MAILBOX,"Placeholder - The mailbox is stuffed full, but the slot was taped shut from the inside.","Placeholder - A caixa de correio está entupida, sobrou nada para o beta, B R U T A L."
 PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_01,Placeholder - An open cardboard box. Someone left in a hurry.,Placeholder - Uma caixa de papelão aberta. Alguém saiu com pressa.
 PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_02,Placeholder - Should I look inside?,Placeholder - Será que eu olho dentro?
