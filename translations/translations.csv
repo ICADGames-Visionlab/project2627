@@ -4,6 +4,11 @@ MENU_EXIT,Exit,Sair
 MENU_LANGUAGE,Languages,Línguas
 MENU_FULLSCREEN,Fullscreen,Tela Cheia
 MENU_WINDOWED,Windowed,Janela
+MENU_BORDERLESS,Borderless fullscreen,Tela cheia sem borda
+MENU_WINDOW_MODE,Window mode,Modo de janela
+MENU_RESOLUTION,Resolution (windowed),Resolução (janela)
+MENU_ASPECT_RATIO,Aspect ratio,Proporção da tela
+MENU_ASPECT_AUTO,Automatic,Automática
 MENU_LANG_EN,English,English
 MENU_LANG_PT_BR,Português (Brasil),Português (Brasil)
 MENU_MOVEMENT,Movement,Movimentação
