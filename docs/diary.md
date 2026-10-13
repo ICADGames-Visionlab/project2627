@@ -30,7 +30,13 @@ a referência global (mesma regra do AudioManager, ver `docs/AudioManager.md`).
   sem precisar instanciar nada à mão.
 - Com o diário aberto: as teclas de movimento **esquerda/direita** (ou o D-pad/analógico
   correspondente) folheiam as páginas; não voltam ao início ao passar da última nem da primeira.
-- **Esc** fecha o diário (mesmo padrão do menu de pausa e da tela de diálogo).
+- **Esc** (ou **B** no controle) também fecha o diário (mesmo padrão do menu de pausa e da tela de
+  diálogo).
+- O fechar pelo J/Y mora no `DiaryOverlay`, e não no `Diary`: abrir o diário pausa a árvore, e o
+  Autoload `Diary`, pausável, para de receber a tecla. Antes da issue #55 o mesmo botão que abria não
+  fechava.
+- As páginas podem citar ações com `{acao}` (ex.: `{diary_toggle}`), que viram a tecla ou o botão do
+  dispositivo em uso — ver [docs/suporte_a_controle.md](suporte_a_controle.md).
 - Por padrão, abrir o diário pausa o jogo (`Diary.pause_game_on_open`) — ver "Como escalar" para
   desligar isso.
 

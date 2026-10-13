@@ -8,6 +8,10 @@
 # _input_event (do picking de física) roda antes do _unhandled_input do Player, então clicar no NPC
 # não faz o personagem sair andando até ele — o mesmo problema que o InsightInteractor resolve para
 # os orbes.
+#
+# NO TECLADO/CONTROLE: o NPC entra no foco do InsightInteractor (o anel que segue o alvo mais perto,
+# acionado pelo A ou pelo E) cumprindo o contrato de FocusTargets — ver os métodos da seção "Foco de
+# teclado/controle" lá embaixo. Acionar pelo foco é exatamente o mesmo que clicar.
 class_name NPCInteraction
 extends Area2D
 
@@ -18,35 +22,99 @@ extends Area2D
 # rodando juntas. Só uma abordagem por vez, em qualquer NPC.
 static var _approach_in_progress: bool = false
 
+# O contorno branco acende por dois motivos independentes: o mouse em cima (hover) ou o foco de
+# teclado/controle. Guardados separados porque cada um apaga por um caminho diferente.
+var _is_hovered: bool = false
+var _is_focused: bool = false
+# No modo teclado/controle o hover do mouse não conta (ver set_mouse_hover_suppressed).
+var _is_hover_suppressed: bool = false
+
 @onready var _npc: NPC = get_parent()
+@onready var _shape: CollisionShape2D = $Shape
 
 
 func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+	add_to_group(FocusTargets.GROUP)
 
 
 # Contorno de hover (SPEC §11.4): só acende para NPC com conversa disponível, senão o jogador
 # passaria o mouse por cima e a cidade inteira pareceria clicável.
 func _on_mouse_entered() -> void:
-	var definition: NPCDefinition = _npc.definition
-	if definition != null and definition.conversation_id != &"":
-		_npc.set_hover_outline(true)
+	if _is_hover_suppressed:
+		return
+	_is_hovered = _has_conversation()
+	_refresh_outline()
 
 
 func _on_mouse_exited() -> void:
-	_npc.set_hover_outline(false)
+	_is_hovered = false
+	_refresh_outline()
 
 
 func _input_event(viewport: Viewport, event: InputEvent, _shape_idx: int) -> void:
 	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 	if mouse_button == null or not mouse_button.pressed or mouse_button.button_index != MOUSE_BUTTON_LEFT:
 		return
-	var definition: NPCDefinition = _npc.definition
-	if definition == null or definition.conversation_id == &"" or _approach_in_progress:
+	if not can_be_focused():
 		return
 	viewport.set_input_as_handled()
-	_start_conversation(definition)
+	_start_conversation(_npc.definition)
+
+
+# --- Foco de teclado/controle (contrato de FocusTargets) ---
+
+# Posição do NPC no mundo: é dela que o foco mede "mais perto do jogador".
+func get_focus_world_position() -> Vector2:
+	return _npc.global_position
+
+
+# A área de clique do NPC na tela. O foco só oferece NPC que aparece na tela, como o mouse.
+func get_focus_screen_rect() -> Rect2:
+	var rectangle: RectangleShape2D = _shape.shape as RectangleShape2D
+	if rectangle == null:
+		return Rect2(get_global_transform_with_canvas().origin, Vector2.ZERO)
+	return _shape.get_global_transform_with_canvas() * Rect2(-rectangle.size * 0.5, rectangle.size)
+
+
+# A mesma regra do clique: NPC com conversa, nenhuma abordagem em andamento, e na tela.
+func can_be_focused() -> bool:
+	return _has_conversation() and not _approach_in_progress and is_visible_in_tree()
+
+
+# Acende/apaga o contorno do foco. Quem decide qual alvo tem o foco é o InsightInteractor.
+func set_focused(focused: bool) -> void:
+	_is_focused = focused
+	_refresh_outline()
+
+
+# O mesmo que o clique: trava o jogador, aproxima e abre a conversa.
+func activate_focus(_player: Player) -> void:
+	if not can_be_focused():
+		return
+	print("[Dialogue] - NPC \"%s\" acionado pelo teclado/controle" % _npc.definition.id)
+	_start_conversation(_npc.definition)
+
+
+# Liga/desliga o hover do mouse. Ligado o modo teclado/controle, um NPC que estava sob o cursor parado
+# apaga, para o foco ser o único destaque.
+func set_mouse_hover_suppressed(suppressed: bool) -> void:
+	_is_hover_suppressed = suppressed
+	if suppressed:
+		_is_hovered = false
+	_refresh_outline()
+
+
+# Diz se este NPC tem conversa (sem ela não há o que clicar nem focar).
+func _has_conversation() -> bool:
+	var definition: NPCDefinition = _npc.definition
+	return definition != null and definition.conversation_id != &""
+
+
+# O contorno aceso é o OU do hover com o foco.
+func _refresh_outline() -> void:
+	_npc.set_hover_outline(_is_hovered or _is_focused)
 
 
 # Trava o jogador (via conversation_approach_started), anda até perto do NPC, aproxima a câmera de

@@ -108,6 +108,10 @@ hoje), cai em `current_scene` só para evitar crash.
 - **Tecla I**: abre/fecha o painel "Evidências". Cada slot tem os botões **Largar** e **Destruir** (o
   botão Destruir some para itens com `destructible = false`), e mostra a descrição do item como tooltip
   ao passar o mouse.
+- **No controle**: **Back** abre/fecha, o foco cai no primeiro botão do primeiro slot (ou no **Fechar**
+  com o painel vazio), o D-pad anda entre os botões e o **B** fecha. Quem cuida disso é o nó
+  `MenuFocus` da cena; como a lista se refaz a cada mudança, o `InventoryUI` troca o `Initial Focus`
+  depois de refazer e devolve o foco quando ele se perdeu com a lista antiga (ver [docs/suporte_a_controle.md](suporte_a_controle.md)).
 - **No mundo**: encostar num `ItemPickup` coleta automaticamente (via `Area2D.body_entered`, igual ao
   detector de jogador que `Structure.gd` já usa). Durante os `pickup_delay` segundos após ser largado
   (padrão 0.5s — ajustável no Inspector do `ItemPickup`), o mesmo corpo que largou o item não consegue

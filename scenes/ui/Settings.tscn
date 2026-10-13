@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://rmyf01pn70ie"]
 
 [ext_resource type="Script" uid="uid://h4m8wx6ocg2h" path="res://scripts/settings/Settings.gd" id="1_o2bc3"]
+[ext_resource type="Script" uid="uid://dbevk37m0k5ea" path="res://scripts/ui/MenuFocus.gd" id="90_menu_focus"]
 
 [node name="Settings" type="Control" unique_id=1754711566]
 custom_minimum_size = Vector2(1, 0)
@@ -161,3 +162,7 @@ offset_right = 154.02362
 offset_bottom = -25.0
 grow_vertical = 0
 text = "MENU_EXIT"
+
+[node name="MenuFocus" type="Node" parent="." node_paths=PackedStringArray("cancel_button")]
+script = ExtResource("90_menu_focus")
+cancel_button = NodePath("../Sair")

@@ -413,6 +413,7 @@ Revisar antes de iniciar uma tarefa ou abrir um PR:
 - [ ] Toda função não nativa com comentário de finalidade/motivação (em português).
 - [ ] Código em inglês, comentários em português.
 - [ ] Nomenclatura e organização de scripts respeitadas.
+- [ ] Mexeu em ação de input, texto que cita tecla, menu ou coisa interagível? Seguir o checklist de `docs/suporte_a_controle.md` e rodar o autoteste do controle.
 
 ---
 

@@ -126,6 +126,10 @@ func _ready() -> void:
 	_search_field.text_changed.connect(_on_search_text_changed)
 	_search_field.hide()
 	_apply_filter_buttons()
+	# Os filtros não aceitam foco na cena (o clique do mouse deixaria o contorno de foco neles), mas
+	# o controle precisa chegar neles pelo D-pad. A lupa fica de fora: pesquisar é digitar.
+	EventBus.input_device_changed.connect(_on_input_device_changed)
+	_apply_filter_focus_mode()
 
 
 # Só roda com um filtro selecionado: é o pulso lento na escala dele.
@@ -156,6 +160,21 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 
 ## Espaço para funções personalizadas
 
+# Põe o foco do controle no chip de uma palavra. Devolve se achou o chip.
+func focus_word(word_id: StringName) -> bool:
+	for chip: GlossaryWordChip in _live_chips():
+		if chip.word != null and chip.word.id == word_id and MenuFocus.can_take_focus(chip):
+			chip.grab_focus()
+			return true
+	return false
+
+
+# A primeira palavra da lista (o foco de entrada da tela de história), ou null com a lista vazia.
+func get_first_chip() -> Control:
+	var chips: Array[GlossaryWordChip] = _live_chips()
+	return chips[0] if not chips.is_empty() else null
+
+
 # Aponta o painel para o glossário de um NPC. story pode ser null: é assim que o diário vai usar
 # este painel, sem página nenhuma aberta.
 func configure(npc_id: StringName, story: ProfilingStory = null) -> void:
@@ -170,6 +189,12 @@ func configure(npc_id: StringName, story: ProfilingStory = null) -> void:
 func refresh() -> void:
 	if _words_container == null:
 		return
+
+	# A lista é refeita do zero, e o chip que tinha o foco do controle vai embora junto. Guardar a
+	# palavra (e a posição, pra quando ela sumir da lista por um filtro) é o que devolve o foco ao
+	# mesmo lugar depois — sem isto, cada palavra posta numa lacuna deixava o controle sem cursor.
+	var focused_word: StringName = _focused_word_id()
+	var focused_position: int = _focused_chip_position()
 
 	for child: Node in _words_container.get_children():
 		child.queue_free()
@@ -191,6 +216,9 @@ func refresh() -> void:
 			chip.word_activated.connect(_on_chip_word_activated)
 			chip.mark_menu_requested.connect(_on_chip_mark_menu_requested)
 			chip.word_returned.connect(_on_chip_word_returned)
+
+	if focused_word != &"" and not focus_word(focused_word):
+		_focus_chip_at(focused_position)
 
 	# A contagem é do POOL, não da lista filtrada: o jogador quer saber quanto falta descobrir, e
 	# não quantas palavras o filtro dele deixou passar.
@@ -335,6 +363,55 @@ func _on_chip_word_activated(word_id: StringName) -> void:
 
 func _on_chip_mark_menu_requested(word_id: StringName, chip_rect: Rect2) -> void:
 	mark_menu_requested.emit(word_id, chip_rect)
+
+
+# Os chips da lista atual, sem os da lista antiga que ainda esperam o fim do quadro pra sair.
+func _live_chips() -> Array[GlossaryWordChip]:
+	var chips: Array[GlossaryWordChip] = []
+	for child: Node in _words_container.get_children():
+		var chip: GlossaryWordChip = child as GlossaryWordChip
+		if chip != null and not chip.is_queued_for_deletion():
+			chips.append(chip)
+	return chips
+
+
+# Foca o chip na posição (limitada ao tamanho da lista). Devolve se focou algum.
+func _focus_chip_at(chip_position: int) -> bool:
+	var chips: Array[GlossaryWordChip] = _live_chips()
+	if chips.is_empty() or chip_position < 0:
+		return false
+	var chip: GlossaryWordChip = chips[mini(chip_position, chips.size() - 1)]
+	if not MenuFocus.can_take_focus(chip):
+		return false
+	chip.grab_focus()
+	return true
+
+
+# A palavra do chip com o foco agora, ou vazio.
+func _focused_word_id() -> StringName:
+	var chip: GlossaryWordChip = get_viewport().gui_get_focus_owner() as GlossaryWordChip
+	if chip == null or not _words_container.is_ancestor_of(chip) or chip.word == null:
+		return &""
+	return chip.word.id
+
+
+# A posição, na lista, do chip com o foco agora, ou -1.
+func _focused_chip_position() -> int:
+	var chip: GlossaryWordChip = get_viewport().gui_get_focus_owner() as GlossaryWordChip
+	if chip == null:
+		return -1
+	return _live_chips().find(chip)
+
+
+# Filtros focáveis só no controle (ver o _ready).
+func _apply_filter_focus_mode() -> void:
+	for filter: int in _filter_buttons.keys():
+		MenuFocus.apply_joypad_focus_mode(_filter_buttons[filter] as Button)
+
+
+# O jogador pegou (ou largou) o controle: os filtros passam a aceitar (ou recusar) o foco.
+func _on_input_device_changed(_device: int) -> void:
+	_apply_filter_focus_mode()
 
 
 func _on_chip_word_returned(word_id: StringName) -> void:

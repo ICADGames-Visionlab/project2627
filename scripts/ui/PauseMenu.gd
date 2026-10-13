@@ -47,8 +47,15 @@ func _ready() -> void:
 # A ação de pausa volta um passo por vez em vez de sempre despausar direto: com as configurações
 # abertas ela fecha as configurações, e só no menu de pausa é que ela retoma o jogo. Sem isso, sair
 # de dentro das opções despausaria o jogo sem o jogador ter pedido.
+#
+# Com o jogo já pausado por OUTRA tela (diário, profiling, a pergunta de acordar) o menu não abre e
+# deixa o evento seguir: cada uma dessas telas tem a própria saída, e o menu de pausa por cima delas
+# ficaria escondido atrás (camada mais baixa) e, ao despausar, soltaria o jogo com a tela ainda aberta.
+# No controle isso aparecia no Start; no teclado, no ESC do diário.
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed(&"pause"):
+		return
+	if not _root.visible and get_tree().paused:
 		return
 
 	get_viewport().set_input_as_handled()

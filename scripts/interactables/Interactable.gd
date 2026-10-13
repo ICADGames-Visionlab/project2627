@@ -14,6 +14,10 @@
 ## cursor e quando brilhar é o InteractableInteractor, filho do Player. Aqui mora só o que é do
 ## objeto: a aparência do contorno e o que acontece quando ele é acionado.
 ##
+## NO TECLADO/CONTROLE: o objeto entra no foco do InsightInteractor (o anel que segue o alvo mais
+## perto, acionado pelo A ou pelo E) cumprindo o contrato de FocusTargets — ver a seção "Foco de
+## teclado/controle". Acionar pelo foco é o mesmo que clicar: interact(player).
+##
 ## NO SAVE: uma evidência já coletada não volta ao recarregar. Quem lembra disso é a GameSession
 ## (seção "pickups"), pelo caminho do nó na cena; o objeto em si não sabe de save nenhum. Renomear ou
 ## mover no editor um Interactable de evidência faz ele reaparecer para quem já o tinha coletado.
@@ -125,6 +129,9 @@ static var _padded_cache: Dictionary = {}
 var _padding: int = 0
 
 var _is_hovered: bool = false
+# Foco de teclado/controle (ver set_focused). Desenhado como o hover: é o "este é o que o botão vai
+# pegar" de quem não usa mouse.
+var _is_focused: bool = false
 var _highlight_color: Color = Color.TRANSPARENT
 var _brighten: float = 0.0
 # Consequência bem configurada, calculada uma vez no _ready (a checagem de conversa lê o disco, e
@@ -145,6 +152,7 @@ func _ready() -> void:
 		update_configuration_warnings()
 		return
 	add_to_group(GROUP)
+	add_to_group(FocusTargets.GROUP)
 	_is_configured = _check_configured()
 	if not _is_configured:
 		push_warning("[Interactables] - \"%s\" sem consequência configurada; não vai brilhar nem responder ao clique" % name)
@@ -204,6 +212,44 @@ func is_available() -> bool:
 # do que acertar um canto vazio.
 func get_screen_rect() -> Rect2:
 	return _sprite.get_global_transform_with_canvas() * _drawing_rect()
+
+
+# --- Foco de teclado/controle (contrato de FocusTargets) ---
+
+# Posição do objeto no mundo: é dela que o foco mede "mais perto do jogador".
+func get_focus_world_position() -> Vector2:
+	return global_position
+
+
+# O retângulo do desenho na tela, o mesmo que o clique usa.
+func get_focus_screen_rect() -> Rect2:
+	return get_screen_rect()
+
+
+# A mesma regra do clique: disponível e sem outra interação de objeto em andamento.
+func can_be_focused() -> bool:
+	return is_available() and not is_any_interaction_running()
+
+
+# Acende/apaga o contorno do foco. Quem decide qual alvo tem o foco é o InsightInteractor.
+func set_focused(focused: bool) -> void:
+	if _is_focused == focused:
+		return
+	_is_focused = focused
+	_apply_outline()
+
+
+# O mesmo que o clique.
+func activate_focus(player: Player) -> void:
+	print("[Interactables] - \"%s\" acionado pelo teclado/controle" % name)
+	interact(player)
+
+
+# Ligado o modo teclado/controle, o objeto sob o cursor parado perde o hover. Quem para de pôr hover
+# a cada quadro é o InteractableInteractor (ver InsightInteractor.is_focus_mode_active).
+func set_mouse_hover_suppressed(suppressed: bool) -> void:
+	if suppressed:
+		set_hovered(false)
 
 
 # --- Aparência ---
@@ -349,19 +395,19 @@ func _collect_evidence(inventory: Inventory) -> void:
 func _apply_outline() -> void:
 	if not is_node_ready() or Engine.is_editor_hint():
 		return
-	var material: ShaderMaterial = _sprite.material as ShaderMaterial
-	if material == null:
+	var outline_material: ShaderMaterial = _sprite.material as ShaderMaterial
+	if outline_material == null:
 		return
 	var color: Color = Color.TRANSPARENT
-	if _is_hovered:
+	if _is_hovered or _is_focused:
 		color = HOVER_COLOR
 	elif _highlight_color.a > 0.0:
 		color = _highlight_color
-	material.set_shader_parameter(&"outline_color", color)
-	material.set_shader_parameter(&"outline_width", outline_width if color.a > 0.0 else 0.0)
+	outline_material.set_shader_parameter(&"outline_color", color)
+	outline_material.set_shader_parameter(&"outline_width", outline_width if color.a > 0.0 else 0.0)
 	# self_modulate acima de 1 clareia o desenho: é o "brilhar" além do contorno. No sprite, e não no
 	# nó, para não clarear a caixa de texto do insight, que é filha deste nó.
-	var brighten: float = _brighten if not _is_hovered else 0.0
+	var brighten: float = _brighten if not (_is_hovered or _is_focused) else 0.0
 	_sprite.self_modulate = Color(1.0 + brighten, 1.0 + brighten, 1.0 + brighten, 1.0)
 
 

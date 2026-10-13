@@ -6,6 +6,9 @@
 ##   2. O objeto sob o cursor ganha o contorno branco de hover, igual ao do NPC.
 ##   3. O clique esquerdo num objeto aciona ele, e não vira movimento no esquema de clique para andar.
 ##
+## No teclado/controle quem aciona o objeto é o foco do InsightInteractor (o objeto cumpre o contrato
+## de FocusTargets); aqui só se apaga o hover do mouse enquanto esse foco está ligado.
+##
 ## Vive como filho do Player pelo mesmo motivo do InsightInteractor: ser filho é o que garante
 ## receber o clique ANTES do Player (a engine chama _unhandled_input primeiro nos nós mais adiante na
 ## árvore). Fora dele, clicar num objeto no esquema de clique também mandaria o personagem andar até o
@@ -70,7 +73,12 @@ func _process(delta: float) -> void:
 		_set_hovered(null)
 		_stop_highlight()
 		return
-	_set_hovered(_object_at(get_viewport().get_mouse_position(), true))
+	# No modo teclado/controle o mouse parado não destaca nada: o foco do InsightInteractor é o único
+	# destaque, igual aos orbes (ver docs/suporte_a_controle.md).
+	if InsightInteractor.is_focus_mode_active():
+		_set_hovered(null)
+	else:
+		_set_hovered(_object_at(get_viewport().get_mouse_position(), true))
 	_update_highlight(delta)
 
 

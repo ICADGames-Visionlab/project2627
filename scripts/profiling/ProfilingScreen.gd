@@ -21,6 +21,14 @@
 ## TODAS as emoções do NPC, a tela de emoções é a última parada: dali, sair é ACORDAR (o GDD:
 ## entender o NPC inteiro fecha o sonho), e ele ainda pode escolher a emoção antes.
 ##
+## NO CONTROLE: a tela abre com o foco na primeira emoção (ou na primeira palavra do glossário, na
+## história). O D-pad anda, o A é o clique (segurar o A numa emoção escolhe a emoção; o A numa palavra
+## põe ela na primeira lacuna da categoria; o A numa lacuna cheia devolve a palavra), o Y abre as
+## marcas da palavra, o X colhe as palavras sublinhadas da história resolvida e o B volta um passo.
+## Cada peça cuida do próprio gesto; o foco de entrada fica com o nó MenuFocus da cena (como nos outros
+## menus), e esta tela só diz a ele onde o foco entra em cada vista — ver _initial_focus_target e
+## docs/suporte_a_controle.md.
+##
 ## O LAYOUT É LIVRE: as peças da cena são soltas (âncoras), e não presas em contêineres — dá pra
 ## arrastar cada uma no editor, inclusive as opções de emoção (filhas do nó Emotions, que recebem as
 ## emoções do NPC na ordem). O script acha os nós pelo nome único (%), então mudar um nó de pai
@@ -106,10 +114,19 @@ var _blink_time: float = 0.0
 @onready var _story_portrait: TextureRect = %StoryPortrait
 @onready var _story_caption: Label = %StoryCaption
 @onready var _back_button: Button = %BackButton
-@onready var _continue_hint: Control = %ContinueHint
+@onready var _continue_hint: Label = %ContinueHint
+# A instrução da tela do espírito: no mouse fala de segurar o botão e passar o mouse, no controle do A
+# e do D-pad (variante _JOYPAD no CSV).
+@onready var _spirit_hint: Label = %Hint
+# "Aperte X para colher as palavras sublinhadas" — só no controle, na história resolvida com palavra
+# ainda por colher.
+@onready var _collect_hint: Label = %CollectHint
 # O retângulo de marcas fica FORA do "Shake" e por cima de tudo: ele se posiciona em coordenadas de
 # tela (acima da palavra clicada), e tremer com a tela o descolaria da palavra.
 @onready var _mark_menu: GlossaryMarkMenu = %MarkMenu
+# O foco do controle: entrar na tela, pegar o controle com ela aberta, o primeiro aperto do D-pad.
+# Quem escolhe ONDE o foco entra é _initial_focus_target (initial_focus_provider).
+@onready var _menu_focus: MenuFocus = $MenuFocus
 
 ## Espaço para funções nativas
 
@@ -133,6 +150,15 @@ func _ready() -> void:
 	_glossary.mark_menu_requested.connect(_on_glossary_mark_menu_requested)
 	_glossary.word_returned.connect(_on_glossary_word_returned)
 	_mark_menu.mark_chosen.connect(_on_mark_chosen)
+	_mark_menu.canceled.connect(_on_mark_menu_canceled)
+	EventBus.input_device_changed.connect(_on_input_device_changed)
+	_menu_focus.initial_focus_provider = _initial_focus_target
+	EventBus.glossary_word_discovered.connect(_on_glossary_word_discovered)
+	# Os avisos são montados em código (com a tecla/botão do dispositivo no lugar).
+	_continue_hint.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_collect_hint.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_spirit_hint.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	_refresh_hints()
 	for option: ProfilingEmotionOption in _get_emotion_options():
 		option.hold_changed.connect(_on_option_hold_changed)
 		option.hold_completed.connect(_on_option_hold_completed)
@@ -147,16 +173,29 @@ func _process(delta: float) -> void:
 	# de selecionar emoções fica piscando", GDD), ou do "clique para continuar" logo depois do acerto.
 	_blink_time += delta
 	var wave: float = 0.55 + 0.45 * sin(_blink_time * TAU / maxf(blink_period, 0.05))
-	var target: CanvasItem = _continue_hint if _awaiting_continue else _back_button
+	var target: CanvasItem = _back_button
+	if _awaiting_continue:
+		target = _continue_hint
 	target.modulate = Color(1.0, 1.0, 1.0, wave)
+
+
+# O "aperte A para continuar" depois do acerto é lido aqui, e não em _unhandled_input, de propósito: o
+# acerto esconde o glossário e o foco do controle some junto, e aí o MenuFocus da cena (que recebe o
+# evento antes desta tela) gastaria o A só pra pôr o foco de volta — o jogador teria de apertar duas
+# vezes para continuar.
+func _input(event: InputEvent) -> void:
+	if _root.visible and _awaiting_continue and event.is_action_pressed(&"ui_accept"):
+		get_viewport().set_input_as_handled()
+		show_spirit_view()
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _root.visible:
 		return
-	if _awaiting_continue and event.is_action_pressed(&"ui_accept"):
+	# O X do controle colhe as palavras sublinhadas da história resolvida (no mouse elas se clicam).
+	if _view == View.STORY and event.is_action_pressed(&"collect_words"):
 		get_viewport().set_input_as_handled()
-		show_spirit_view()
+		_page.collect_resolved_words()
 		return
 	if not event.is_action_pressed(&"ui_cancel"):
 		return
@@ -167,6 +206,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		show_spirit_view()
 	else:
 		close()
+
+
+# Os avisos são montados em código, então não se retraduzem sozinhos quando o idioma muda.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
+		_refresh_hints()
+
 
 ## Espaço para funções personalizadas
 
@@ -228,6 +274,8 @@ func show_spirit_view() -> void:
 	_back_button.show()
 	_continue_hint.hide()
 	_refresh_spirit_view()
+	_refresh_hints()
+	_focus_view_if_joypad()
 
 
 # Abre a história de uma emoção. É o que o botão INVESTIGAR do GDD faz.
@@ -254,9 +302,11 @@ func show_story_view(slot: int) -> void:
 	# "o glossário some" do GDD.
 	_glossary.visible = not ProfilingJournal.is_story_solved(story.id)
 	set_process(ProfilingJournal.is_story_solved(story.id))
+	_refresh_hints()
+	_focus_view_if_joypad()
 
 	print("[Profiling] - História \"%s\" aberta (emoção \"%s\")" % [
-		story.id, emotion.id if emotion != null else "?"])
+		story.id, String(emotion.id) if emotion != null else "?"])
 
 
 # Redesenha a tela de emoções: cada emoção do NPC vai pra uma das opções que estão na cena, na ordem
@@ -337,6 +387,44 @@ func _reveal_solved() -> void:
 	_awaiting_continue = true
 	_blink_time = 0.0
 	set_process(true)
+	_refresh_hints()
+
+
+# Põe o foco do controle na vista que acabou de entrar, no fim do quadro (a vista pode estar
+# terminando de se montar). O foco que estava na vista anterior sumiu junto com ela. Com o mouse não
+# faz nada: quem joga de mouse não vê contorno de foco aparecendo sozinho.
+func _focus_view_if_joypad() -> void:
+	if GameManager.is_joypad_active():
+		_menu_focus.focus_if_needed.call_deferred()
+
+
+# Onde o foco do controle entra em cada vista (o initial_focus_provider do MenuFocus): na do espírito,
+# a primeira emoção visível (ou o Sair, sem emoção nenhuma); na da história, a primeira palavra do
+# glossário (ou a seta de voltar, numa história resolvida, que esconde o glossário).
+func _initial_focus_target() -> Control:
+	if _view == View.SPIRIT:
+		for option: ProfilingEmotionOption in _get_emotion_options():
+			if MenuFocus.can_take_focus(option):
+				return option
+		return _exit_button
+	if _glossary.visible:
+		var chip: Control = _glossary.get_first_chip()
+		if MenuFocus.can_take_focus(chip):
+			return chip
+	return _back_button
+
+
+# Reescreve os avisos no dispositivo em uso: a instrução do espírito troca o mouse pelo A e pelo D-pad,
+# o "clique para continuar" vira "aperte A para continuar" no controle, e o "aperte X para colher" só
+# aparece no controle, com palavra para colher.
+func _refresh_hints() -> void:
+	_spirit_hint.text = InputGlyphs.tr_prompt("PROFILING_HINT_HOLD")
+	_continue_hint.text = InputGlyphs.tr_prompt("PROFILING_CONTINUE")
+	var can_collect: bool = _view == View.STORY and GameManager.is_joypad_active() \
+		and _page.has_resolved_words_to_collect()
+	if can_collect:
+		_collect_hint.text = InputGlyphs.tr_prompt("PROMPT_COLLECT_WORDS")
+	_collect_hint.visible = can_collect
 
 
 # Acorda o jogador, com a mesma passagem que a cama usa. Fora do sonho (a tela aberta pelo menu de
@@ -508,6 +596,29 @@ func _on_glossary_mark_menu_requested(word_id: StringName, chip_rect: Rect2) -> 
 # o painel, porque o painel é reaproveitado pelo diário (que vai ter o retângulo dele).
 func _on_mark_chosen(word_id: StringName, kind: GlossaryMark.Kind) -> void:
 	ProfilingJournal.set_mark(_npc_id, word_id, kind)
+	# O foco do controle estava no botão do retângulo, que fechou: volta pra palavra marcada.
+	if GameManager.is_joypad_active():
+		_glossary.focus_word.call_deferred(word_id)
+
+
+# O retângulo de marcas fechou pelo B sem escolha: o foco volta pra palavra de onde ele saiu.
+func _on_mark_menu_canceled(word_id: StringName) -> void:
+	if GameManager.is_joypad_active():
+		_glossary.focus_word(word_id)
+
+
+# O jogador pegou (ou largou) o controle com a tela aberta: os avisos são reescritos. O foco, quem põe
+# é o MenuFocus da cena — adiado pro fim do quadro, para o aperto que trouxe o controle não andar com
+# ele (sem isso o cursor começava na segunda emoção).
+func _on_input_device_changed(_device: int) -> void:
+	_refresh_hints()
+
+
+# Palavra colhida (da história resolvida, pelo X ou pelo clique): o aviso de colher some quando não
+# sobra palavra.
+func _on_glossary_word_discovered(_discovered_npc_id: StringName, _word_id: StringName) -> void:
+	if _root.visible:
+		_refresh_hints()
 
 
 # O diário mudou (palavra nova, lacuna preenchida, marca posta): a tela aberta se redesenha.

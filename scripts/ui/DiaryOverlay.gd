@@ -30,15 +30,24 @@ func _ready() -> void:
 
 	Diary.pages_changed.connect(refresh)
 	Diary.current_page_changed.connect(_on_current_page_changed)
+	# Uma página pode citar teclas ("Use {diary_toggle} para abrir"): trocar de dispositivo com o
+	# diário aberto reescreve a tecla na hora.
+	EventBus.input_device_changed.connect(_on_input_device_changed)
 
 
-# Fechar com "ui_cancel" (Esc) segue o mesmo padrão do resto das telas do projeto (PauseMenu,
-# PlaceholderDialogueScreen). Passar de página reaproveita as ações de movimento esquerda/direita —
-# ver docs/diary.md, "Como escalar" pra saber quando trocar isso por ações dedicadas.
+# Fechar com "ui_cancel" (Esc, ou o B do controle) segue o mesmo padrão do resto das telas do projeto
+# (PauseMenu, PlaceholderDialogueScreen). O diary_toggle (J, ou o Y) também fecha AQUI, e não no
+# Diary: abrir o diário pausa a árvore, e o Autoload Diary, pausável, não recebe mais a tecla — o
+# mesmo botão que abriu não fecharia. Passar de página reaproveita as ações de movimento
+# esquerda/direita (que no controle são o analógico e o D-pad) — ver docs/diary.md, "Como escalar"
+# pra saber quando trocar isso por ações dedicadas.
+#
+# Os botões do diário não recebem foco do controle de propósito: com um botão focado, o D-pad
+# navegaria entre eles em vez de virar a página.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
-	if event.is_action_pressed(&"ui_cancel"):
+	if event.is_action_pressed(&"ui_cancel") or event.is_action_pressed(&"diary_toggle"):
 		Diary.close_diary()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed(&"move_right"):
@@ -63,6 +72,12 @@ func _on_current_page_changed(_index: int) -> void:
 	refresh()
 
 
+# A página aberta pode citar teclas ({acao}): trocar de dispositivo reescreve a tecla na hora.
+func _on_input_device_changed(_device: int) -> void:
+	if visible:
+		refresh()
+
+
 # Desenha a página atual, ou o estado vazio se o diário ainda não tem nenhuma página — o único
 # jeito de o protótipo abrir sem quebrar antes de qualquer sistema chamar Diary.add_page().
 func _draw_current_page() -> void:
@@ -76,7 +91,8 @@ func _draw_current_page() -> void:
 	var body_text: String = tr(page.text_key)
 	if not page.format_args.is_empty():
 		body_text = body_text % page.format_args
-	_body_label.text = body_text
+	# {acao} no texto vira a tecla/botão do dispositivo em uso (ver InputGlyphs).
+	_body_label.text = InputGlyphs.format_actions(body_text, GameManager.active_input_device)
 
 
 # Desativa os botões de navegação nas pontas (o diário não dá a volta) e some com eles de vez com o

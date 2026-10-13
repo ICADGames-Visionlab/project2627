@@ -9,6 +9,11 @@
 ## Por que "Evidências" e não "Inventário": é assim que a issue #29 pediu que a UI chamasse os
 ## itens do jogador. O código continua em inglês (ItemData, Inventory, item_id) — só o TEXTO
 ## exibido ao jogador reflete o tema do jogo (ver INVENTORY_TITLE em translations.csv).
+##
+## NO CONTROLE: Back abre e fecha, o D-pad anda entre os botões Largar/Destruir/Fechar, A aperta e B
+## fecha. Quem cuida do foco e do B é o nó MenuFocus da cena; este script só diz a ele qual botão
+## recebe o foco quando a lista muda (ver _rebuild_slots). Enquanto o painel tem foco, o analógico
+## não anda com o personagem (ver Player._get_input_direction).
 extends CanvasLayer
 
 ## Espaço para variáveis
@@ -16,6 +21,8 @@ extends CanvasLayer
 const TOGGLE_ACTION: StringName = &"toggle_inventory"
 
 var _inventory: Inventory
+# Há uma reconstrução da lista esperando o fim do quadro (ver _on_inventory_changed).
+var _is_rebuild_queued: bool = false
 
 ## Espaço para variáveis onready
 
@@ -23,6 +30,7 @@ var _inventory: Inventory
 @onready var _slots_grid: GridContainer = $Root/Center/Panel/Margin/Layout/Slots
 @onready var _empty_label: Label = $Root/Center/Panel/Margin/Layout/EmptyLabel
 @onready var _close_button: Button = $Root/Center/Panel/Margin/Layout/Header/Close
+@onready var _menu_focus: MenuFocus = $MenuFocus
 
 ## Espaço para funções nativas
 
@@ -65,7 +73,19 @@ func _on_close_pressed() -> void:
 	_root.hide()
 
 
+# Refaz a lista quando o inventário muda com o painel aberto. Adiado pro fim do quadro de propósito:
+# a mudança quase sempre vem de um botão DESTA lista (Largar/Destruir), no meio do aperto dele. Refazer
+# na hora tiraria o botão da árvore antes de ele marcar o aperto como usado, e o mesmo aperto seguiria
+# adiante — no controle, o A que largou a evidência acionava também o orbe atrás do painel.
 func _on_inventory_changed(_item: ItemData, _amount: int) -> void:
+	if _root.visible and not _is_rebuild_queued:
+		_is_rebuild_queued = true
+		_rebuild_queued.call_deferred()
+
+
+# O corpo adiado de _on_inventory_changed (várias mudanças no mesmo quadro refazem a lista uma vez só).
+func _rebuild_queued() -> void:
+	_is_rebuild_queued = false
 	if _root.visible:
 		_rebuild_slots()
 
@@ -86,8 +106,14 @@ func _rebuild_slots() -> void:
 	var stacks: Array[ItemStack] = _inventory.get_stacks() if _inventory != null else []
 	_empty_label.visible = stacks.is_empty()
 
+	var first_button: Button = null
 	for stack: ItemStack in stacks:
-		_slots_grid.add_child(_build_slot(stack))
+		var slot: Control = _build_slot(stack)
+		_slots_grid.add_child(slot)
+		if first_button == null:
+			var buttons: Array[Node] = slot.find_children("*", "Button", true, false)
+			first_button = buttons[0] as Button if not buttons.is_empty() else null
+	_update_focus_after_rebuild(first_button)
 
 
 # Monta um slot (ícone, nome, quantidade e os botões Largar/Destruir) para uma pilha. Construído
@@ -141,6 +167,20 @@ func _build_slot(stack: ItemStack) -> Control:
 		buttons.add_child(destroy_button)
 
 	return panel
+
+
+# Diz ao MenuFocus qual botão recebe o foco (o Largar do primeiro slot, ou o Fechar sem nenhum item)
+# e devolve o foco ao painel se ele estava aqui dentro: largar uma evidência refaz a lista, e o botão
+# que tinha o foco vai embora junto com a lista antiga — sem isto, quem joga de controle ficava sem
+# cursor no meio do painel.
+func _update_focus_after_rebuild(first_button: Button) -> void:
+	if _menu_focus == null:
+		return
+	_menu_focus.initial_focus = first_button if first_button != null else _close_button
+	var focus_owner: Control = get_viewport().gui_get_focus_owner()
+	var lost_focus: bool = focus_owner == null or not focus_owner.is_visible_in_tree()
+	if _root.visible and GameManager.is_joypad_active() and lost_focus:
+		_menu_focus.focus_initial.call_deferred()
 
 
 func _on_drop_pressed(item_id: StringName) -> void:

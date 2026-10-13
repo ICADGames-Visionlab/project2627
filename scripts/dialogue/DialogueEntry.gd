@@ -186,7 +186,7 @@ func _speaker_display_name() -> String:
 # A fala pronta pro label: BBCode limpo e a marcação do glossário já convertida em sublinhado/link.
 # A conversão vem DEPOIS da limpeza porque ela gera [url]/[color]/[u], que a limpeza cortaria.
 func _sanitized_text() -> String:
-	var sanitized: String = DialogueEntry.sanitize_bbcode(tr(_line.text_key), _line.line_id)
+	var sanitized: String = _raw_text()
 	_has_glossary_words = not ClickableWordText.find_word_ids(sanitized).is_empty()
 	if not _has_glossary_words:
 		return sanitized
@@ -244,6 +244,28 @@ func _on_text_gui_input(event: InputEvent) -> void:
 	var payload: String = _hovered_word_payload
 	if ClickableWordText.collect_payload(payload):
 		print("[Dialogue] - Palavra(s) \"%s\" colhida(s) da fala \"%s\"" % [payload, _line.line_id])
+
+
+# Colhe todas as palavras do glossário desta fala que ainda não foram colhidas: o clique de quem joga
+# de controle (ação collect_words, ver DialogueScreen). Devolve true se alguma era nova. O redesenho
+# sem sublinhado vem do evento glossary_word_discovered, como no clique.
+func collect_glossary_words() -> bool:
+	if _line == null or not _has_glossary_words:
+		return false
+	var collected: bool = ClickableWordText.collect_all(_raw_text())
+	if collected:
+		print("[Dialogue] - Palavras colhidas pelo controle da fala \"%s\"" % _line.line_id)
+	return collected
+
+
+# Diz se esta fala ainda tem palavra do glossário para colher.
+func has_uncollected_glossary_words() -> bool:
+	return _line != null and _has_glossary_words and ClickableWordText.has_uncollected(_raw_text())
+
+
+# A fala traduzida e com o BBCode limpo, mas ainda com a marcação [FACA] do glossário.
+func _raw_text() -> String:
+	return DialogueEntry.sanitize_bbcode(tr(_line.text_key), _line.line_id)
 
 
 # Rede de segurança: a fala que nasce embaixo de um mouse parado não recebe meta_hover_started, e aí
