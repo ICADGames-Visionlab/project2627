@@ -1,7 +1,7 @@
 keys,en,pt_BR
 MENU_VOLUME,General Volume,Volume Geral
 MENU_EXIT,Exit,Sair
-MENU_LANGUAGE,Languages,Línguas
+MENU_LANGUAGE,Language,Idioma
 MENU_FULLSCREEN,Fullscreen,Tela Cheia
 MENU_WINDOWED,Windowed,Janela
 MENU_LANG_EN,English,English
@@ -170,6 +170,13 @@ DIALOGUE_END,End,Encerrar
 DIALOGUE_NEW_LINES,%d new,%d nova(s)
 DIALOGUE_LOG_TRIMMED,… earlier lines,… falas anteriores
 DIALOGUE_TAG_AUTHORITY,Authority,Autoridade
+SETTINGS_TITLE,Settings,Configurações
+SETTINGS_TAB_GENERAL,General,Geral
+SETTINGS_TAB_VIDEO,Video,Vídeo
+SETTINGS_TAB_AUDIO,Audio,Áudio
+SETTINGS_TAB_DIALOGUE,Dialogue,Diálogo
+SETTINGS_SCREEN_MODE,Screen mode,Modo de tela
+SETTINGS_BACK,Back,Voltar
 SETTINGS_DIALOGUE_TEXT_SCALE,Dialogue text size,Tamanho do texto do diálogo
 SETTINGS_DIALOGUE_ALT_FONT,Sans-serif dialogue font,Fonte sem serifa no diálogo
 SETTINGS_DIALOGUE_PANEL_OPACITY,Dialogue panel opacity,Opacidade do painel de diálogo
