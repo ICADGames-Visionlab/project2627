@@ -13,6 +13,9 @@
 ##
 ## O layout (tamanho, cantos, ícones dos botões) está na cena. Este script só abre, fecha e posiciona.
 ##
+## NO CONTROLE: aberto pelo Y num chip, ele já nasce com foco no lixo; o D-pad troca pra estrela, o A
+## escolhe e o B fecha. Fechar pelo B avisa (canceled) pra a tela devolver o foco à palavra.
+##
 ## O guia completo está em docs/sistema_de_profiling.md.
 class_name GlossaryMarkMenu
 extends PanelContainer
@@ -22,6 +25,10 @@ extends PanelContainer
 ## Emitido quando o jogador escolhe uma marca. Quem grava é quem escuta (a tela), porque a marca é
 ## estado do diário, e este nó não conhece o diário.
 signal mark_chosen(word_id: StringName, kind: GlossaryMark.Kind)
+
+## Emitido quando o jogador fecha o retângulo pelo ui_cancel (B / ESC) sem escolher nada. A tela
+## usa pra devolver o foco do controle à palavra de onde ele saiu.
+signal canceled(word_id: StringName)
 
 ## Espaço para variáveis exportadas
 
@@ -55,6 +62,14 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
+	if event.is_action_pressed(&"ui_cancel"):
+		# Antes da tela, que trataria o mesmo cancelar como "voltar pras emoções": este nó é filho
+		# dela, então recebe o evento primeiro.
+		get_viewport().set_input_as_handled()
+		var canceled_word: StringName = _word_id
+		close()
+		canceled.emit(canceled_word)
+		return
 	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 	if mouse_button != null and mouse_button.pressed:
 		close()
@@ -84,6 +99,10 @@ func open_for(word_id: StringName, chip_rect: Rect2, current: GlossaryMark.Kind)
 	global_position = Vector2(
 		chip_rect.get_center().x - size.x * 0.5,
 		chip_rect.position.y - size.y - gap)
+	# Aberto pelo controle: o foco vai pro primeiro botão, senão o D-pad continuaria andando no
+	# glossário por baixo do retângulo.
+	if GameManager.is_joypad_active():
+		_trash_button.grab_focus()
 	print("[Profiling] - Menu de marcas aberto para \"%s\"" % word_id)
 
 

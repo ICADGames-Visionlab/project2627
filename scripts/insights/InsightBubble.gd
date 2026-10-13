@@ -72,7 +72,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if is_instance_valid(_anchor_marker) and _anchor_marker.is_mouse_event_inside(mouse_event):
 			get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed(&"ui_cancel"):
+	# Com um menu aberto por cima (as evidências), o cancelar (ESC / B) é do menu: fecha ele primeiro,
+	# e esta caixa só no próximo aperto. Sem isso o B fechava a caixa do mundo atrás do painel.
+	if event.is_action_pressed(&"ui_cancel") and not MenuFocus.is_any_menu_open():
 		close()
 		get_viewport().set_input_as_handled()
 

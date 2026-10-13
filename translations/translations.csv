@@ -56,9 +56,9 @@ INSIGHT_CITY_BUILDING3_GUTTER,"That gutter drains into the street, not into the 
 HEAD_PLAYER_NAME,"Me","Eu"
 HEAD_OLD_FISHERMAN_NAME,"The Old Fisherman","O Velho Pescador"
 PLACEHOLDER_INSIGHT_ORB,"Placeholder - Insight orb drawn in code (final art pending)","Placeholder - Orbe de insight desenhado em código (arte final pendente)"
-PROMPT_SLEEP,Press SPACE to sleep,Aperte ESPAÇO para dormir
+PROMPT_SLEEP,Press {sleep} to sleep,Aperte {sleep} para dormir
 PROMPT_SLEEP_TOO_EARLY,It is not time to sleep yet,Ainda não é hora de dormir
-PROMPT_WAKE,Press SPACE to wake up,Aperte ESPAÇO para acordar
+PROMPT_WAKE,Press {sleep} to wake up,Aperte {sleep} para acordar
 GLOSSARY_CATEGORY_NAME,Name,Nome
 GLOSSARY_CATEGORY_WEAPON,Weapon,Arma
 GLOSSARY_CATEGORY_ACTION,Action,Ação
@@ -75,7 +75,9 @@ PROFILING_NO_STORY,No story yet,Sem história ainda
 PROFILING_EXIT,Leave,Sair
 PROFILING_BACK,Back,Voltar
 PROFILING_CONTINUE,Click to continue,Clique para continuar
+PROFILING_CONTINUE_JOYPAD,Press {ui_accept} to continue,Aperte {ui_accept} para continuar
 PROFILING_HINT_HOLD,Hold the left button on an emotion to change it. Hover to investigate.,Segure o botão esquerdo sobre uma emoção para mudá-la. Passe o mouse para investigar.
+PROFILING_HINT_HOLD_JOYPAD,Hold {ui_accept} on an emotion to change it. Press {ui_down} to investigate.,Segure {ui_accept} sobre uma emoção para mudá-la. Aperte {ui_down} para investigar.
 PROFILING_EMOTION_TODAY,feeling this today,sente isso hoje
 PROFILING_EMOTION_TOMORROW,will feel this tomorrow,vai sentir isso amanhã
 PROFILING_WORD_ADDED,Word added to %s's Glossary,Palavra adicionada ao Glossário de %s
@@ -83,10 +85,11 @@ PROFILING_RESULT_ALL_CORRECT,Everything was filled in correctly,Tudo foi preench
 PROFILING_RESULT_FEW_WRONG,Two or fewer words are wrong,Duas ou menos palavras estão erradas
 PROFILING_RESULT_MANY_WRONG,Several words are incorrect,Várias palavras estão incorretas
 DREAM_WAKE_UP,Wake up,Acordar
+DREAM_WAKE_UP_JOYPAD,Wake up ({dream_wake}),Acordar ({dream_wake})
 DREAM_WAKE_CONFIRM,Do you want to leave the dream world?,Deseja sair do mundo dos sonhos?
 DREAM_WAKE_YES,Yes,Sim
 DREAM_WAKE_NO,No,Não
-PROMPT_INVESTIGATE_SPIRIT,Press F to investigate the spirit,Aperte F para investigar o espírito
+PROMPT_INVESTIGATE_SPIRIT,Press {spirit_interact} to investigate the spirit,Aperte {spirit_interact} para investigar o espírito
 PLACEHOLDER_PROFILING_SCREEN,Placeholder - Profiling screen drawn in code (final art pending),Placeholder - Tela de profiling desenhada em código (arte final pendente)
 PLACEHOLDER_NPC_PORTRAIT,Placeholder - NPC portrait,Placeholder - Portrait do NPC
 PLACEHOLDER_NPC_SPIRIT_ART,Placeholder - NPC spirit art (1920x1080),Placeholder - Arte do espírito do NPC (1920x1080)
@@ -199,7 +202,7 @@ DIARY_DEBUG_TEST_PAGE_TEXT,"Test page number %s, added at runtime.","Página de 
 PLACEHOLDER_DIARY_PAGE_1_TITLE,"Placeholder - Page 1 (final content pending)","Placeholder - Página 1 (conteúdo final pendente)"
 PLACEHOLDER_DIARY_PAGE_1_TEXT,"Placeholder - This is the first page of the diary prototype. Real content will come from other systems calling Diary.add_page().","Placeholder - Esta é a primeira página do protótipo de diário. O conteúdo real virá de outros sistemas chamando Diary.add_page()."
 PLACEHOLDER_DIARY_PAGE_2_TITLE,"Placeholder - Page 2 (final content pending)","Placeholder - Página 2 (conteúdo final pendente)"
-PLACEHOLDER_DIARY_PAGE_2_TEXT,"Placeholder - Use J (or the Y button) to open and close the diary, and the left/right movement keys to flip pages.","Placeholder - Use J (ou o botão Y) para abrir e fechar o diário, e as teclas de movimento esquerda/direita para folhear as páginas."
+PLACEHOLDER_DIARY_PAGE_2_TEXT,"Placeholder - Use {diary_toggle} to open and close the diary, and {move_left} / {move_right} to flip pages.","Placeholder - Use {diary_toggle} para abrir e fechar o diário, e {move_left} / {move_right} para folhear as páginas."
 SAVE_SLOT_MENU_TITLE,Choose a slot,Escolha um slot
 SAVE_SLOT_TITLE,Slot %d,Slot %d
 SAVE_SLOT_EMPTY,Empty,Vazio
@@ -231,3 +234,43 @@ PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_REASON_NOTE,Placeholder - You have not found 
 PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_OPT_LEAVE,Placeholder - Leave it.,Placeholder - Deixar pra lá.
 PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_LOOK_01,Placeholder - Empty. Only a smell of the sea.,Placeholder - Vazia. Só um cheiro de mar.
 PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_NOTE_01,Placeholder - The torn edge of the note matches a scrap stuck to the box.,Placeholder - A borda rasgada do bilhete bate com um pedaço preso na caixa.
+PROMPT_COLLECT_WORDS,"Press {collect_words} to collect the underlined words","Aperte {collect_words} para colher as palavras sublinhadas"
+INPUT_KEY_SPACE,"SPACE","ESPAÇO"
+INPUT_KEY_ESCAPE,"ESC","ESC"
+INPUT_KEY_ENTER,"ENTER","ENTER"
+INPUT_KEY_TAB,"TAB","TAB"
+INPUT_KEY_SHIFT,"SHIFT","SHIFT"
+INPUT_KEY_ALT,"ALT","ALT"
+INPUT_KEY_HOME,"HOME","HOME"
+INPUT_KEY_END,"END","END"
+INPUT_KEY_UP,"↑","↑"
+INPUT_KEY_DOWN,"↓","↓"
+INPUT_KEY_LEFT,"←","←"
+INPUT_KEY_RIGHT,"→","→"
+INPUT_MOUSE_1,"Left click","Clique esquerdo"
+INPUT_MOUSE_2,"Right click","Clique direito"
+INPUT_JOY_BUTTON_0,"A","A"
+INPUT_JOY_BUTTON_1,"B","B"
+INPUT_JOY_BUTTON_2,"X","X"
+INPUT_JOY_BUTTON_3,"Y","Y"
+INPUT_JOY_BUTTON_4,"Back","Back"
+INPUT_JOY_BUTTON_5,"Guide","Guide"
+INPUT_JOY_BUTTON_6,"Start","Start"
+INPUT_JOY_BUTTON_7,"LS","LS"
+INPUT_JOY_BUTTON_8,"RS","RS"
+INPUT_JOY_BUTTON_9,"LB","LB"
+INPUT_JOY_BUTTON_10,"RB","RB"
+INPUT_JOY_BUTTON_11,"D-pad ↑","Direcional ↑"
+INPUT_JOY_BUTTON_12,"D-pad ↓","Direcional ↓"
+INPUT_JOY_BUTTON_13,"D-pad ←","Direcional ←"
+INPUT_JOY_BUTTON_14,"D-pad →","Direcional →"
+INPUT_JOY_AXIS_0_NEG,"Left stick ←","Analógico esquerdo ←"
+INPUT_JOY_AXIS_0_POS,"Left stick →","Analógico esquerdo →"
+INPUT_JOY_AXIS_1_NEG,"Left stick ↑","Analógico esquerdo ↑"
+INPUT_JOY_AXIS_1_POS,"Left stick ↓","Analógico esquerdo ↓"
+INPUT_JOY_AXIS_2_NEG,"Right stick ←","Analógico direito ←"
+INPUT_JOY_AXIS_2_POS,"Right stick →","Analógico direito →"
+INPUT_JOY_AXIS_3_NEG,"Right stick ↑","Analógico direito ↑"
+INPUT_JOY_AXIS_3_POS,"Right stick ↓","Analógico direito ↓"
+INPUT_JOY_AXIS_4_POS,"LT","LT"
+INPUT_JOY_AXIS_5_POS,"RT","RT"

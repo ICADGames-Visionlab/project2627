@@ -173,7 +173,7 @@ A lógica de `logic/` é pura de propósito: dá pra chamar de qualquer lugar se
 ## Detalhes de polimento
 
 - **Sons.** Os campos `DialogueStyle.sfx_*` (abrir, fechar, nova fala, confirmar, hover) estão vazios. Enquanto isso, a tela toca um bipe sintetizado em código (`DialoguePlaceholderAudio`), e o boot avisa no log quais pistas ainda são placeholder. O som final entra pelo Inspector.
-- **Controle.** O D-pad e o analógico esquerdo repetem `dialogue_focus_up` e `dialogue_focus_down` a cada `DialogueScreen.analog_repeat_interval` (0,18 s) enquanto seguros. O joypad não gera eco de tecla como o teclado, então sem a repetição o analógico moveria o destaque uma vez só. O R3 (`dialogue_jump_to_end`) já estava mapeado.
+- **Controle.** O D-pad e o analógico esquerdo repetem `dialogue_focus_up` e `dialogue_focus_down` a cada `DialogueScreen.analog_repeat_interval` (0,18 s) enquanto seguros. O joypad não gera eco de tecla como o teclado, então sem a repetição o analógico moveria o destaque uma vez só. O R3 (`dialogue_jump_to_end`) já estava mapeado; o L3 (`dialogue_jump_to_start`) entrou com o suporte a controle, e o X (`collect_words`) colhe de uma vez as palavras sublinhadas da fala (ver [docs/suporte_a_controle.md](../suporte_a_controle.md)).
 - **Escala de 200%.** A lista de opções ganha rolagem própria (`OptionsScroll`) quando passaria de 50% da altura da coluna, para o log nunca ficar com menos de uns 50% dela.
 - **Blur de fundo.** Está implementado (`BackBufferCopy` e `resources/shaders/backdrop_blur.gdshader`, caixa 3×3 de um passe) e desligado por padrão (`DialogueStyle.backdrop_blur_enabled = false`). O custo no renderer Compatibility ainda não foi medido em hardware real.
 
@@ -197,4 +197,4 @@ Pendências para o Lead. Nenhuma bloqueou o trabalho, porque o `MemoryRunner` e 
 1. Aprovar `initiator_id` nos eventos de conversa, que diverge da assinatura do PRD (V4).
 2. Decidir se o `DialogueState` continua estático, como está, ou vira um Autoload `DialogueJournal` (V9).
 3. Confirmar que as flags ficam no `InsightJournal`, atrás do `DialogueGameState`, na v1 (D3). Já está implementado assim.
-4. Decidir se a interação com NPC por teclado ou controle, que ficou fora da v1, entra no foco do `InsightInteractor` ou ganha foco próprio.
+4. ~~Decidir se a interação com NPC por teclado ou controle, que ficou fora da v1, entra no foco do `InsightInteractor` ou ganha foco próprio.~~ Resolvido na issue #55: entrou no foco do `InsightInteractor`, pelo contrato `FocusTargets` (o `NPCInteraction` cumpre ele). RB passa o foco, A ou E inicia a conversa. Ver [docs/suporte_a_controle.md](../suporte_a_controle.md).

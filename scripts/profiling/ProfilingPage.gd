@@ -105,11 +105,16 @@ func refresh() -> void:
 
 	var fills: PackedStringArray = ProfilingJournal.get_fills(_story.id, _story.get_blank_count())
 	var evaluation: ProfilingEvaluation = ProfilingEvaluation.evaluate(_story, fills, few_wrong_limit)
+	# As lacunas são refeitas do zero: a que tinha o foco do controle vai embora junto. Guardar o
+	# índice devolve o foco à mesma lacuna depois (ver focus_blank).
+	var focused_index: int = _focused_blank_index()
 
 	if _show_resolved:
 		_draw_resolved()
 	else:
 		_draw_template(fills, evaluation)
+		if focused_index >= 0:
+			focus_blank(focused_index)
 
 	_update_message(evaluation)
 	evaluated.emit(evaluation)
@@ -119,6 +124,28 @@ func refresh() -> void:
 func show_resolved() -> void:
 	_show_resolved = true
 	refresh()
+
+
+# Põe o foco do controle na lacuna de um índice. Devolve se achou a lacuna.
+func focus_blank(blank_index: int) -> bool:
+	for blank: ProfilingBlank in _live_blanks():
+		if blank.index == blank_index and MenuFocus.can_take_focus(blank):
+			blank.grab_focus()
+			return true
+	return false
+
+
+# Colhe de uma vez as palavras marcadas da história resolvida (o X do controle, que não clica numa
+# palavra). Devolve se alguma era nova. Na página com lacunas não há o que colher.
+func collect_resolved_words() -> bool:
+	if not _show_resolved:
+		return false
+	return _resolved_text.collect_all_words()
+
+
+# Diz se a história resolvida na tela ainda tem palavra para colher.
+func has_resolved_words_to_collect() -> bool:
+	return _show_resolved and _resolved_text.has_uncollected_words()
 
 
 # Usa uma palavra do glossário sem arrastar: ela vai pra primeira lacuna vazia que aceita a
@@ -282,6 +309,27 @@ func _get_blank_category(index: int) -> GlossaryCategory:
 func _clear_lines() -> void:
 	for child: Node in _lines.get_children():
 		child.queue_free()
+
+
+# As lacunas da página atual, sem as da página antiga que ainda esperam o fim do quadro pra sair.
+func _live_blanks() -> Array[ProfilingBlank]:
+	var blanks: Array[ProfilingBlank] = []
+	for row: Node in _lines.get_children():
+		if row.is_queued_for_deletion():
+			continue
+		for child: Node in row.get_children():
+			var blank: ProfilingBlank = child as ProfilingBlank
+			if blank != null and not blank.is_queued_for_deletion():
+				blanks.append(blank)
+	return blanks
+
+
+# O índice da lacuna com o foco agora, ou -1.
+func _focused_blank_index() -> int:
+	var blank: ProfilingBlank = get_viewport().gui_get_focus_owner() as ProfilingBlank
+	if blank == null or not _lines.is_ancestor_of(blank):
+		return -1
+	return blank.index
 
 
 # De quem é o glossário desta página. A página precisa disso pra saber se a palavra em conjunto já

@@ -102,6 +102,8 @@ func _ready() -> void:
 	_back_button.pressed.connect(_on_back_pressed)
 	_confirm_dialog.confirmed.connect(_on_confirmation_confirmed)
 	_confirm_dialog.canceled.connect(_on_confirmation_canceled)
+	# A Godot fecha o diálogo no ESC, mas não no B do controle (ver MenuFocus.bind_joypad_cancel).
+	MenuFocus.bind_joypad_cancel(_confirm_dialog)
 
 
 # Texto montado em código (título do slot, resumo, botão principal) não se retraduz sozinho quando o

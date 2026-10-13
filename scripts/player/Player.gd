@@ -174,10 +174,18 @@ func _get_movement_direction() -> Vector2:
 	return _get_input_direction()
 
 
-# Lê o input de movimento (AWSD, setinhas e analógico esquerdo do joystick, configurados juntos
-# em cada ação no Input Map) já normalizado, permitindo as 8 direções sem que o diagonal ande
+# Lê o input de movimento (AWSD, setinhas, analógico esquerdo e D-pad do controle, configurados
+# juntos em cada ação no Input Map) já normalizado, permitindo as 8 direções sem que o diagonal ande
 # mais rápido que os eixos retos.
+#
+# No controle, um menu aberto que não pausa o jogo (as evidências) é dono do D-pad e do analógico: os
+# dois navegam entre os botões dele, e sem esta regra o personagem sairia andando a cada botão
+# escolhido. A pergunta é "tem menu aberto?" (MenuFocus), e não "tem algum Control com foco?": um
+# botão do HUD clicado com o mouse fica com o foco, e aí pegar o controle travaria o personagem. No
+# teclado nada muda (ver docs/suporte_a_controle.md).
 func _get_input_direction() -> Vector2:
+	if GameManager.is_joypad_active() and MenuFocus.is_any_menu_open():
+		return Vector2.ZERO
 	return Input.get_vector("move_left", "move_right", "move_up", "move_down")
 
 

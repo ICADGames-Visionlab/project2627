@@ -27,6 +27,8 @@ const FREEZE_REASON: StringName = &"dialogue"
 @onready var _options_scroll: ScrollContainer = $Root/Panel/Margin/Column/OptionsScroll
 @onready var _options: DialogueOptionList = $Root/Panel/Margin/Column/OptionsScroll/Options
 @onready var _scroll_indicator: DialogueScrollIndicator = $Root/Panel/Margin/Column/LogArea/ScrollIndicator
+# "Aperte X para colher as palavras sublinhadas", embaixo das opções, só no controle.
+@onready var _collect_hint: Label = $Root/Panel/Margin/Column/CollectHint
 
 var _runner: DialogueRunner
 var _resolver: DialogueSpeakerResolver
@@ -78,6 +80,10 @@ func _ready() -> void:
 	EventBus.conversation_requested.connect(open)
 	EventBus.dialogue_requested.connect(_open_insight_line)
 	EventBus.day_ended.connect(_on_day_ended)
+	EventBus.glossary_word_discovered.connect(_on_glossary_word_discovered)
+	EventBus.input_device_changed.connect(_on_input_device_changed)
+	# O texto do aviso é montado em código (com o botão do controle no lugar).
+	_collect_hint.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 	GameManager.dialogue_preferences_changed.connect(_apply_preferences)
 	_warn_placeholder_sfx()
 	# [DEBUG] Seção "Diálogo" do menu (F4/F1): não existe em build de release.
@@ -485,6 +491,7 @@ func _process_step(step: DialogueStep) -> void:
 		_set_speaking_npc(resolved.npc)
 	_current_entry = _log.append_line(line, resolved, _exchange_tracker.current_exchange)
 	_state = State.SHOWING_LINE
+	_update_collect_prompt()
 	_play_sfx_or_placeholder(style.sfx_new_line, DialoguePlaceholderAudio.new_line())
 	_await_entry_then_continue(step)
 
@@ -617,6 +624,7 @@ func _finalize_close() -> void:
 	_runner = null
 	_pending_step = null
 	_initiator_id = &""
+	_update_collect_prompt()
 
 
 func _play_sfx(stream: AudioStream) -> void:
@@ -634,6 +642,12 @@ func _play_sfx_or_placeholder(assigned: AudioStream, placeholder: AudioStreamWAV
 
 func _unhandled_input(event: InputEvent) -> void:
 	if _state == State.CLOSED:
+		return
+	# Colher as palavras da fala (o X do controle): consumido sempre com a conversa aberta, para o
+	# mesmo botão não dormir na cama nem abrir um espírito por baixo da tela.
+	if event.is_action_pressed(&"collect_words"):
+		get_viewport().set_input_as_handled()
+		_collect_current_entry_words()
 		return
 	if _handle_scroll_action(event):
 		get_viewport().set_input_as_handled()
@@ -734,6 +748,37 @@ func _on_panel_gui_input(event: InputEvent) -> void:
 	if system_choice != null:
 		_confirm_choice(system_choice)
 		get_viewport().set_input_as_handled()
+
+
+# Colhe as palavras do glossário da fala atual — o "clique nas palavras" de quem joga de controle.
+func _collect_current_entry_words() -> void:
+	if _current_entry == null:
+		return
+	_current_entry.collect_glossary_words()
+
+
+# Mostra o aviso "Aperte X para colher as palavras sublinhadas" enquanto o jogador está no controle e
+# a fala atual tem palavra para colher; esconde nos outros casos. No mouse não aparece: lá a palavra
+# sublinhada se clica, e a mãozinha do cursor já diz isso.
+#
+# O aviso mora dentro do painel (e não no rodapé do mundo, o ActionPrompt): o rodapé fica numa camada
+# abaixo da tela de diálogo, embaixo do fundo borrado.
+func _update_collect_prompt() -> void:
+	var should_show: bool = _state != State.CLOSED and GameManager.is_joypad_active() \
+		and _current_entry != null and _current_entry.has_uncollected_glossary_words()
+	if should_show:
+		_collect_hint.text = InputGlyphs.tr_prompt("PROMPT_COLLECT_WORDS")
+	_collect_hint.visible = should_show
+
+
+# Palavra colhida (pelo X ou pelo clique): o aviso de colher some quando a fala não tem mais palavra.
+func _on_glossary_word_discovered(_npc_id: StringName, _word_id: StringName) -> void:
+	_update_collect_prompt()
+
+
+# O aviso de colher só existe no controle: aparece ou some quando o jogador troca de dispositivo.
+func _on_input_device_changed(_device: int) -> void:
+	_update_collect_prompt()
 
 
 func _on_scroll_indicator_pressed() -> void:

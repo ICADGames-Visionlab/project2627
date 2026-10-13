@@ -90,8 +90,8 @@ func refresh() -> void:
 #
 # clickable desligado desenha a palavra ainda não descoberta sublinhada, mas sem link: é o insight,
 # em que as palavras vão pro glossário sozinhas quando a caixa fecha.
-static func render_markup(source: String, npc_id: StringName, clickable_color: Color,
-		discovered_color: Color, clickable: bool = true) -> String:
+static func render_markup(source: String, npc_id: StringName, word_color: Color,
+		collected_color: Color, clickable: bool = true) -> String:
 	if source.is_empty():
 		return ""
 
@@ -108,8 +108,8 @@ static func render_markup(source: String, npc_id: StringName, clickable_color: C
 		var found: RegExMatch = matches[index]
 		if found.get_start() > cursor:
 			result += source.substr(cursor, found.get_start() - cursor)
-		result += _render_token(found.get_string(1), payloads[index], npc_id, clickable_color,
-			discovered_color, clickable)
+		result += _render_token(found.get_string(1), payloads[index], npc_id, word_color,
+			collected_color, clickable)
 		cursor = found.get_end()
 
 	if cursor < source.length():
@@ -140,6 +140,43 @@ static func find_word_ids(source: String) -> Array[StringName]:
 		if not result.has(word_id):
 			result.append(word_id)
 	return result
+
+
+# Colhe de uma vez todas as palavras marcadas no texto que ainda não estão no glossário — o "clicar em
+# todas" de quem joga de controle, que não tem como clicar numa palavra (ação collect_words, o X).
+# Respeita os grupos [A]/[B] como o clique. Devolve true se alguma palavra era nova.
+static func collect_all(source: String, npc_id: StringName = &"") -> bool:
+	var regex: RegEx = RegEx.create_from_string(MARKUP_PATTERN)
+	var matches: Array[RegExMatch] = regex.search_all(source)
+	if matches.is_empty():
+		return false
+	var discovered_anything: bool = false
+	for payload: String in build_payloads(source, matches):
+		discovered_anything = collect_payload(payload, npc_id) or discovered_anything
+	return discovered_anything
+
+
+# Diz se o texto tem alguma palavra marcada que ainda não está no glossário. É o que decide se o aviso
+# "Aperte X para colher" aparece.
+static func has_uncollected(source: String, npc_id: StringName = &"") -> bool:
+	for word_id: StringName in find_word_ids(source):
+		if ProfilingCatalog.find_word(word_id) != null and not is_word_collected(word_id, npc_id):
+			return true
+	return false
+
+
+# Colhe todas as palavras ainda não colhidas DESTE texto e redesenha (ver collect_all).
+func collect_all_words() -> bool:
+	var discovered_anything: bool = collect_all(_source, _npc_id)
+	if discovered_anything:
+		print("[Profiling] - Palavras colhidas do texto de uma vez (controle)")
+		refresh()
+	return discovered_anything
+
+
+# Diz se este texto ainda tem palavra para colher.
+func has_uncollected_words() -> bool:
+	return has_uncollected(_source, _npc_id)
 
 
 # Descobre todas as palavras de um payload de clique ("marcos|castro"). Devolve true se alguma era
@@ -187,8 +224,8 @@ static func build_payloads(source: String, matches: Array[RegExMatch]) -> Packed
 
 # Desenha uma palavra marcada. Palavra que não existe no projeto aparece como texto normal e avisa no
 # console: um id errado no CSV não pode virar uma frase quebrada na cara do jogador.
-static func _render_token(token: String, payload: String, npc_id: StringName, clickable_color: Color,
-		discovered_color: Color, clickable: bool) -> String:
+static func _render_token(token: String, payload: String, npc_id: StringName, word_color: Color,
+		collected_color: Color, clickable: bool) -> String:
 	var word_id: StringName = StringName(token.to_lower())
 	var word: GlossaryWord = ProfilingCatalog.find_word(word_id)
 	if word == null:
@@ -197,8 +234,8 @@ static func _render_token(token: String, payload: String, npc_id: StringName, cl
 
 	var display: String = word.get_display_text()
 	if is_word_collected(word_id, npc_id):
-		return "[color=#%s]%s[/color]" % [discovered_color.to_html(false), display]
-	var underlined: String = "[color=#%s][u]%s[/u][/color]" % [clickable_color.to_html(false), display]
+		return "[color=#%s]%s[/color]" % [collected_color.to_html(false), display]
+	var underlined: String = "[color=#%s][u]%s[/u][/color]" % [word_color.to_html(false), display]
 	if not clickable:
 		return underlined
 	return "[url=%s]%s[/url]" % [payload, underlined]

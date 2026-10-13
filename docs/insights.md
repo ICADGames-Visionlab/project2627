@@ -239,6 +239,18 @@ navegação de menus por teclado e controle continua pelas setas e pelo D-pad (`
 O acionamento passa por `InsightMarker.activate()`, o mesmo caminho do clique. A fonte e a órbita não
 sabem se o orbe foi clicado ou acionado por tecla.
 
+**O foco não é só de orbes.** Desde a issue #55, o anel percorre também todo nó do grupo
+`FocusTargets.GROUP` que cumpre o contrato de `scripts/shared/FocusTargets.gd`: hoje os NPCs
+(`NPCInteraction`, A/E inicia a conversa) e os objetos interagíveis (`Interactable`, A/E faz o que o
+clique faria). O ciclo do RB e a escolha do "mais perto" tratam orbes e alvos do mesmo jeito, e o hover
+do mouse é suprimido nos dois enquanto o modo foco está ligado. Para pôr uma coisa nova do mundo no
+foco, ver o checklist de [docs/suporte_a_controle.md](suporte_a_controle.md).
+
+Com um menu aberto (as evidências), o interagir e o ciclo ficam quietos, e o ESC/B não fecha a caixa do
+orbe: o botão é do menu (`MenuFocus.is_any_menu_open()`). E depois de uma conversa o interagir tem uma
+folga (`interact_cooldown_after_conversation`, 0,75 s, recomeçando a cada aperto), porque no controle o
+A que passa as falas é o mesmo que fala com o NPC.
+
 A tela de diálogo dá foco ao botão de fechar quando abre, então o botão de confirmar do controle
 também fecha a fala, além do de cancelar.
 

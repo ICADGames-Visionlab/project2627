@@ -15,6 +15,10 @@
 ##                               glossário, se ela for solta em qualquer outro lugar)
 ##   clique DIREITO na cheia  -> cleared(index), e a palavra volta pro glossário
 ##
+## NO CONTROLE (a lacuna só aceita foco com o controle em uso): o A numa lacuna cheia é o clique
+## direito — devolve a palavra ao glossário. Pôr palavra é pelo glossário (o A num chip), que já
+## escolhe a primeira lacuna vazia da categoria. A lacuna com foco fica mais opaca.
+##
 ## O clique esquerdo não tira a palavra de propósito: o esquerdo é o botão de arrastar, e pegar a
 ## palavra pra levá-la a outra lacuna não pode ter o risco de devolvê-la ao glossário.
 ##
@@ -52,6 +56,10 @@ signal cleared(index: int)
 ## opacidade cheia roubaria a atenção da frase.
 @export_range(0.0, 1.0, 0.01) var filled_opacity: float = 0.35
 
+## Opacidade do fundo da lacuna com o foco do controle (vazia ou cheia). É o destaque de "o A vai
+## agir aqui".
+@export_range(0.0, 1.0, 0.01) var focused_opacity: float = 0.75
+
 ## Espaço para variáveis
 
 var index: int = -1
@@ -67,6 +75,8 @@ var _is_correct: bool = false
 # isto que separa "o meu arraste acabou" de "acabou o arraste de alguém". Enquanto ele dura, a
 # lacuna se desenha vazia: a palavra está na mão do jogador.
 var _is_dragging: bool = false
+# Foco do controle (ver _refresh).
+var _is_focused: bool = false
 
 ## Espaço para variáveis onready
 
@@ -76,6 +86,10 @@ var _is_dragging: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	focus_entered.connect(_on_focus_changed.bind(true))
+	focus_exited.connect(_on_focus_changed.bind(false))
+	EventBus.input_device_changed.connect(_on_input_device_changed)
+	MenuFocus.apply_joypad_focus_mode(self)
 	_refresh()
 
 
@@ -94,6 +108,12 @@ func _notification(what: int) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	# Controle: o A numa lacuna cheia devolve a palavra, como o clique direito.
+	if event.is_action_pressed(&"ui_accept"):
+		accept_event()
+		if _word != null:
+			cleared.emit(index)
+		return
 	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 	if mouse_button == null or not mouse_button.pressed or _word == null:
 		return
@@ -145,6 +165,17 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 
 ## Espaço para funções personalizadas
 
+# O controle chegou (ou saiu) desta lacuna: redesenha com o destaque do foco.
+func _on_focus_changed(focused: bool) -> void:
+	_is_focused = focused
+	_refresh()
+
+
+# Aceita foco só com o controle em uso (ver MenuFocus.apply_joypad_focus_mode).
+func _on_input_device_changed(_device: int) -> void:
+	MenuFocus.apply_joypad_focus_mode(self)
+
+
 # Põe (ou tira) a palavra da lacuna. is_correct só vem true quando a página inteira está certa —
 # ver o bloco "A LACUNA NUNCA DIZ QUE ESTÁ ERRADA" no topo deste arquivo. category é a categoria que
 # a lacuna aceita (a da palavra esperada nela).
@@ -173,7 +204,7 @@ func _refresh() -> void:
 		var category_color: Color = _category.color if _category != null else Color.WHITE
 		_label.text = empty_text
 		_label.modulate = Color(category_color.r, category_color.g, category_color.b, 0.8)
-		self_modulate = Color(category_color.r, category_color.g, category_color.b, empty_opacity)
+		self_modulate = Color(category_color.r, category_color.g, category_color.b, _focus_opacity(empty_opacity))
 		return
 
 	_label.text = _word.get_display_text() + (correct_glyph if _is_correct else "")
@@ -184,5 +215,10 @@ func _refresh() -> void:
 
 	_label.modulate = Color.WHITE
 	var tint: Color = _word.get_color()
-	tint.a = filled_opacity
+	tint.a = _focus_opacity(filled_opacity)
 	self_modulate = tint
+
+
+# Opacidade do fundo com o destaque do foco: a lacuna focada fica bem mais visível que as outras.
+func _focus_opacity(base: float) -> float:
+	return maxf(base, focused_opacity) if _is_focused else base

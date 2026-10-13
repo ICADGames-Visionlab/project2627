@@ -112,7 +112,29 @@ espírito ainda do lado dele. Acordar não devolve o aviso: sem sonho não há e
 **HUD do sonho** (`DreamHud`) — o "acordar" que o GDD pede sempre presente na tela do sonho, no canto
 inferior esquerdo, com a pergunta *"Deseja sair do mundo dos sonhos?"*. A cama continua funcionando
 (`Bed.gd`); os dois caminhos terminam na mesma chamada, `GameClock.start_next_day()` atrás de uma
-`DreamTransition`.
+`DreamTransition`. No controle, o B (`dream_wake`) faz a mesma pergunta, e o botão mostra o B no texto
+("Acordar (B)").
+
+**No controle** — as duas telas funcionam inteiras pelo controle. O foco só aparece com o controle em
+uso (as peças ligam o foco por `MenuFocus.apply_joypad_focus_mode()`), e a tela devolve o foco à
+palavra ou lacuna certa sempre que a lista se refaz. Os avisos da tela (a instrução do espírito, o
+"continuar", o "colher") trocam de texto com o dispositivo — ver [docs/suporte_a_controle.md](suporte_a_controle.md).
+
+| Onde | Botão | O que faz |
+| --- | --- | --- |
+| Emoção (`ProfilingEmotionOption`) | *segurar* A | o mesmo que segurar o botão esquerdo: enche e agenda a emoção |
+| Emoção | D-pad ↓ | vai ao INVESTIGAR (que aparece com o foco, como no hover) |
+| INVESTIGAR / Sair / Voltar | A | aperta |
+| Palavra (`GlossaryWordChip`) | A | o clique curto: põe na primeira lacuna vazia da categoria |
+| Palavra | Y (`ui_context_menu`) | o clique direito: abre o retângulo de marcas, com foco na lixeira; B fecha sem escolher |
+| Lacuna cheia (`ProfilingBlank`) | A | o clique direito: devolve a palavra |
+| Filtros do glossário | A | ligam/desligam como no clique (a lupa fica de fora: pede texto) |
+| História resolvida | X (`collect_words`) | colhe de uma vez as palavras sublinhadas |
+| Depois do acerto | A | o "clique para continuar" |
+| Qualquer lugar | B | o mesmo que o ESC: volta um passo |
+
+Arrastar não tem equivalente no controle, e não precisa: todo arraste tem um atalho de botão que chega
+ao mesmo resultado.
 
 ---
 

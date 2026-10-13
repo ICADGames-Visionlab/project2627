@@ -5,9 +5,10 @@
 # Todos os eventos do jogo ficam neste arquivo, agrupados por módulo, cada um com um comentário
 # acima dizendo quem emite e quem escuta. Abrir este arquivo é ver o jogo inteiro conversando.
 #
-# ESTADO ATUAL: os eventos de tempo (GameClock), os do sistema de insights, os do profiling e os
-# do sistema de diálogo. Eventos nascem junto com o sistema que produz os fatos — criar antes
-# disso seria adivinhar features que o conceito do jogo ainda não decidiu.
+# ESTADO ATUAL: os eventos de tempo (GameClock), os do sistema de insights, os do profiling, os
+# do sistema de diálogo e a troca de dispositivo de entrada (suporte a controle). Eventos nascem
+# junto com o sistema que produz os fatos — criar antes disso seria adivinhar features que o conceito
+# do jogo ainda não decidiu.
 #
 # Para adicionar um evento, é uma edição só: declarar o sinal abaixo, tipado e comentado.
 #
@@ -155,6 +156,18 @@ signal conversation_started(conversation_id: StringName, initiator_id: StringNam
 # Emitido quando uma conversa fecha, com o nó onde terminou.
 # Emissor: DialogueScreen. Ouvintes: os mesmos de conversation_started.
 signal conversation_ended(conversation_id: StringName, end_node_id: StringName)
+
+# ------------------------------------------------------------------------------------
+# Entrada (controle)
+# ------------------------------------------------------------------------------------
+
+# Emitido quando o jogador troca de dispositivo: pegou o controle depois de usar teclado/mouse, ou
+# voltou pro teclado/mouse. Só na TROCA, nunca a cada tecla. device é um GameManager.InputDevice.
+# Emissor: InputDeviceDetector (filho do GameManager). Ouvintes: quem mostra aviso com tecla e o
+# reescreve (ActionPrompt, DreamHud, DialogueScreen, ProfilingScreen, DiaryOverlay), MenuFocus (põe foco
+# no menu aberto quando o controle chega) e as peças que só aceitam foco no controle (GlossaryPanel,
+# GlossaryWordChip, ProfilingBlank, ProfilingEmotionOption) — ver docs/suporte_a_controle.md.
+signal input_device_changed(device: int)
 
 var _logger: EventBusLogger
 

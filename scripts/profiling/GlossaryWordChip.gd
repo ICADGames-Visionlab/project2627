@@ -21,6 +21,10 @@
 ##   clique direito   -> pede o retângulo de marcas (lixo e estrela), que é um nó da tela, não uma
 ##                       janela: ver GlossaryMarkMenu.
 ##
+## NO CONTROLE (o chip só aceita foco com o controle em uso): o D-pad anda entre as palavras, o A é o
+## clique curto (põe na primeira lacuna vazia da categoria) e o Y (ação ui_context_menu) é o clique
+## direito (abre as marcas). A palavra com foco fica destacada como a palavra sob o mouse.
+##
 ## O atalho do clique só dispara ao SOLTAR o botão, e só se o arraste não tiver começado no meio —
 ## senão pegar a palavra pra arrastar já a mandava pra lacuna, e o arraste ficava impossível.
 ##
@@ -76,6 +80,8 @@ var word: GlossaryWord
 var _mark: GlossaryMark.Kind = GlossaryMark.Kind.NONE
 var _in_use: bool = false
 var _is_hovered: bool = false
+# Foco do controle. Desenhado como o hover (ver _refresh e _process).
+var _is_focused: bool = false
 # O botão esquerdo está pressionado em cima deste chip e o arraste ainda não começou: é o "clique
 # curto" em potencial. O arraste (ou o mouse saindo) cancela.
 var _press_pending: bool = false
@@ -94,6 +100,10 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+	focus_entered.connect(_on_focus_entered)
+	focus_exited.connect(_on_focus_exited)
+	EventBus.input_device_changed.connect(_on_input_device_changed)
+	MenuFocus.apply_joypad_focus_mode(self)
 	resized.connect(_update_pivot)
 	_update_pivot()
 	_refresh()
@@ -104,8 +114,9 @@ func _ready() -> void:
 # exponencial (1 - exp(-v*dt)) pra ficar igual em qualquer taxa de quadros.
 func _process(delta: float) -> void:
 	var weight: float = 1.0 - exp(-hover_lerp_speed * delta)
-	var target_scale: float = hover_scale if _is_hovered else 1.0
-	var target_rotation: float = deg_to_rad(hover_rotation_degrees) if _is_hovered else 0.0
+	var lifted: bool = _is_hovered or _is_focused
+	var target_scale: float = hover_scale if lifted else 1.0
+	var target_rotation: float = deg_to_rad(hover_rotation_degrees) if lifted else 0.0
 
 	scale = scale.lerp(Vector2(target_scale, target_scale), weight)
 	rotation = lerpf(rotation, target_rotation, weight)
@@ -138,8 +149,20 @@ func _notification(what: int) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	if word == null:
+		return
+	# Controle: A é o clique curto, Y é o clique direito.
+	if event.is_action_pressed(&"ui_accept"):
+		accept_event()
+		word_activated.emit(word.id)
+		return
+	if event.is_action_pressed(&"ui_context_menu"):
+		accept_event()
+		mark_menu_requested.emit(word.id, get_global_rect())
+		return
+
 	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
-	if mouse_button == null or word == null:
+	if mouse_button == null:
 		return
 
 	if mouse_button.button_index == MOUSE_BUTTON_RIGHT and mouse_button.pressed:
@@ -234,7 +257,7 @@ func _refresh() -> void:
 		else "%s %s" % [glyph, word.get_display_text()]
 
 	var tint: Color = word.get_color()
-	if _is_hovered:
+	if _is_hovered or _is_focused:
 		tint = tint.lightened(hover_lighten)
 	tint.a = in_use_opacity if _in_use else 1.0
 	# self_modulate tinge só o fundo deste nó: o Label é filho, e a cor de leitura dele não é
@@ -255,6 +278,25 @@ func _on_mouse_entered() -> void:
 	_is_hovered = true
 	set_process(true)
 	_refresh()
+
+
+# O controle chegou nesta palavra: ela se destaca como sob o mouse.
+func _on_focus_entered() -> void:
+	_is_focused = true
+	set_process(true)
+	_refresh()
+
+
+# O foco saiu: a palavra volta ao repouso.
+func _on_focus_exited() -> void:
+	_is_focused = false
+	set_process(true)
+	_refresh()
+
+
+# Aceita foco só com o controle em uso (ver MenuFocus.apply_joypad_focus_mode).
+func _on_input_device_changed(_device: int) -> void:
+	MenuFocus.apply_joypad_focus_mode(self)
 
 
 func _on_mouse_exited() -> void:

@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" uid="uid://bcpk8vk7dip7v" path="res://scripts/ui/InventoryUI.gd" id="1_inventory_ui"]
+[ext_resource type="Script" uid="uid://dbevk37m0k5ea" path="res://scripts/ui/MenuFocus.gd" id="90_menu_focus"]
 
 [node name="InventoryUI" type="CanvasLayer"]
 layer = 45
@@ -61,3 +62,8 @@ text = "INVENTORY_EMPTY"
 [node name="Slots" type="GridContainer" parent="Root/Center/Panel/Margin/Layout"]
 layout_mode = 2
 columns = 4
+
+[node name="MenuFocus" type="Node" parent="." node_paths=PackedStringArray("menu_root", "cancel_button")]
+script = ExtResource("90_menu_focus")
+menu_root = NodePath("../Root")
+cancel_button = NodePath("../Root/Center/Panel/Margin/Layout/Header/Close")

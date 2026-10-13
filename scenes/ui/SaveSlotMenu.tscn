@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://fja82fkd8flig"]
 
 [ext_resource type="Script" uid="uid://hhemlqq5v7xur" path="res://scripts/ui/SaveSlotMenu.gd" id="1_slotmenu"]
+[ext_resource type="Script" uid="uid://dbevk37m0k5ea" path="res://scripts/ui/MenuFocus.gd" id="90_menu_focus"]
 
 [node name="SaveSlotMenu" type="Control"]
 layout_mode = 3
@@ -204,3 +205,7 @@ grow_vertical = 0
 text = "SAVE_SLOT_BACK"
 
 [node name="ConfirmDialog" type="ConfirmationDialog" parent="."]
+
+[node name="MenuFocus" type="Node" parent="." node_paths=PackedStringArray("cancel_button")]
+script = ExtResource("90_menu_focus")
+cancel_button = NodePath("../Back")

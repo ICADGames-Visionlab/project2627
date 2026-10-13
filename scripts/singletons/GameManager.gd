@@ -18,9 +18,22 @@ signal dialogue_preferences_changed
 # mesma em que as opções aparecem no OptionButton da tela de Settings.
 enum MovementScheme { KEYBOARD, CLICK }
 
+# Dispositivo que o jogador está usando agora. Decide o que os avisos da tela mostram ("Aperte
+# ESPAÇO" ou "Aperte X") e se os menus ganham foco sozinhos. Teclado e mouse são um dispositivo só:
+# quem joga de mouse também lê a tecla no aviso. Ver docs/suporte_a_controle.md.
+enum InputDevice { KEYBOARD_MOUSE, JOYPAD }
+
 # Modo de revelação do texto de diálogo (SPEC §14): instantâneo mostra a fala inteira de uma vez;
 # progressivo é o typewriter (DialogueScreen._await_entry_then_continue).
 enum TextReveal { INSTANT, PROGRESSIVE }
+
+## Movimento do mouse, em pixels, a partir do qual o jogador é considerado de volta ao mouse. Evita
+## que o tremor de um mouse parado na mesa tire o jogo do modo controle.
+@export var mouse_motion_threshold: float = 3.0
+
+## Inclinação do analógico (ou do gatilho) a partir da qual o jogador é considerado no controle.
+## Abaixo disso é folga do analógico parado, não intenção.
+@export_range(0.1, 1.0, 0.05) var joypad_axis_threshold: float = 0.5
 
 # Preferências de diálogo (SPEC §14.1). Mude sempre por set_dialogue_preference(): é o setter que
 # aplica o clamp, persiste e avisa a DialogueScreen.
@@ -29,6 +42,11 @@ var dialogue_use_alt_font: bool = false
 var dialogue_panel_opacity: float = 0.82      # 0.82 .. 1.0
 var dialogue_text_reveal: TextReveal = TextReveal.INSTANT
 var dialogue_animation_multiplier: float = 1.0   # 1.0, 0.5 ou 0.0
+
+# Dispositivo em uso agora. Quem muda é o InputDeviceDetector (filho deste nó), por
+# set_active_input_device(); quem lê pergunta is_joypad_active() ou escuta
+# EventBus.input_device_changed.
+var active_input_device: InputDevice = InputDevice.KEYBOARD_MOUSE
 
 # Variável a ser utilizada na transição de cenas, fica true no inicio da troca e passa para false após a troca
 var in_transition: bool = false
@@ -75,9 +93,35 @@ var _load_in_progress_path: String = ""
 
 func _ready() -> void:
 	_load_gameplay_settings()
+	_create_input_device_detector()
 
 
 ## Espaço para funções personalizadas
+
+# Diz se o jogador está no controle agora. Atalho para a pergunta mais comum sobre o dispositivo.
+func is_joypad_active() -> bool:
+	return active_input_device == InputDevice.JOYPAD
+
+
+# Registra o dispositivo em uso e, só quando ele MUDA, anuncia pelo EventBus. Chamado pelo
+# InputDeviceDetector a cada evento que diz algo sobre o dispositivo; repetir o mesmo não faz nada.
+func set_active_input_device(device: InputDevice) -> void:
+	if device == active_input_device:
+		return
+	active_input_device = device
+	print("[Input] - Dispositivo em uso: %s" % InputDevice.keys()[device])
+	EventBus.input_device_changed.emit(device)
+
+
+# Cria o detector de dispositivo como filho. Em código, e não numa cena, porque o GameManager é um
+# Autoload só de script; ver o cabeçalho do InputDeviceDetector para o porquê de ser um nó à parte.
+func _create_input_device_detector() -> void:
+	var detector: InputDeviceDetector = InputDeviceDetector.new()
+	detector.name = &"InputDeviceDetector"
+	detector.mouse_motion_threshold = mouse_motion_threshold
+	detector.joypad_axis_threshold = joypad_axis_threshold
+	add_child(detector)
+
 
 # Troca o esquema de movimentação e persiste a escolha. Usar sempre este método (nunca a
 # variável movement_scheme direto) quando a troca vier do jogador.

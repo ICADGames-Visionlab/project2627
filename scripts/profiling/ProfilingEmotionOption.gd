@@ -15,6 +15,11 @@
 ##                               de encher cancela, sem efeito nenhum.
 ##   passar o mouse           -> aparece o botão INVESTIGAR logo embaixo, que abre a história.
 ##
+## NO CONTROLE os mesmos dois gestos, com o foco no lugar do mouse: a opção com foco mostra o
+## INVESTIGAR (o D-pad pra baixo chega nele, e o A aperta), e SEGURAR o A em cima da opção enche o
+## retângulo. Tirar o foco da opção no meio cancela, como tirar o mouse de cima. A opção só aceita
+## foco com o controle em uso, para o clique do mouse não deixar contorno de foco pra trás.
+##
 ## Segurar é gesto de mudar o mundo, e clicar é gesto de investigar: são intenções diferentes, e é
 ## por isso que o GDD separa uma no tempo de pressão e a outra num botão. Um clique curto em cima da
 ## emoção, por isso, não faz nada — e não deve fazer.
@@ -65,6 +70,9 @@ var slot: int = NPCDefinition.EmotionSlot.NEUTRAL
 var _emotion: EmotionDefinition
 var _is_holding: bool = false
 var _hold_time: float = 0.0
+# O gesto de segurar em curso veio do A (foco), e não do mouse: aí quem cancela é perder o foco, e não
+# o mouse estar fora da opção (no controle o cursor nem está lá).
+var _is_holding_with_focus: bool = false
 
 ## Espaço para variáveis onready
 
@@ -81,6 +89,10 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_investigate.pressed.connect(_on_investigate_pressed)
 	_investigate.hide()
+	focus_entered.connect(_on_focus_changed)
+	focus_exited.connect(_on_focus_changed)
+	EventBus.input_device_changed.connect(_on_input_device_changed)
+	_apply_focus_mode()
 
 
 # O processo fica sempre ligado por dois motivos: o gesto de segurar precisa contar tempo, e a
@@ -93,11 +105,13 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	var mouse: Vector2 = get_global_mouse_position()
 	var over_option: bool = get_global_rect().has_point(mouse)
-	_investigate.visible = over_option or _investigate.get_global_rect().has_point(mouse)
+	# No controle, o foco faz o papel do mouse em cima: na opção ou no próprio INVESTIGAR.
+	var focused: bool = has_focus() or _investigate.has_focus()
+	_investigate.visible = over_option or _investigate.get_global_rect().has_point(mouse) or focused
 
-	if _is_holding and not over_option:
-		# Arrastar o mouse pra fora enquanto segura cancela o gesto: sem isso, o jogador trocaria a
-		# emoção sem estar mais olhando pra ela.
+	if _is_holding and not (has_focus() if _is_holding_with_focus else over_option):
+		# Arrastar o mouse pra fora (ou tirar o foco) enquanto segura cancela o gesto: sem isso, o
+		# jogador trocaria a emoção sem estar mais olhando pra ela.
 		_stop_hold()
 
 	if not _is_holding:
@@ -115,13 +129,23 @@ func _process(delta: float) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	# Controle (e Enter, com a opção focada): segurar o A é segurar o botão esquerdo.
+	if event.is_action_pressed(&"ui_accept"):
+		accept_event()
+		_start_hold(true)
+		return
+	if event.is_action_released(&"ui_accept"):
+		accept_event()
+		_stop_hold()
+		return
+
 	var mouse_button: InputEventMouseButton = event as InputEventMouseButton
 	if mouse_button == null or mouse_button.button_index != MOUSE_BUTTON_LEFT:
 		return
 
 	accept_event()
 	if mouse_button.pressed:
-		_start_hold()
+		_start_hold(false)
 	else:
 		_stop_hold()
 
@@ -165,6 +189,7 @@ func configure(emotion: EmotionDefinition, p_slot: int, is_current: bool, is_sch
 
 	_apply_tint(is_current or is_scheduled)
 	_apply_progress(0.0)
+	_on_focus_changed()
 
 
 # A emoção desta opção. A tela usa pra pintar o filtro de cor com o tint dela.
@@ -172,8 +197,10 @@ func get_emotion() -> EmotionDefinition:
 	return _emotion
 
 
-func _start_hold() -> void:
+# Começa o gesto de segurar. with_focus diz se ele veio do A (foco) ou do mouse — muda o que cancela.
+func _start_hold(with_focus: bool) -> void:
 	_is_holding = true
+	_is_holding_with_focus = with_focus
 	_hold_time = 0.0
 
 
@@ -184,6 +211,7 @@ func _stop_hold() -> void:
 	if not _is_holding:
 		return
 	_is_holding = false
+	_is_holding_with_focus = false
 	_hold_time = 0.0
 	_apply_progress(0.0)
 	hold_changed.emit(slot, 0.0)
@@ -220,3 +248,23 @@ func _get_tint() -> Color:
 
 func _on_investigate_pressed() -> void:
 	investigate_requested.emit(slot)
+
+
+# A opção só aceita foco com o controle em uso (ver MenuFocus.apply_joypad_focus_mode). O INVESTIGAR
+# é um Button e aceita foco sempre, como os outros botões do jogo.
+func _apply_focus_mode() -> void:
+	MenuFocus.apply_joypad_focus_mode(self)
+
+
+# O jogador pegou (ou largou) o controle: a opção passa a aceitar (ou recusar) o foco.
+func _on_input_device_changed(_device: int) -> void:
+	_apply_focus_mode()
+
+
+# O destaque do foco: a moldura da opção fica opaca, como a de uma emoção escolhida, mas sem a
+# moldura grossa — essa continua sendo só da emoção vigente/escolhida.
+func _on_focus_changed() -> void:
+	if _frame == null:
+		return
+	var tint: Color = _get_tint()
+	_frame.self_modulate = Color(tint.r, tint.g, tint.b, 1.0 if has_focus() else idle_frame_opacity)
