@@ -88,9 +88,8 @@ func _ready() -> void:
 # o jogador clica numa palavra sublinhada no meio de um texto e ela vai pro NPC a que pertence, sem
 # quem mostrou o texto precisar saber de quem é.
 #
-# É ESTA A PORTA DE ENTRADA DO SISTEMA DE INVENTÁRIO E DO DE DIÁLOGO: nenhum dos dois existe ainda
-# (as evidências vêm do inventário, as falas vêm do diálogo, ambos em outra branch), e os dois vão
-# chamar exatamente esta função quando existirem.
+# É ESTA A PORTA DE ENTRADA DAS EVIDÊNCIAS E DO DIÁLOGO: o texto da evidência (EvidenceViewer) e as
+# falas (DialogueEntry) chegam aqui pelo ClickableWordText.
 func discover_word(word_id: StringName, npc_id: StringName = &"") -> bool:
 	if word_id == &"":
 		return false

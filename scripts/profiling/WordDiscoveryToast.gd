@@ -2,8 +2,8 @@
 ## diário, e do lado aparece "Palavra adicionada ao Glossário do Zé".
 ##
 ## COMO USAR: instancie WordDiscoveryToast.tscn uma vez na cena de jogo. Nada a configurar — ele
-## escuta EventBus.glossary_word_discovered e se cuida. Quem descobre a palavra (o texto clicável, o
-## inventário quando existir, o menu de debug) não conhece esta cena.
+## escuta EventBus.glossary_word_discovered e se cuida. Quem descobre a palavra (o texto clicável, a
+## evidência vista de perto, o menu de debug) não conhece esta cena.
 ##
 ## O layout está na cena: o canto, a mensagem e o retângulo do diário. A palavra que voa é a cena
 ## apontada em "Flying Word Scene" (FlyingWord.tscn) — fonte e contorno dela se mexem lá, não aqui.

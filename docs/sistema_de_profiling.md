@@ -242,6 +242,7 @@ A marcação no texto é a **mesma legenda do GDD**, e vale no CSV:
 | --- | --- |
 | `Achei uma [FACA] no beco.` | Uma palavra clicável. |
 | `O nome dele era [MARCOS]/[CASTRO].` | Duas palavras; clicar em qualquer uma adiciona **as duas**. |
+| `Assinado por [MARCOS] [CASTRO].` | O mesmo, sem a barra no texto: o par vem das `paired_words`, não da marcação. |
 
 O id entre colchetes é o `GlossaryWord.id` **em maiúsculas** (é o que distingue a marcação do
 BBCode `[i]`/`[b]`), e é o mesmo em todos os idiomas: a coluna `en` também escreve `[FACA]`, e a
@@ -254,9 +255,13 @@ A mesma marcação vale em três lugares, cada um com o seu jeito de colher:
 | Fala de diálogo (`.dlg` → chave no CSV) | Sublinhada até o jogador **clicar**. O clique não pula a revelação nem avança a conversa. (`DialogueEntry`) |
 | Caixa de insight de ambiente | Sublinhada, **sem clique**: quando a caixa fecha, todas as palavras marcadas voam da caixa pro diário. (`InsightBubble`) |
 | História resolvida na página de profiling | Clique, como no diálogo. (`ClickableWordText`) |
+| Texto de uma evidência (`ItemData.description_key`) | Clique, como no diálogo; a evidência só fecha com todas colhidas. (`EvidenceViewer`, ver `docs/evidencias.md`) |
 
 O `.dlg` não muda: ele só tem chaves, e a marcação mora no texto do CSV. Insight **de personagem**
 abre a tela de diálogo, então lá a palavra é colhida por clique, como numa fala.
+
+No `ClickableWordText` (história resolvida e evidência), passar o mouse numa palavra troca o
+sublinhado por **fundo vermelho e letra branca**, e o par dela acende junto.
 
 Quem desenha isso é o `ClickableWordText`, e quem liga o par são as `paired_words` do
 `GlossaryWord` — apontadas **num sentido só** (marcar `CASTRO` em `MARCOS` basta). O grupo é
@@ -506,7 +511,6 @@ entram.
 
 | O que falta | O que já está de pé | Onde ele entra |
 | --- | --- | --- |
-| **Evidências / inventário** | A descoberta de palavra é uma função pública. | `ProfilingJournal.discover_word(word_id, npc_id)` |
 | **Opções de diálogo liberadas por emoção concluída** | Todo acerto passa por um funil só. | `ProfilingJournal.mark_story_solved()` |
 | **História narrada pelo NPC** (o GDD sugere animatic) | A história resolvida aparece como texto na própria página. | `ProfilingScreen._reveal_solved()` |
 | **Música curta no acerto** | Não há música no projeto (`docs/AudioManager.md`). | comentário `MÚSICA` em `ProfilingScreen._reveal_solved()` |
