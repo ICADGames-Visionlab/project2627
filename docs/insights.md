@@ -98,8 +98,16 @@ lugar, vazado, e clicar nele mostra o texto de novo, sem emitir `insight_reveale
 
 ## As cabeças
 
-`HeadData` (`scripts/insights/HeadData.gd`), um `.tres` por cabeça em `res://resources/heads/`:
-`id`, `display_name_key` (chave do CSV), `origin` (`PLAYER` ou `NPC`), `npc_id` (o NPC dono da cabeça), `color` e `glyph`.
+`HeadData` (`scripts/insights/HeadData.gd`): `id`, `display_name_key` (chave do CSV), `origin`
+(`PLAYER` ou `NPC`), `color` e `glyph`. Há dois jeitos de uma cabeça existir:
+
+- **Cabeça de NPC do roster**: não tem arquivo. O `InsightCatalog` monta uma por NPC a partir do
+  `NPCDefinition` (`HeadData.from_npc`): mesmo `id`, nome, `color` e a letra `head_glyph` (vazia = a
+  inicial do id). Por isso o orbe da cabeça, o nome no diálogo e o sprite do NPC têm sempre a mesma
+  cor. Para mudar a cor, mude o `NPCDefinition`.
+- **Cabeça em `.tres`** em `res://resources/heads/`: a do jogador e as avulsas, que não são de nenhum NPC
+  do roster (`old_fisherman`). Elas têm cor própria. Um `.tres` com o `id` de um NPC do roster é
+  ignorado, com aviso no log, porque a cabeça daquele NPC é a montada da definição dele.
 
 A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC ficam disponíveis quando o
 profiling do NPC é completado: o `HeadRegistry` pergunta a `ProfilingJournal.is_profile_complete()` e
@@ -108,10 +116,13 @@ o jogador. A ação de debug "Desbloquear cabeça" destrava uma cabeça sem comp
 
 ### Elenco atual
 
-| id | Nome | Cor | Glifo |
-| --- | --- | --- | --- |
-| `player` | `HEAD_PLAYER_NAME` | `#5B9EFF` azul | `P` |
-| `old_fisherman` | `HEAD_OLD_FISHERMAN_NAME` | `#FF9B42` laranja | `F` |
+| id | Origem | Nome | Cor | Glifo |
+| --- | --- | --- | --- | --- |
+| `player` | `.tres` | `HEAD_PLAYER_NAME` | `#5B9EFF` azul | `P` |
+| `old_fisherman` | `.tres` (avulsa) | `HEAD_OLD_FISHERMAN_NAME` | `#FF9B42` laranja | `F` |
+| `ze` | NPC | `NPC_NAME_ZE` | `#87BDFF` azul-claro | `Z` |
+| `ana` | NPC | `NPC_NAME_ANA` | `#FFB380` pêssego | `A` |
+| `policial` | NPC | `NPC_NAME_POLICIAL` | `#998CFF` lilás | `P` |
 
 ### A paleta reservada
 
@@ -269,20 +280,27 @@ ação Disparar insight, que é a ação registrada à mão que o `docs/debug_me
 `InsightJournal` guarda o que já foi lido e quais flags o mundo concedeu. Ele escuta
 `insight_revealed` e se atualiza sozinho; nenhum outro script escreve nele.
 
-O diário entra no save pela chave `insights` do Dictionary do slot, sem mexer nas outras chaves do
-arquivo. A conversão de volta é explícita (`StringName(...)`) por causa de uma armadilha do
-`SaveManager`: ele serializa com `JSON.stringify`, e na leitura todo `StringName` vira `String` e
-todo número vira `float`. Comparar `StringName` com `String` falha sem erro nenhum, e o sintoma é o
-jogador reencontrar insights que já leu.
+O diário é um participante do `SaveManager` (ver `docs/SaveManager.md`): registra `to_dict()`/
+`from_dict()` no `_ready()` com a chave `insights` (campos `read` e `flags`) e pede gravação com
+`request_save()` a cada mudança. Ler um insight marca o lido e concede uma flag, dois pedidos no mesmo
+frame, e o `SaveManager` os junta numa escrita só. A conversão de volta é explícita (`StringName(...)`)
+por causa de uma armadilha do JSON: na leitura todo `StringName` vira `String` e todo número vira
+`float`. Comparar `StringName` com `String` falha sem erro nenhum, e o sintoma é o jogador reencontrar
+insights que já leu.
 
-Enquanto ninguém é dono do slot ativo, o jogo vai do menu direto para a cidade, sem escolher slot, e
-o diário carrega e grava sozinho no slot 1. Quando o fluxo de save existir, quem for dono do slot
-define `InsightJournal.save_slot_path`, desliga `autosave_enabled` e chama `to_dict()`/`from_dict()`
-de dentro do save do jogo. A API já está pronta para isso.
+Quem escolhe o slot e abre a partida é o `SaveManager`; o diário só entrega e recebe a seção.
+`from_dict({})` é o novo jogo: o diário volta vazio. Sem partida ativa (menu principal, ou uma cena
+rodada direto pelo editor com F6) o diário começa vazio e nada é gravado. Para jogar com progresso,
+F4 → Save → "Continuar slot".
 
-As cabeças desbloqueadas ainda não são salvas. Quem sabe persistir "este NPC foi derrotado" é o
-sistema de derrota, que ainda não existe, e duplicar isso no `HeadRegistry` criaria duas fontes de
-verdade para o mesmo fato.
+Um id de insight ou de flag que já foi gravado e mudou de nome deixa de casar: o insight reaparece para
+quem já o leu. Se isso importa, a renomeação pede uma migração (checklist "renomeei um id de conteúdo"
+no `docs/SaveManager.md`).
+
+As cabeças de NPC atravessam o save sem seção própria: o `HeadRegistry` não guarda quem foi
+derrotado, ele pergunta ao `ProfilingJournal` (`is_profile_complete()`), que já é participante. Ao
+abrir uma partida, o `ProfilingJournal` recebe a seção dele e avisa a mudança, e o `HeadRegistry`
+reconfere as cabeças. O "Desbloquear cabeça" do debug não é salvo.
 
 ---
 
@@ -304,11 +322,12 @@ console aceita o sufixo mais curto que seja único, então `diagnostico_da_cena`
 | Teto de orbes de cabeça | Calibra o teto olhando a tela |
 | Listar estado do diário | Imprime lidos e flags |
 | Conceder flag `<flag>` | Abre uma porta sem reproduzir a condição de jogo |
-| Resetar lidos / Resetar diário | Zera só os lidos, ou lidos e flags |
-| Salvar / Carregar diário | Round-trip manual pelo slot atual |
-| Salvar automático | Liga/desliga a gravação a cada mudança |
+| Resetar lidos / Resetar diário | Zera só os lidos, ou lidos e flags, da partida ativa (e pede gravação) |
 
 Os relatórios saem por `print()`, então aparecem no visualizador de log (F5) sem o editor aberto.
+
+Salvar, carregar e ligar ou desligar o salvamento automático **não** são mais entradas desta seção:
+ficam na seção **Save** (ver `docs/SaveManager.md`).
 
 O diagnóstico responde com cinco tipos de linha, que cobrem todos os casos de "sumiu e não sei por
 quê":
@@ -336,8 +355,8 @@ ninguém está olhando.
 
 Ele roda contra o `InsightDirector` real, não contra uma cópia da regra. Os insights de teste são
 criados em memória (ids com prefixo `__selftest_`). O diário do jogador é guardado antes e devolvido
-no fim, e o salvamento automático fica desligado durante a execução, então rodar o autoteste no meio
-de uma sessão de jogo não altera nada.
+no fim, e o salvamento automático (`SaveManager.autosave_enabled`) fica desligado durante a execução,
+então rodar o autoteste no meio de uma sessão de jogo não altera nada.
 
 Ele também roda pela linha de comando, sem abrir o jogo, e sai com código 1 quando algum caso falha:
 

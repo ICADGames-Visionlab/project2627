@@ -11,8 +11,18 @@
 ## Com a máscara padrão (1, "world") a Area2D não enxerga o Player e o item largado nunca mais volta
 ## pro inventário. collision_layer = 0 porque ninguém precisa detectar o pickup. NPC também está na
 ## camada 2, mas _on_body_entered filtra por Player.
+##
+## NO SAVE: quem grava os itens no chão é a GameSession (seção "pickups"), achando todos pelo grupo
+## GROUP. Um pickup posto numa cena no editor que o jogador já pegou não volta ao recarregar; um que o
+## jogador largou volta onde estava. O pickup em si não sabe de save nenhum.
 class_name ItemPickup
 extends Area2D
+
+## Espaço para constantes
+
+# Grupo em que todo ItemPickup entra (ver _enter_tree). É por ele que a GameSession acha os itens no
+# chão para gravar quais foram pegos e quais o jogador largou.
+const GROUP: StringName = &"item_pickup"
 
 ## Espaço para variáveis
 
@@ -36,7 +46,17 @@ var _collectible: bool = false
 
 ## Espaço para funções nativas
 
+# Entra no grupo em _enter_tree, e não em _ready: a GameSession procura os pickups no _ready dela, e
+# todo _enter_tree da cena roda antes de qualquer _ready, então a ordem dos nós na árvore não importa.
+func _enter_tree() -> void:
+	add_to_group(GROUP)
+
+
 func _ready() -> void:
+	# A GameSession pode ter removido este pickup antes do _ready dele (o jogador já o tinha pego
+	# nesta partida). Sem isto ele ainda montaria o sprite e esperaria o cooldown à toa.
+	if is_queued_for_deletion():
+		return
 	if item == null:
 		push_warning("[ItemPickup] - Instanciado sem item definido; destruindo")
 		queue_free()
@@ -60,6 +80,13 @@ func _ready() -> void:
 		_on_body_entered(body)
 
 ## Espaço para funções personalizadas
+
+# Diz se este pickup foi posto numa cena no editor (true) ou criado com o jogo rodando, largado pelo
+# jogador ou recriado do save (false). Nó que veio de um .tscn tem owner; nó criado por código, não.
+# A GameSession grava os dois de jeitos diferentes: o primeiro pelo caminho na cena, o segundo inteiro.
+func is_placed_in_scene() -> bool:
+	return owner != null
+
 
 # Coleta o item para o Inventory do corpo que entrou na área, se for o Player e o cooldown de
 # pickup_delay já tiver terminado. Pega o inventário direto do corpo (e não pelo grupo

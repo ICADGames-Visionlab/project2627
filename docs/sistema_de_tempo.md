@@ -131,7 +131,9 @@ func _exit_tree() -> void:
 
 **Se você criar uma nova cena de gameplay, coloque um nó com `GameSession.gd` nela.** Sem isso o
 relógio não anda. Como efeito colateral bem-vindo, rodar a cena direto pelo editor (F6) também
-liga o relógio, sem precisar passar pelo menu.
+liga o relógio, sem precisar passar pelo menu. Só que F6 **não abre partida**: o relógio começa no dia 1
+e nada é lido nem gravado. Para jogar com progresso, F4 → Save → "Continuar slot" (ver
+[Save](#save)).
 
 ### Segurar o tempo durante um diálogo
 
@@ -189,13 +191,13 @@ GameClock.end_day(GameClock.DayEndReason.SLEPT)  # idem, explícito
 # O horário máximo dispara COLLAPSED sozinho, de dentro do advance().
 ```
 
-Os dois congelam o relógio e emitem `day_ended`. **O relógio não conhece tela**: o fade, a tela de
-resumo e o save automático são de quem escuta. E o relógio fica parado até alguém chamar
-`start_next_day()`:
+Os dois congelam o relógio e emitem `day_ended`. **O relógio não conhece tela**: o fade e a tela de
+resumo são de quem escuta (o save não precisa: o `SaveManager` grava na virada do dia, em
+`day_changed`). E o relógio fica parado até alguém chamar `start_next_day()`:
 
 ```gdscript
 func _on_day_ended(day: int, reason: int) -> void:
-	await _mostrar_resumo_do_dia(day)     # fade, tela de resumo, save...
+	await _mostrar_resumo_do_dia(day)     # fade, tela de resumo...
 	GameClock.start_next_day()            # sem isso, o jogo trava com o tempo parado
 ```
 
@@ -280,24 +282,39 @@ Valem para `wake_hour = 6`; o dia da semana e a virada de dia não dependem do b
 
 ## Save
 
-O relógio não salva sozinho — ele entrega e recebe o valor:
+O relógio é um participante do `SaveManager` (ver `docs/SaveManager.md`): registra `to_dict`/`from_dict`
+no `_ready()`. Quem grava, lê e escolhe o slot é o `SaveManager`; o relógio só entrega e recebe o valor.
 
 ```gdscript
-# Ao salvar
-var data: Dictionary = {}
-GameClock.write_to_save(data)          # data["total_minutes"] = 4380
-SaveManager.save_game(data, slot)
-
-# Ao carregar
-var data: Dictionary = SaveManager.load_game(slot)
-GameClock.read_from_save(data)
-GameClock.start_session()
+GameClock.to_dict()                                # { "total_minutes": 4380 }
+GameClock.from_dict({ "total_minutes": 4380.0 })   # é assim que volta do JSON: float
 ```
 
-> ⚠️ **Por que existe um `int()` dentro do `read_from_save`.** O `SaveManager` grava em JSON, e
-> JSON não tem tipo inteiro: tudo volta como `float`. `4380` salvo volta como `4380.0`, e um
-> `float` ali quebraria todas as divisões do calendário **sem nenhum erro no console**. Se você
-> escrever outro sistema que salva número inteiro, lembre do mesmo cuidado.
+| Constante | Valor | O que é |
+|---|---|---|
+| `GameClock.SAVE_KEY` | `"clock"` | O nome da seção no arquivo |
+| `GameClock.MINUTES_KEY` | `"total_minutes"` | O único campo da seção |
+
+No arquivo fica `"clock": { "total_minutes": 6260 }`. **`from_dict({})` é o novo jogo**: o minuto 0, que é
+o dia 1 na hora de acordar.
+
+**Carregar só escreve o minuto.** O `from_dict` não anuncia nada nem solta o relógio; quem solta o
+relógio e anuncia a hora (`time_changed`) é o `start_session()` do `GameSession`, já com a cena montada.
+Ele também zera o sonho e o fim do dia: sair no sonho e abrir outra partida não deixa o relógio
+"sonhando".
+
+**No sonho, o save guarda o minuto em que o dia fechou.** Entre `end_day()` e `start_next_day()` (o sonho
+inteiro), o `to_dict()` devolve o minuto em que o jogador deitou, e não o do sonho: 03:00 fica além do
+horário máximo e fecharia o dia na hora ao carregar. Fechar o jogo no sonho e continuar devolve o jogador
+acordado no **mesmo dia, na hora em que deitou**.
+
+A virada de dia grava sozinha: o `SaveManager` escuta `day_changed` e pede a gravação, que cai no frame
+seguinte com o dia novo já em vigor.
+
+> ⚠️ **Por que existe um `int()` dentro do `from_dict`.** O save é JSON, e JSON não tem tipo inteiro:
+> tudo volta como `float`. `4380` salvo volta como `4380.0`, e um `float` ali quebraria todas as
+> divisões do calendário **sem nenhum erro no console**. Se você escrever outro sistema que salva
+> número inteiro, lembre do mesmo cuidado (ver o contrato de tipos no `docs/SaveManager.md`).
 
 Salve apenas `total_minutes`. Hora e dia são derivados — salvar os três é criar a chance de eles
 voltarem inconsistentes entre si.
@@ -316,8 +333,6 @@ Coisas conhecidas, pra ninguém "descobrir" de novo:
   natural era a rotina de NPC, mas ela precisa de granularidade mais fina que a hora e escuta
   `time_changed` (ver `docs/sistema_de_npc.md`); o primeiro ouvinte será quem reagir à hora cheia —
   som ambiente, loja abrindo e fechando.
-- **O save não está plugado no fluxo.** As funções existem e estão testadas; falta chamá-las de
-  dentro do fluxo de save/carga quando ele deixar de ser teste.
 - **A sequência de fim de dia é um print.** Ver [Fim do dia](#fim-do-dia).
 
 ---

@@ -39,11 +39,11 @@ func run() -> void:
 	_lines.clear()
 
 	var journal_snapshot: Dictionary = InsightJournal.to_dict()
-	var was_autosaving: bool = InsightJournal.autosave_enabled
+	var was_autosaving: bool = SaveManager.autosave_enabled
 	var was_ignoring_gates: bool = InsightDirector.is_ignoring_gates()
 	# Autosave desligado por garantia: nenhum caso deveria gravar, mas um caso novo que conceda flag
-	# pelo caminho normal escreveria o estado de teste no save do jogador.
-	InsightJournal.autosave_enabled = false
+	# pelo caminho normal pediria gravação, e o estado de teste iria para o slot da partida aberta.
+	SaveManager.autosave_enabled = false
 	InsightDirector.set_ignoring_gates(false)
 
 	_test_selection()
@@ -52,7 +52,7 @@ func run() -> void:
 	_test_offer_tiebreak()
 
 	InsightJournal.from_dict(journal_snapshot)
-	InsightJournal.autosave_enabled = was_autosaving
+	SaveManager.autosave_enabled = was_autosaving
 	InsightDirector.set_ignoring_gates(was_ignoring_gates)
 
 

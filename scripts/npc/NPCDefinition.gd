@@ -300,9 +300,15 @@ func collect_issues() -> PackedStringArray:
 
 	var dialogue_style: DialogueStyle = load("res://resources/dialogue/dialogue_style.tres")
 	if dialogue_style != null:
-		var ratio: float = DialogueContrast.worst_case_ratio(color, 1.0, dialogue_style, 0.82)
+		var ratio: float = DialogueContrast.worst_speaker_ratio(color, dialogue_style, 0.82)
 		if ratio < dialogue_style.min_contrast_ratio:
-			issues.append("Cor do NPC com contraste %.1f:1 no diálogo (mínimo %.1f:1)." % [ratio, dialogue_style.min_contrast_ratio])
+			issues.append("Cor do NPC com contraste %.1f:1 no diálogo, contando a fala passada (mínimo %.1f:1)."
+				% [ratio, dialogue_style.min_contrast_ratio])
+		# Branco é o padrão do campo e passa em qualquer contraste, então uma cor esquecida (ou perdida
+		# num .tres que ainda grava um campo renomeado) só aparece aqui: o nome do NPC fica igual ao do
+		# jogador na coluna, e o sprite fica sem tinta, igual ao corpo do jogador.
+		if color.is_equal_approx(dialogue_style.player_name_color):
+			issues.append("Cor do NPC igual à do jogador no diálogo — provavelmente não foi preenchida.")
 
 	for index: int in insights.size():
 		var insight: InsightData = insights[index]

@@ -1,0 +1,206 @@
+[gd_scene format=3 uid="uid://fja82fkd8flig"]
+
+[ext_resource type="Script" uid="uid://hhemlqq5v7xur" path="res://scripts/ui/SaveSlotMenu.gd" id="1_slotmenu"]
+
+[node name="SaveSlotMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_slotmenu")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.15686275)
+
+[node name="Content" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Column" type="VBoxContainer" parent="Content"]
+custom_minimum_size = Vector2(1100, 0)
+layout_mode = 2
+theme_override_constants/separation = 32
+accessibility_region = true
+
+[node name="Title" type="Label" parent="Content/Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "SAVE_SLOT_MENU_TITLE"
+horizontal_alignment = 1
+
+[node name="Rows" type="VBoxContainer" parent="Content/Column"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Slot1" type="PanelContainer" parent="Content/Column/Rows"]
+custom_minimum_size = Vector2(0, 170)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Content/Column/Rows/Slot1"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 16
+
+[node name="Row" type="HBoxContainer" parent="Content/Column/Rows/Slot1/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Info" type="VBoxContainer" parent="Content/Column/Rows/Slot1/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Title" type="Label" parent="Content/Column/Rows/Slot1/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+
+[node name="Summary" type="Label" parent="Content/Column/Rows/Slot1/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+[node name="Status" type="Label" parent="Content/Column/Rows/Slot1/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="Buttons" type="HBoxContainer" parent="Content/Column/Rows/Slot1/Margin/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 16
+
+[node name="Primary" type="Button" parent="Content/Column/Rows/Slot1/Margin/Row/Buttons"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
+[node name="Delete" type="Button" parent="Content/Column/Rows/Slot1/Margin/Row/Buttons"]
+custom_minimum_size = Vector2(160, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "SAVE_SLOT_DELETE"
+
+[node name="Slot2" type="PanelContainer" parent="Content/Column/Rows"]
+custom_minimum_size = Vector2(0, 170)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Content/Column/Rows/Slot2"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 16
+
+[node name="Row" type="HBoxContainer" parent="Content/Column/Rows/Slot2/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Info" type="VBoxContainer" parent="Content/Column/Rows/Slot2/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Title" type="Label" parent="Content/Column/Rows/Slot2/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+
+[node name="Summary" type="Label" parent="Content/Column/Rows/Slot2/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+[node name="Status" type="Label" parent="Content/Column/Rows/Slot2/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="Buttons" type="HBoxContainer" parent="Content/Column/Rows/Slot2/Margin/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 16
+
+[node name="Primary" type="Button" parent="Content/Column/Rows/Slot2/Margin/Row/Buttons"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
+[node name="Delete" type="Button" parent="Content/Column/Rows/Slot2/Margin/Row/Buttons"]
+custom_minimum_size = Vector2(160, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "SAVE_SLOT_DELETE"
+
+[node name="Slot3" type="PanelContainer" parent="Content/Column/Rows"]
+custom_minimum_size = Vector2(0, 170)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Content/Column/Rows/Slot3"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 16
+
+[node name="Row" type="HBoxContainer" parent="Content/Column/Rows/Slot3/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Info" type="VBoxContainer" parent="Content/Column/Rows/Slot3/Margin/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Title" type="Label" parent="Content/Column/Rows/Slot3/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+
+[node name="Summary" type="Label" parent="Content/Column/Rows/Slot3/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+
+[node name="Status" type="Label" parent="Content/Column/Rows/Slot3/Margin/Row/Info"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+
+[node name="Buttons" type="HBoxContainer" parent="Content/Column/Rows/Slot3/Margin/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 16
+
+[node name="Primary" type="Button" parent="Content/Column/Rows/Slot3/Margin/Row/Buttons"]
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+
+[node name="Delete" type="Button" parent="Content/Column/Rows/Slot3/Margin/Row/Buttons"]
+custom_minimum_size = Vector2(160, 60)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "SAVE_SLOT_DELETE"
+
+[node name="Back" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 22.257744
+offset_top = -100.0
+offset_right = 154.02362
+offset_bottom = -25.0
+grow_vertical = 0
+text = "SAVE_SLOT_BACK"
+
+[node name="ConfirmDialog" type="ConfirmationDialog" parent="."]

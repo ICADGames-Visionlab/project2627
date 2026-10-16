@@ -41,13 +41,24 @@ static func load_all_insights() -> Array[InsightData]:
 #
 # As de NPC não são arquivo: cada NPC do roster tem a sua, montada da definição dele (ver
 # HeadData.from_npc). NPC novo no roster já tem cabeça, sem ninguém criar .tres nenhum.
+#
+# Um .tres com o id de um NPC do roster é ignorado: a cabeça do NPC é sempre a montada da definição.
+# Deixar os dois entrarem fazia a ordenação decidir qual sobrevivia ao filtro de id repetido do
+# HeadRegistry — e, se fosse o .tres, o orbe sairia numa cor e o nome do NPC no diálogo em outra.
 static func load_all_heads() -> Array[HeadData]:
-	var result: Array[HeadData] = []
+	var result: Array[HeadData] = _load_npc_heads()
+	var npc_head_ids: Dictionary = {}
+	for head: HeadData in result:
+		npc_head_ids[head.id] = true
 	for resource: Resource in _load_folder(HEADS_DIR):
 		var head: HeadData = resource as HeadData
-		if head != null:
-			result.append(head)
-	result.append_array(_load_npc_heads())
+		if head == null:
+			continue
+		if npc_head_ids.has(head.id):
+			push_warning("[Insights] - AVISO: \"%s\" ignorada: a cabeça do NPC \"%s\" vem do NPCDefinition dele"
+				% [head.resource_path, head.id])
+			continue
+		result.append(head)
 	result.sort_custom(_compare_head_ids)
 	return result
 

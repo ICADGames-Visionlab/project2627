@@ -24,6 +24,10 @@
 ##
 ## Para reagir ao tempo, escute o EventBus — não leia o relógio em _process.
 ##
+## SAVE: participante "clock" do SaveManager (to_dict/from_dict). Só total_minutes vai para o disco,
+## e no sonho vai o minuto em que o dia fechou (ver to_dict()). Carregar só escreve o minuto, sem
+## anunciar nada; quem solta o relógio e anuncia a hora é o start_session() da cena de jogo.
+##
 ## O guia completo está em docs/sistema_de_tempo.md.
 extends Node
 
@@ -42,8 +46,12 @@ const SETTINGS_PATH: String = "res://resources/TimeSettings.tres"
 # notificações por dia para a cidade inteira, sem nenhuma diferença visível no HUD.
 const TICK_MINUTES: int = 10
 
-# Chave do tempo no dicionário de save.
-const SAVE_KEY: String = "total_minutes"
+# Chave da seção do relógio no save (ver SaveManager). É contrato do arquivo: renomear pede um passo
+# de migração no SaveManager.
+const SAVE_KEY: String = "clock"
+# Campo da seção: o único estado do relógio que vai para o disco. O resto (dia, hora, dia da semana)
+# é derivado dele.
+const MINUTES_KEY: String = "total_minutes"
 
 # Motivo de freeze usado pela sequência de fim de dia. Fica numa constante porque quem congela
 # (este arquivo) e quem descongela (start_next_day) precisam usar exatamente o mesmo nome.
@@ -80,6 +88,11 @@ var _accumulator: float = 0.0
 # Último total_minutes anunciado em time_changed, usado para medir o degrau de TICK_MINUTES.
 var _last_tick_minutes: int = 0
 
+# Minuto em que o dia fechou, guardado em end_day(). É o que vai para o save enquanto o dia está
+# fechado (o sonho inteiro): o minuto do sonho, 03:00, fica além do horário máximo e colapsaria o
+# dia ao carregar. Ver to_dict().
+var _day_end_minutes: int = 0
+
 ## Espaço para funções nativas
 
 func _ready() -> void:
@@ -89,6 +102,9 @@ func _ready() -> void:
 
 	settings = _load_settings()
 	time = GameTime.new(settings)
+
+	# Sem partida ativa no boot, isto só registra: quem entrega o minuto salvo é o continue_game.
+	SaveManager.register_participant(SAVE_KEY, to_dict, from_dict)
 
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Tempo" do menu de debug (F4) e do console (F1).
@@ -174,6 +190,9 @@ func end_day(reason: DayEndReason = DayEndReason.SLEPT) -> void:
 	if _freeze_reasons.has(FREEZE_DAY_END):
 		return
 
+	# Antes do freeze, e antes de enter_dream() escrever a hora do sonho: é o minuto que o save
+	# guarda até o start_next_day() (ver to_dict()).
+	_day_end_minutes = time.total_minutes
 	freeze(FREEZE_DAY_END)
 	print("[GameClock] - Fim do dia %d (%s) às %s" % [
 		time.get_day(), DayEndReason.keys()[reason], time.format_clock()])
@@ -258,18 +277,35 @@ func get_minutes_left() -> int:
 	return time.get_minutes_left()
 
 
-# Escreve o tempo no dicionário que vai para o SaveManager.
-func write_to_save(data: Dictionary) -> void:
-	data[SAVE_KEY] = time.total_minutes
+# Seção "clock" do save (participante do SaveManager). É o último minuto SEGURO, não
+# necessariamente o de agora: entre end_day() e start_next_day() (o sonho inteiro) devolve o minuto
+# em que o dia fechou. Continuar um save feito no sonho acorda o jogador no mesmo dia, na hora em que
+# deitou, em vez de às 03:00 — que fica além do horário máximo e fecharia o dia na hora.
+func to_dict() -> Dictionary:
+	var minutes: int = _day_end_minutes if _freeze_reasons.has(FREEZE_DAY_END) else time.total_minutes
+	return { MINUTES_KEY: minutes }
 
 
-# Lê o tempo de um dicionário vindo do SaveManager.
+# Recebe a seção "clock" do save; {} é o novo jogo (minuto 0 = dia 1 na hora de acordar).
 #
 # O int() não é decoração: o JSON não tem tipo inteiro, então todo número que o SaveManager grava
 # volta como float. Sem a conversão, as divisões do calendário viram divisões de ponto flutuante
 # e a data sai errada sem nenhum erro no console.
-func read_from_save(data: Dictionary) -> void:
-	_set_total_minutes(int(data.get(SAVE_KEY, 0)), false)
+#
+# Não emite nada: quem anuncia o tempo é o start_session() da cena de jogo, com os ouvintes já
+# montados. Zerar o sonho e o fim do dia corrige um vazamento real: sair no sonho e abrir outra
+# partida deixaria o relógio "sonhando", porque start_session() não mexe nisso.
+func from_dict(data: Dictionary) -> void:
+	_is_dreaming = false
+	unfreeze(FREEZE_DAY_END)
+	_accumulator = 0.0
+	# Número negativo ou que não é número (save editado à mão) vira o minuto 0, não um calendário
+	# quebrado.
+	var raw_minutes: Variant = data.get(MINUTES_KEY, 0)
+	var minutes: int = maxi(int(raw_minutes), 0) if (raw_minutes is float or raw_minutes is int) else 0
+	_set_total_minutes(minutes, false)
+	_day_end_minutes = minutes
+	print("[GameClock] - Relógio carregado no dia %d às %s" % [time.get_day(), time.format_clock()])
 
 
 # Único ponto do projeto que escreve no inteiro do calendário. As viradas de hora e de dia saem

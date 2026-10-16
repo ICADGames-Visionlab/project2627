@@ -57,6 +57,14 @@ const BLOCKED_GRACE_SECONDS: float = 0.25
 # longe demais do NPC, em vez de só descartar um trajeto e parar.
 const APPROACH_BLOCKED_GRACE_SECONDS: float = 1.0
 
+# Grupo pelo qual o resto do jogo acha o Player (a GameSession, para o save; o NPCInteraction, para a
+# abordagem). A cena já marca o grupo; o _enter_tree() garante para quem instanciar o script sem ela.
+const GROUP: StringName = &"player"
+
+# Camada 1 ("world" em project.godot): só a geometria do mapa. É a máscara que valida a posição
+# restaurada de um save — um NPC parado ali (camada 2, "Agentes") não pode invalidar a posição.
+const WORLD_COLLISION_MASK: int = 1
+
 var _is_moving: bool = false
 var _facing_direction: Isometric.Facing = Isometric.Facing.S
 
@@ -80,7 +88,34 @@ var _approach_index: int = 0
 var _is_approaching: bool = false
 var _approach_blocked_time: float = 0.0
 
+# Onde a cena pôs o Player. É o ponto de partida de um novo jogo e o destino de uma posição salva
+# que não vale mais (o mapa mudou e ela caiu dentro de uma parede). Guardado só uma vez, no primeiro
+# _enter_tree(), antes de qualquer restore_position().
+var _spawn_position: Vector2 = Vector2.ZERO
+var _has_spawn_position: bool = false
+
+# Última posição em momento seguro (ver _is_in_safe_state()). É ela, e não a de agora, que vai para
+# o save: gravar no meio de uma abordagem de conversa ou de uma troca de cena guarda onde o jogador
+# estava no controle pela última vez.
+var _last_safe_position: Vector2 = Vector2.ZERO
+
+# Há uma posição restaurada esperando validação contra o mapa. A consulta ao espaço de física fica
+# para o primeiro _physics_process, quando a cena inteira (inclusive as colisões do mapa) já montou.
+var _needs_position_check: bool = false
+
 @onready var _animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
+
+
+# Entra no grupo e guarda o ponto de partida. Em _enter_tree, e não em _ready, de propósito: a engine
+# roda todo _enter_tree da cena antes de qualquer _ready, então a GameSession (que restaura a posição
+# no _ready dela) nunca chega antes e o ponto de partida nunca vira a posição restaurada.
+func _enter_tree() -> void:
+	add_to_group(GROUP)
+	if _has_spawn_position:
+		return
+	_has_spawn_position = true
+	_spawn_position = global_position
+	_last_safe_position = global_position
 
 
 func _ready() -> void:
@@ -92,12 +127,16 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if _needs_position_check:
+		_validate_restored_position()
 	var input_direction: Vector2 = _get_movement_direction()
 	velocity = _to_screen_velocity(input_direction)
 	move_and_slide()
 	_cancel_click_target_if_blocked(delta)
 	_cancel_approach_if_blocked(delta)
 	_update_movement_state(input_direction)
+	if _is_in_safe_state():
+		_last_safe_position = global_position
 
 
 # Marca o destino do esquema de clique. Roda em _unhandled_input (e não em _input) de propósito:
@@ -324,3 +363,47 @@ func _update_movement_state(input_direction: Vector2) -> void:
 func _on_movement_state_changed(is_moving: bool, facing_direction: Isometric.Facing) -> void:
 	var prefix: StringName = &"run" if is_moving else &"idle"
 	_animated_sprite.play(Isometric.animation_name(prefix, facing_direction))
+
+
+# Posição que a GameSession grava no save: a última em momento seguro, não a de agora.
+func get_last_safe_position() -> Vector2:
+	return _last_safe_position
+
+
+# Põe o Player na posição de um save. Valor não finito (save editado à mão) é ignorado: o Player
+# fica no ponto de partida. A checagem contra o mapa fica para o primeiro _physics_process (ver
+# _validate_restored_position()), porque aqui a cena ainda está montando.
+func restore_position(saved: Vector2) -> void:
+	if not saved.is_finite():
+		print("[Player] - Posição salva %s não é finita; ficando no ponto de partida" % [saved])
+		return
+	global_position = saved
+	_last_safe_position = saved
+	_needs_position_check = true
+	print("[Player] - Posição restaurada do save: %s" % [saved])
+
+
+# O jogador está no controle, acordado, fora de conversa e de troca de cena. Só nesses momentos a
+# posição vale como ponto de retorno: sair no meio de um diálogo grava a posição de antes da
+# abordagem. Pausa não entra na conta porque, com a árvore pausada, _physics_process nem
+# roda. Combate e cutscene futuros entram aqui travando o input ou acontecendo no sonho.
+func _is_in_safe_state() -> bool:
+	return not _is_input_locked and not _is_approaching and not GameClock.is_dreaming() \
+		and not GameManager.in_transition
+
+
+# Confere se a posição restaurada caiu dentro da geometria do mapa (o mapa mudou desde o save). Se
+# caiu, volta ao ponto de partida em vez de deixar o jogador preso numa parede. A máscara é só a do
+# mundo, e o próprio corpo fica de fora da consulta.
+func _validate_restored_position() -> void:
+	_needs_position_check = false
+	var query: PhysicsPointQueryParameters2D = PhysicsPointQueryParameters2D.new()
+	query.position = global_position
+	query.collision_mask = WORLD_COLLISION_MASK
+	query.exclude = [get_rid()]
+	var hits: Array[Dictionary] = get_world_2d().direct_space_state.intersect_point(query, 1)
+	if hits.is_empty():
+		return
+	global_position = _spawn_position
+	_last_safe_position = _spawn_position
+	print("[Player] - Posição salva inválida, voltando ao ponto de partida")

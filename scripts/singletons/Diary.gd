@@ -79,6 +79,7 @@ var _overlay: DiaryOverlay = null
 
 
 func _ready() -> void:
+	SaveManager.session_opened.connect(_on_session_opened)
 	if OS.has_feature("editor") or OS.is_debug_build():
 		# [DEBUG] Seção "Diário": ver docs/diary.md.
 		DebugMenu.register_action(DEBUG_SECTION, "Abrir/fechar diário", toggle_diary)
@@ -87,12 +88,7 @@ func _ready() -> void:
 		DebugMenu.register_action(DEBUG_SECTION, "Adicionar página de teste", _debug_add_test_page)
 		DebugMenu.register_action(DEBUG_SECTION, "Limpar diário", clear, true)
 		DebugMenu.register_action(DEBUG_SECTION, "Listar estado do diário", _print_diary)
-		# [DEBUG] Duas páginas de exemplo pra ter algo pra folhear testando o protótipo, sem
-		# depender de outro sistema chamar add_page() primeiro. Nunca aparece numa build de release
-		# de verdade (is_debug_build() cobre isso), e o texto já nasce identificado como placeholder
-		# — ver GUIDELINE_PROGRAMACAO.md, "Placeholders".
-		add_page(&"PLACEHOLDER_DIARY_PAGE_1_TEXT", &"PLACEHOLDER_DIARY_PAGE_1_TITLE")
-		add_page(&"PLACEHOLDER_DIARY_PAGE_2_TEXT", &"PLACEHOLDER_DIARY_PAGE_2_TITLE")
+		_add_placeholder_pages()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -135,8 +131,8 @@ func remove_page(index: int) -> void:
 	pages_changed.emit()
 
 
-# Esvazia o diário inteiro. Existe pro debug e pro dia em que "novo jogo" precisar zerar o diário
-# sem reiniciar o autoload inteiro.
+# Esvazia o diário inteiro. Existe pro debug e pra partida que abre recomeçar o diário sem
+# reiniciar o autoload inteiro (ver _on_session_opened).
 func clear() -> void:
 	_pages.clear()
 	_current_page = 0
@@ -240,7 +236,31 @@ func close_diary() -> void:
 	print("[Diary] - Diário fechado")
 
 
+# --- Partida ---
+
+# Toda partida aberta (novo jogo ou continuar) começa com o diário do boot. As páginas não vão para o
+# save: elas derivam de fatos que outros donos já guardam (ver docs/diary.md, "Persistência"). Sem
+# isto, as páginas de uma partida apareceriam na seguinte. Quando houver página derivada de fato
+# (insight lido, por exemplo), é aqui que ela se refaz a partir do dono do fato, que a esta altura
+# já recebeu a seção dele.
+func _on_session_opened(slot: int) -> void:
+	clear()
+	_add_placeholder_pages()
+	print("[Diary] - Diário recomeçado para a partida do slot %d" % slot)
+
+
 # --- Debug ---
+
+# [DEBUG] Duas páginas de exemplo pra ter algo pra folhear testando o protótipo, sem depender de
+# outro sistema chamar add_page() primeiro. Nunca aparece numa build de release de verdade
+# (is_debug_build() cobre isso), e o texto já nasce identificado como placeholder — ver
+# GUIDELINE_PROGRAMACAO.md, "Placeholders".
+func _add_placeholder_pages() -> void:
+	if not (OS.has_feature("editor") or OS.is_debug_build()):
+		return
+	add_page(&"PLACEHOLDER_DIARY_PAGE_1_TEXT", &"PLACEHOLDER_DIARY_PAGE_1_TITLE")
+	add_page(&"PLACEHOLDER_DIARY_PAGE_2_TEXT", &"PLACEHOLDER_DIARY_PAGE_2_TITLE")
+
 
 # [DEBUG] Adiciona uma página numerada e pula pra ela, pra testar navegação/adição em runtime pelo
 # menu ou console de debug sem precisar mexer em código.

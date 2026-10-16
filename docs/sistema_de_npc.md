@@ -99,7 +99,9 @@ aritmética de horário, e assim ela pode ser conferida sem rodar o jogo.
    circula em vez de ficar parado (o policial), a rotina ganha uma
    [exceção](#exceções-de-rotina) no campo `Exceptions`.
 3. **Criar o NPC**: `resources/npcs/npc_<nome>.tres`, recurso `NPCDefinition`. Preencher nome, cor,
-   velocidade, as duas emoções, os dias de trabalho e apontar as seis rotinas. O campo `portrait` (a
+   velocidade, as duas emoções, os dias de trabalho e apontar as seis rotinas. A cor (`color`) é uma
+   só para o NPC inteiro: tinge o sprite, pinta o nome dele no diálogo e o orbe da cabeça dele nos
+   insights. O padrão é branco, igual ao nome do jogador, e o resumo avisa se ela ficar assim. O campo `portrait` (a
    cara do NPC, usada pelas telas que o mostram fora de cena — hoje o profiling) pode ficar vazio:
    quem mostra desenha um retângulo identificado com o nome dele.
 4. **Arrastar pro roster**: `resources/npcs/npc_roster.tres`.
