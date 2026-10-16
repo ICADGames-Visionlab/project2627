@@ -47,6 +47,27 @@ var movement_scheme: MovementScheme = MovementScheme.KEYBOARD
 # seção extra ali seria apagada na primeira mudança de idioma ou de modo de tela.
 const GAMEPLAY_CONFIG_PATH: String = "user://gameplay_settings.cfg"
 
+# Preferências de vídeo (modo de janela, proporção e resolução). Mude sempre por
+# set_video_preference(): é o setter que valida, aplica na janela e persiste. A resolução só tem
+# efeito no modo janela; nas telas cheias a janela ocupa o monitor inteiro.
+var video_window_mode: VideoOptions.WindowMode = VideoOptions.DEFAULT_WINDOW_MODE
+var video_aspect_ratio: VideoOptions.AspectRatio = VideoOptions.DEFAULT_ASPECT_RATIO
+var video_resolution: Vector2i = VideoOptions.DEFAULT_RESOLUTION
+
+# Arquivo próprio pro vídeo, pelo mesmo motivo do GAMEPLAY_CONFIG_PATH. Fica no GameManager (e não
+# na tela de Settings, como era antes) pra ser aplicado logo na abertura do jogo, mesmo que a tela
+# de configurações nunca seja instanciada.
+#
+# Atenção: o project.godot abre a janela em modo janela 1280x720 de propósito, e é o _ready() daqui
+# que coloca a tela cheia. Se a janela nascer em tela cheia (window/size/mode=3), o Windows guarda
+# o tamanho do monitor como "tamanho de antes da tela cheia" e voltar pro modo janela deixa de
+# funcionar (a janela continua reportando tela cheia exclusiva).
+const VIDEO_CONFIG_PATH: String = "user://video_settings.cfg"
+
+# Arquivo antigo onde a tela de Settings guardava o modo de tela (seção "video", chave "screen":
+# 0 = tela cheia, 1 = janela). Lido só uma vez, pra migrar a escolha de quem já tinha salvo.
+const LEGACY_SETTINGS_PATH: String = "user://settings.cfg"
+
 # Caminho da cena de loading exibida durante o carregamento assíncrono da cena de destino.
 # Atenção: o layer do CanvasLayer da LoadingScreen precisa ser MAIOR que FADE_LAYER (ver
 # abaixo), senão a barra de progresso fica escondida atrás do overlay preto.
@@ -75,6 +96,8 @@ var _load_in_progress_path: String = ""
 
 func _ready() -> void:
 	_load_gameplay_settings()
+	_load_video_settings()
+	_apply_video_settings()
 
 
 ## Espaço para funções personalizadas
@@ -106,6 +129,29 @@ func set_dialogue_preference(key: StringName, value: Variant) -> void:
 			return
 	_save_gameplay_settings()
 	dialogue_preferences_changed.emit()
+
+
+# Muda uma preferência de vídeo, aplica na janela na hora e persiste. key é o nome do campo sem o
+# prefixo "video_" (&"window_mode", &"aspect_ratio" ou &"resolution").
+#
+# Ao trocar a proporção, a resolução é ajustada pra mais próxima que exista na proporção nova (a
+# antiga pode não pertencer a ela) — quem mostra o dropdown de resolução deve reler
+# video_resolution depois desta chamada.
+func set_video_preference(key: StringName, value: Variant) -> void:
+	match key:
+		&"window_mode":
+			video_window_mode = value as VideoOptions.WindowMode
+		&"aspect_ratio":
+			video_aspect_ratio = value as VideoOptions.AspectRatio
+			video_resolution = VideoOptions.closest_resolution(video_aspect_ratio, video_resolution)
+		&"resolution":
+			# Só aceita resoluções da lista da proporção ativa (que já respeita o monitor).
+			video_resolution = VideoOptions.closest_resolution(video_aspect_ratio, value)
+		_:
+			push_warning("[GameManager] - AVISO: preferência de vídeo desconhecida: \"%s\"" % key)
+			return
+	_apply_video_settings()
+	_save_video_settings()
 
 # Ponto de entrada público para qualquer troca de cena do projeto. Nenhum outro script deve
 # chamar get_tree().change_scene_to_file()/change_scene_to_packed() diretamente.
@@ -262,3 +308,66 @@ func _load_gameplay_settings() -> void:
 	dialogue_animation_multiplier = config.get_value("dialogue", "animation_multiplier", dialogue_animation_multiplier)
 
 	print("[GameManager] - Configurações de jogabilidade carregadas (movimentação: %s)" % MovementScheme.keys()[movement_scheme])
+
+
+# Aplica as preferências de vídeo em memória na janela principal (ver VideoOptions.apply()).
+func _apply_video_settings() -> void:
+	VideoOptions.apply(get_tree().root, video_window_mode, video_aspect_ratio, video_resolution)
+	print("[GameManager] - Vídeo aplicado (modo: %s, proporção: %s, resolução: %s)" % [
+		VideoOptions.WindowMode.keys()[video_window_mode],
+		VideoOptions.AspectRatio.keys()[video_aspect_ratio],
+		VideoOptions.format_resolution(video_resolution),
+	])
+
+
+# Salva as preferências de vídeo atuais em disco, sempre a partir do estado em memória.
+func _save_video_settings() -> void:
+	var config: ConfigFile = ConfigFile.new()
+	config.set_value("video", "window_mode", int(video_window_mode))
+	config.set_value("video", "aspect_ratio", int(video_aspect_ratio))
+	config.set_value("video", "resolution", video_resolution)
+	config.save(VIDEO_CONFIG_PATH)
+	print("[GameManager] - Configurações de vídeo salvas")
+
+
+# Carrega as preferências de vídeo do disco, validando cada valor (o arquivo pode ter sido editado
+# à mão ou salvo em outro monitor). Sem arquivo, tenta migrar o modo de tela do settings.cfg antigo
+# e, se nem ele existir, fica nos padrões.
+func _load_video_settings() -> void:
+	var config: ConfigFile = ConfigFile.new()
+	if config.load(VIDEO_CONFIG_PATH) != OK:
+		_migrate_legacy_video_settings()
+		return
+
+	var saved_mode: int = config.get_value("video", "window_mode", int(VideoOptions.DEFAULT_WINDOW_MODE))
+	if not VideoOptions.WindowMode.values().has(saved_mode):
+		push_warning("[GameManager] - Modo de janela salvo inválido (%d), usando o padrão" % saved_mode)
+		saved_mode = int(VideoOptions.DEFAULT_WINDOW_MODE)
+	video_window_mode = saved_mode as VideoOptions.WindowMode
+
+	var saved_aspect: int = config.get_value("video", "aspect_ratio", int(VideoOptions.DEFAULT_ASPECT_RATIO))
+	if not VideoOptions.AspectRatio.values().has(saved_aspect):
+		push_warning("[GameManager] - Proporção salva inválida (%d), usando o padrão" % saved_aspect)
+		saved_aspect = int(VideoOptions.DEFAULT_ASPECT_RATIO)
+	video_aspect_ratio = saved_aspect as VideoOptions.AspectRatio
+
+	var saved_resolution: Variant = config.get_value("video", "resolution", VideoOptions.DEFAULT_RESOLUTION)
+	if not saved_resolution is Vector2i:
+		saved_resolution = VideoOptions.DEFAULT_RESOLUTION
+	# Se a resolução salva não estiver na lista desta proporção/monitor, cai na mais próxima.
+	video_resolution = VideoOptions.closest_resolution(video_aspect_ratio, saved_resolution)
+
+	print("[GameManager] - Configurações de vídeo carregadas")
+
+
+# Migra o modo de tela salvo pela versão antiga da tela de Settings (0 = tela cheia, 1 = janela).
+# A "tela cheia" antiga usava WINDOW_MODE_FULLSCREEN, que hoje é a opção BORDERLESS.
+func _migrate_legacy_video_settings() -> void:
+	var legacy: ConfigFile = ConfigFile.new()
+	if legacy.load(LEGACY_SETTINGS_PATH) != OK or not legacy.has_section_key("video", "screen"):
+		print("[GameManager] - Nenhuma configuração de vídeo salva, usando os padrões")
+		return
+	var legacy_screen: int = legacy.get_value("video", "screen", 0)
+	video_window_mode = VideoOptions.WindowMode.WINDOWED if legacy_screen == 1 else VideoOptions.WindowMode.BORDERLESS
+	_save_video_settings()
+	print("[GameManager] - Modo de tela migrado do settings.cfg antigo")
