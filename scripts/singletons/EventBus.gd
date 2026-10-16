@@ -48,13 +48,14 @@ signal time_changed(total_minutes: int)
 signal hour_changed(hour: int)
 
 # Emitido quando o dia de jogo muda — o que acontece ao acordar, não à meia-noite.
-# Emissor: GameClock. Ouvintes: rotinas de NPC, produção, save automático.
+# Emissor: GameClock. Ouvintes: rotinas de NPC, produção, SaveManager (pede a gravação da virada, que
+# cai no frame seguinte, já com o dia novo em vigor).
 signal day_changed(day: int)
 
 # Emitido quando o dia fecha, por sono ou por ter batido no horário máximo. O relógio fica
 # congelado a partir daqui até alguém chamar GameClock.start_next_day() — hoje, a cama.
 # reason é um GameClock.DayEndReason.
-# Emissor: GameClock. Ouvintes: tela de resumo, save (quando existirem).
+# Emissor: GameClock. Ouvintes: tela de resumo (quando existir).
 signal day_ended(day: int, reason: int)
 
 # Emitido quando o jogador adormece e entra no mundo dos sonhos. A partir daqui o relógio fica
@@ -147,7 +148,8 @@ signal conversation_requested(conversation_id: StringName, initiator_id: StringN
 # Emitido quando uma conversa abre.
 # Emissor: DialogueScreen. Ouvintes: Player (trava movimento, redundante se já veio de
 # conversation_approach_started), NPCDirector (segura os NPCs da conversa e vira eles pro jogador),
-# InsightInteractor (desliga orbes, idem Player).
+# InsightInteractor (desliga orbes, idem Player), ProfilingJournal (marca o NPC abordado como
+# encontrado no mundo real, o que faz ele aparecer no sonho).
 signal conversation_started(conversation_id: StringName, initiator_id: StringName)
 
 # Emitido quando uma conversa fecha, com o nó onde terminou.

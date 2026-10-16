@@ -12,6 +12,10 @@
 #   cresce e mostra a mãozinha   = o clique vai abrir
 #   anel branco em volta         = é o orbe que a tecla/botão de interagir vai acionar
 #
+# Mouse e teclado/controle nunca destacam orbes ao mesmo tempo. No modo teclado/controle (ligado pelo
+# InsightInteractor), o hover do mouse deixa de contar: sem isso, clicar num orbe e apertar Tab
+# deixava dois orbes em destaque — o que ficou sob o cursor parado e o que recebeu o foco.
+#
 # Não existe alcance de clique: o orbe abre de qualquer distância. Quem limita o que aparece é a
 # fonte (portas e, no canal de personagem, o raio), nunca o marcador.
 #
@@ -37,6 +41,10 @@ signal highlight_changed(is_highlighted: bool)
 # Emitido quando um orbe que estava vazado volta a ter novidade — uma flag abriu um insight novo no
 # mesmo lugar. Quem instanciou sabe dizer qual orbe foi, e é quem imprime o log.
 signal rekindled
+
+# Grupo de todos os orbes vivos. É por ele que a troca de modo (mouse <-> teclado/controle) chega a
+# todos de uma vez, inclusive aos que estão fora da tela.
+const GROUP: StringName = &"insight_markers"
 
 @export_group("Aparência")
 @export var radius: float = 16.0
@@ -74,6 +82,9 @@ signal rekindled
 # inteiro: com dois orbes sobrepostos, sair de um não pode devolver a seta enquanto o mouse ainda
 # está sobre o outro.
 static var _pointer_owners: Dictionary = {}    # int(instance_id) -> true
+# Verdadeiro enquanto o jogador está no modo teclado/controle. Estático porque o modo é do jogo
+# inteiro, não de um orbe: quem liga e desliga é o InsightInteractor, via set_mouse_hover_suppressed().
+static var _is_mouse_hover_suppressed: bool = false
 
 var _color: Color = Color.WHITE
 var _glyph: String = ""
@@ -93,6 +104,7 @@ var _rekindle_left: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	input_pickable = true
 	input_event.connect(_on_input_event)
 	mouse_entered.connect(_on_mouse_entered)
@@ -142,6 +154,19 @@ func _draw() -> void:
 	var fill_color: Color = _color.lightened(0.6 * (1.0 - rekindle_progress)) if _rekindle_left > 0.0 else _color
 	draw_circle(Vector2.ZERO, radius, fill_color)
 	draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, _color.lightened(0.35), outline_width * 0.6, true)
+
+
+# Liga ou desliga o hover do mouse em todos os orbes. Chamado pelo InsightInteractor ao entrar e sair
+# do modo teclado/controle. O orbe continua sabendo se o mouse está em cima (_is_hovered); só deixa de
+# destacar por isso. Assim, quando o mouse volta a se mexer sobre um orbe, o destaque reaparece na hora,
+# sem depender de um mouse_entered que a engine não emite de novo com o cursor parado lá dentro.
+static func set_mouse_hover_suppressed(suppressed: bool, tree: SceneTree) -> void:
+	if _is_mouse_hover_suppressed == suppressed:
+		return
+	_is_mouse_hover_suppressed = suppressed
+	if tree != null:
+		tree.call_group(GROUP, &"_apply_appearance")
+	print("[Insights] - Hover do mouse nos orbes %s" % ("desligado (modo teclado/controle)" if suppressed else "religado (modo mouse)"))
 
 
 # Define quem este orbe representa: a cor de quem fala e o glifo que o identifica sem depender de
@@ -216,7 +241,7 @@ func _apply_appearance() -> void:
 	modulate.a = read_alpha if _is_read else 1.0
 
 	_update_hint()
-	_set_pointer_owner(_is_hovered)
+	_set_pointer_owner(_is_mouse_highlighted())
 	_update_highlight_signal()
 	_update_animated_state()
 	_update_processing()
@@ -270,9 +295,15 @@ func _set_pointer_owner(wants_pointer: bool) -> void:
 	Input.set_default_cursor_shape(Input.CURSOR_ARROW if _pointer_owners.is_empty() else Input.CURSOR_POINTING_HAND)
 
 
-# Diz se o orbe está em destaque: mouse em cima ou foco do controle.
+# Diz se o orbe está em destaque: mouse em cima (fora do modo teclado/controle) ou foco do controle.
 func _is_highlighted() -> bool:
-	return _is_hovered or _is_focused
+	return _is_mouse_highlighted() or _is_focused
+
+
+# Diz se o mouse, sozinho, deixa o orbe em destaque. No modo teclado/controle o hover não conta: quem
+# destaca é só o foco, senão o orbe clicado continuaria parecendo "em hover" ao lado do orbe em foco.
+func _is_mouse_highlighted() -> bool:
+	return _is_hovered and not _is_mouse_hover_suppressed
 
 
 # Tamanho de destaque desejado agora.

@@ -6,15 +6,12 @@
 ##
 ##     EventBus.profiling_requested.emit(definition.id)
 ##
-## FORA DO SONHO ELA NÃO FAZ NADA. Acordado, o NPC é assunto do sistema de diálogo, que está sendo
-## feito em outra branch — e é ele que vai chamar ProfilingJournal.mark_met() pra marcar que o
-## jogador conversou com aquela pessoa.
+## FORA DO SONHO ELA NÃO FAZ NADA. Acordado, o NPC é assunto do sistema de diálogo — e cada conversa
+## marca o NPC como encontrado (ProfilingJournal.mark_met).
 ##
-## O QUE O GDD PEDE E AINDA NÃO DÁ PRA FAZER: "espíritos de NPCs só aparecem quando você conversa com
-## um NPC no mundo real". A regra está escrita e ligada aqui (_has_spirit pergunta a
-## ProfilingJournal.has_met), mas nada marca esse encontro ainda, então has_met responde sim pra todo
-## mundo — ver ASSUME_MET_UNTIL_DIALOGUE_EXISTS em ProfilingJournal.gd. Desligar aquela constante
-## ativa a regra do GDD inteira, sem tocar neste arquivo.
+## "Espíritos de NPCs só aparecem quando você conversa com um NPC no mundo real" (GDD): o NPC que o
+## jogador ainda não encontrou nem nasce no sonho (NPCDirector._apply_dream_positions), e _has_spirit
+## faz a mesma pergunta (ProfilingJournal.can_appear_in_dream).
 ##
 ## PLACEHOLDER: no sonho, o NPC continua com o corpo e o sprite do mundo acordado. Os "espíritos"
 ## (portraits/monstros) são arte que ainda não existe; o que muda no sonho hoje é a posição fixa
@@ -79,7 +76,7 @@ func _has_spirit() -> bool:
 		return false
 	if ProfilingCatalog.find_profile(definition.id) == null:
 		return false
-	return ProfilingJournal.has_met(definition.id)
+	return ProfilingJournal.can_appear_in_dream(definition.id)
 
 
 # O NPC a que esta área pertence. A área vive dentro de NPC.tscn, então o dono é o nó pai.

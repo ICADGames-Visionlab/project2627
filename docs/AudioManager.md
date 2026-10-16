@@ -51,7 +51,8 @@ Loop de música depende da configuração de importação do arquivo de
 áudio (não é controlado pelo AudioManager).
 
 Preferências salvas em `user://audio_settings.cfg` (arquivo próprio,
-separado do `user://settings.cfg` usado pelo SettingsManager para vídeo).
+separado do `user://settings.cfg` usado pelo SettingsManager para idioma e do
+`user://video_settings.cfg` do GameManager para vídeo).
 
 ## Integração com o SettingsManager
 

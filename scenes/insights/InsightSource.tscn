@@ -8,7 +8,7 @@ radius = 260.0
 
 [node name="InsightSource" type="Area2D"]
 collision_layer = 0
-collision_mask = 1
+collision_mask = 2
 script = ExtResource("1_source")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]

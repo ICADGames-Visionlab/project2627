@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="ItemData" format=3 uid="uid://dmydivkicc0vh"]
+
+[ext_resource type="Script" uid="uid://bk846buifqwos" path="res://scripts/items/ItemData.gd" id="1_item_data"]
+[ext_resource type="Texture2D" uid="uid://ddu5mbomx25pv" path="res://images/placeholder/Isometric City/Props/prop_papers_a.png" id="2_icon"]
+
+[resource]
+script = ExtResource("1_item_data")
+id = &"torn_note"
+display_name_key = &"PLACEHOLDER_EVIDENCE_TORN_NOTE_NAME"
+description_key = &"PLACEHOLDER_EVIDENCE_TORN_NOTE_DESC"
+icon = ExtResource("2_icon")
+max_stack = 1
+destructible = false

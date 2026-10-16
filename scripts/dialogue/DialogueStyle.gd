@@ -65,6 +65,12 @@ extends Resource
 @export var option_tag_color: Color = Color("#D9B26A")
 @export var separator_color: Color = Color(1, 1, 1, 0.12)
 @export var fallback_speaker_color: Color = Color.MAGENTA
+# Palavra do glossário marcada na fala ([FACA] no CSV) e ainda não colhida: sublinhada nesta cor até
+# o jogador clicar. O GDD pede vermelho, igual ao ClickableWordText.
+@export var glossary_word_color: Color = Color(1.0, 0.35, 0.3)
+# A mesma palavra depois de colhida: sem sublinhado e sem link. Igual ao text_color por padrão, que é
+# o "sai o sublinhado" do GDD; tingir aqui deixa a palavra colhida levemente destacada.
+@export var glossary_word_collected_color: Color = Color("#EDEDED")
 @export var min_contrast_ratio: float = 4.5
 
 @export_group("Estados da fala")

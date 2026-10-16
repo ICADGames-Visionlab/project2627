@@ -31,7 +31,7 @@ func _refresh_summary() -> void:
 		resumo = "Sem dialogue_style.tres padrão para calcular o contraste."
 		notify_property_list_changed()
 		return
-	var ratio: float = DialogueContrast.worst_case_ratio(name_color, 1.0, style, 0.82)
+	var ratio: float = DialogueContrast.worst_speaker_ratio(name_color, style, 0.82)
 	if ratio >= style.min_contrast_ratio:
 		resumo = "Contraste no pior caso: %.1f:1 ✓" % ratio
 	else:

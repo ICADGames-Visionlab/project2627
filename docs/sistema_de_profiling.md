@@ -243,6 +243,21 @@ A marcação no texto é a **mesma legenda do GDD**, e vale no CSV:
 | `Achei uma [FACA] no beco.` | Uma palavra clicável. |
 | `O nome dele era [MARCOS]/[CASTRO].` | Duas palavras; clicar em qualquer uma adiciona **as duas**. |
 
+O id entre colchetes é o `GlossaryWord.id` **em maiúsculas** (é o que distingue a marcação do
+BBCode `[i]`/`[b]`), e é o mesmo em todos os idiomas: a coluna `en` também escreve `[FACA]`, e a
+tela mostra o texto traduzido da palavra.
+
+A mesma marcação vale em três lugares, cada um com o seu jeito de colher:
+
+| Onde o texto aparece | Como a palavra vai pro glossário |
+| --- | --- |
+| Fala de diálogo (`.dlg` → chave no CSV) | Sublinhada até o jogador **clicar**. O clique não pula a revelação nem avança a conversa. (`DialogueEntry`) |
+| Caixa de insight de ambiente | Sublinhada, **sem clique**: quando a caixa fecha, todas as palavras marcadas voam da caixa pro diário. (`InsightBubble`) |
+| História resolvida na página de profiling | Clique, como no diálogo. (`ClickableWordText`) |
+
+O `.dlg` não muda: ele só tem chaves, e a marcação mora no texto do CSV. Insight **de personagem**
+abre a tela de diálogo, então lá a palavra é colhida por clique, como numa fala.
+
 Quem desenha isso é o `ClickableWordText`, e quem liga o par são as `paired_words` do
 `GlossaryWord` — apontadas **num sentido só** (marcar `CASTRO` em `MARCOS` basta). O grupo é
 resolvido nos dois sentidos em código (`ProfilingCatalog.find_pair_group`), justamente pra não
@@ -416,16 +431,28 @@ O que **não** é evento de bus, e por quê:
 - histórias resolvidas;
 - marcas de lixo/estrela;
 - a emoção escolhida pra cada NPC e o dia em que ela passa a valer;
-- se o jogador já encontrou o NPC no mundo real (hoje sempre sim — ver
-  [O que ainda não existe](#o-que-ainda-não-existe)).
+- quais NPCs o jogador já encontrou no mundo real. Toda conversa (`EventBus.conversation_started`
+  fora do sonho) marca o NPC que o jogador abordou — quem só participa da conversa não conta —, e só quem foi encontrado aparece no sonho
+  (`can_appear_in_dream()`, consultado pelo `NPCDirector` e pela `SpiritInteraction`). Um perfil
+  com `requires_real_world_meeting` desligado dispensa o encontro. No menu de debug, **Marcar NPC
+  como encontrado** leva ao sonho quem ainda não tem conversa escrita, e **Esquecer encontro com
+  NPC** desfaz (npc vazio = todos) sem apagar o resto do profiling.
 
 É isso que faz o GDD funcionar: preencher metade de uma página, sair do espírito, acordar, jogar um
 dia inteiro e voltar — as palavras continuam nas lacunas onde ele as deixou.
 
-O save usa a chave `profiling` dentro do arquivo do slot, preservando as chaves dos outros sistemas
-(`SaveManager`, ver `docs/SaveManager.md`), e grava a cada mudança. Como o `InsightJournal`, ele
-carrega e salva sozinho no **slot 1** enquanto não existir dono do slot ativo; `to_dict`/`from_dict`
-já são a API desse fluxo.
+O save usa a chave `profiling` do arquivo do slot, e as chaves dos outros sistemas ficam intactas
+(`SaveManager`, ver `docs/SaveManager.md`). Como o `InsightJournal`, o diário é um participante: registra
+`to_dict`/`from_dict` no `_ready()` e pede gravação com `request_save()` a cada mudança. Descobrir uma
+palavra em conjunto mexe em duas entradas, e os pedidos do mesmo frame viram uma escrita só.
+
+`from_dict({})` é o novo jogo: o diário volta vazio. Sem partida ativa (menu principal, ou uma cena
+rodada direto pelo editor com F6) ele começa vazio e nada é gravado; para jogar com progresso, F4 →
+Save → "Continuar slot".
+
+**Gravar no sonho é normal**: o profiling acontece lá, e cada gesto vai para o disco. Fechar o jogo no
+sonho e continuar devolve o jogador acordado no dia em que dormiu, com as palavras que já tinha e a
+emoção ainda agendada para o dia seguinte.
 
 > **Armadilha do JSON:** na volta do save, todo `StringName` vira `String` e todo `int` vira `float`.
 > As conversões na leitura (`StringName(...)`, `int(...)`) são obrigatórias, não estilo — sem elas o
@@ -451,8 +478,10 @@ Seção **Profiling** no menu (F4) e no console (F1):
 | *Validar conteúdo do profiling* | Varre o projeto: preenchimento dos recursos, chave que não existe no CSV, perfil de NPC fora do roster, história numa emoção que o NPC não tem. |
 | *Autoteste do profiling* | Roda `ProfilingSelfTest`. |
 | *Recarregar catálogo* | Descarta a varredura, pra editar um `.tres` e ver o resultado sem reabrir o jogo. |
-| *Resetar / Salvar / Carregar profiling* | Estado do diário. |
-| *Salvar automático* | Liga/desliga a gravação a cada mudança. |
+| *Resetar profiling* | Zera o diário da partida ativa e pede gravação. |
+
+Salvar, carregar e ligar ou desligar o salvamento automático ficam na seção **Save** (ver
+`docs/SaveManager.md`), e não mais aqui.
 
 ### O autoteste
 
@@ -478,12 +507,10 @@ entram.
 | O que falta | O que já está de pé | Onde ele entra |
 | --- | --- | --- |
 | **Evidências / inventário** | A descoberta de palavra é uma função pública. | `ProfilingJournal.discover_word(word_id, npc_id)` |
-| **Diálogo** | O texto com palavras clicáveis (`ClickableWordText`) e a marcação `[FACA]` já funcionam; a tela de diálogo troca o Label dela por esse nó. | `ClickableWordText.set_marked_text()` |
 | **Opções de diálogo liberadas por emoção concluída** | Todo acerto passa por um funil só. | `ProfilingJournal.mark_story_solved()` |
 | **História narrada pelo NPC** (o GDD sugere animatic) | A história resolvida aparece como texto na própria página. | `ProfilingScreen._reveal_solved()` |
 | **Música curta no acerto** | Não há música no projeto (`docs/AudioManager.md`). | comentário `MÚSICA` em `ProfilingScreen._reveal_solved()` |
 | **Diário do jogador** ("Pessoas Importantes", o glossário fora do sonho) | `GlossaryPanel` já funciona **sem história** — é assim que o diário vai usá-lo —, e `ProfilingStory.journal_entry_key` já guarda o texto da entrada. | instanciar `scenes/profiling/GlossaryPanel.tscn`; `ProfilingJournal.mark_story_solved()` |
-| **Espírito só aparece depois de conversar no mundo real** | A regra está escrita e ligada. Hoje `has_met()` responde sim pra todo mundo. | desligar `ProfilingJournal.ASSUME_MET_UNTIL_DIALOGUE_EXISTS` e fazer o diálogo chamar `mark_met()` |
 | **Convencer o NPC a sair da cidade** | `npc_profiling_completed` é emitido quando todas as emoções são entendidas — e esse tem ouvinte hoje (a tela, que acorda o jogador). | ouvinte de `EventBus.npc_profiling_completed` |
 
 ---
@@ -543,7 +570,8 @@ acusa.
 ### Mudar o `id` de uma história
 
 O progresso é gravado **por id de história**. Renomear descarta as lacunas preenchidas e o "já
-resolvida" de quem já jogou.
+resolvida" de quem já jogou. Se isso importa, a renomeação pede um passo de migração no `SaveManager`
+(checklist "renomeei um id de conteúdo" no `docs/SaveManager.md`).
 
 ### Marcar o par nos dois `.tres`
 

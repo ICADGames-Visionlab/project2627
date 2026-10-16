@@ -57,7 +57,7 @@ text = "MENU_OPTIONS"
 [node name="BackToMenu" type="Button" parent="Root/CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
-text = "MENU_MAIN_MENU"
+text = "PAUSE_SAVE_AND_QUIT"
 
 [node name="Settings" parent="Root" instance=ExtResource("2_settings")]
 visible = false

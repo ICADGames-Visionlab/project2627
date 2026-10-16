@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://ckqoq5t266xk2"]
+
+[ext_resource type="Script" uid="uid://21ow22y0js0y" path="res://scripts/interactables/Interactable.gd" id="1_interactable"]
+[ext_resource type="Shader" uid="uid://f26nmx7s4fw3" path="res://resources/shaders/sprite_outline.gdshader" id="2_outline_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_interactable_outline"]
+resource_local_to_scene = true
+shader = ExtResource("2_outline_shader")
+shader_parameter/outline_color = Color(1, 1, 1, 1)
+shader_parameter/outline_width = 0.0
+
+[node name="Interactable" type="Node2D" unique_id=266927093]
+script = ExtResource("1_interactable")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1538601555]
+texture_filter = 1
+material = SubResource("ShaderMaterial_interactable_outline")

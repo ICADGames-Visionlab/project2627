@@ -52,11 +52,9 @@ extends Resource
 
 @export_group("Mundo dos sonhos")
 
-## SUPORTE AO FUTURO: o GDD diz que o espírito do NPC só aparece no sonho depois de o jogador ter
-## conversado com ele no mundo real. O sistema de diálogo está sendo feito em outra branch, então
-## nada marca esse encontro ainda e ProfilingJournal.has_met() responde sim pra todo mundo (ver a
-## constante ASSUME_MET_UNTIL_DIALOGUE_EXISTS lá). Deixar o campo ligado aqui é o que faz a regra
-## valer sozinha no dia em que o diálogo começar a marcar o encontro.
+## Ligado (o padrão, e o que o GDD pede): o espírito do NPC só aparece no sonho depois de o jogador
+## ter conversado com ele no mundo real. Desligado: ele aparece no sonho desde a primeira noite. Ver
+## ProfilingJournal.can_appear_in_dream.
 @export var requires_real_world_meeting: bool = true
 
 @export_group("")
