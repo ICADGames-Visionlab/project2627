@@ -137,7 +137,7 @@ A ordem dos cliques está resolvida: o `_input_event` do `NPCInteraction` roda a
 
 ## Preferências do jogador
 
-Ficam no `GameManager` (`user://gameplay_settings.cfg`, seção `[dialogue]`) e na tela de Configurações:
+Ficam no `GameManager` (`user://gameplay_settings.cfg`, seção `[dialogue]`) e na aba **Diálogo** da tela de Configurações (ver [docs/tela_de_configuracoes.md](../tela_de_configuracoes.md)):
 
 - Tamanho do texto, de 0,8× a 2,0×.
 - Fonte sem serifa.
