@@ -17,9 +17,9 @@
 ## o próprio _on_close_pressed() detecta isso e volta sozinho pro Menu Principal
 ## (ver MAIN_MENU_SCENE mais abaixo). Não precisa fazer nada extra pra esse caso.
 ##
-## Depende dos Autoloads AudioManager (volume geral) e GameManager (esquema de movimentação e
+## Depende dos Autoloads AudioManager (volume geral) e GameManager (esquema de movimentação, vídeo e
 ## preferências de diálogo): esta tela só mostra e repassa esses valores, quem guarda e salva são
-## eles. Vídeo e idioma, sim, são salvos aqui (ver _save_settings()).
+## eles. Só o idioma é salvo aqui (ver _save_settings()).
 ##
 ## COMO AS ABAS FUNCIONAM: as abas são os filhos do TabContainer "Tabs". O título de cada uma vem do
 ## metadado _tab_name do nó da aba (uma chave do CSV, traduzida sozinha pela engine). A ordem das
@@ -31,7 +31,7 @@
 ## chave do Label, renomeie o controle e marque "Access as Unique Name". Aqui no script: crie o
 ## @onready com %Nome, preencha o controle (_populate_* se for um OptionButton), conecte o sinal no
 ## _ready() e reflita o valor salvo em _load_settings(). Quem guarda o valor é o sistema dono dele
-## (AudioManager, GameManager...), nunca esta tela — a não ser que seja vídeo ou idioma.
+## (AudioManager, GameManager...), nunca esta tela — a não ser que seja o idioma.
 ##
 ## COMO ADICIONAR UMA ABA: duplique uma aba (ex.: "Video") como filha de "Tabs", troque o nome do nó
 ## e o metadado _tab_name pela chave nova no CSV. Mais detalhes em docs/tela_de_configuracoes.md.
@@ -63,6 +63,8 @@ const DIALOGUE_ANIMATION_MULTIPLIERS: Array[float] = [1.0, 0.5, 0.0]
 @onready var language_option: OptionButton = %LanguageOption
 @onready var movement_option: OptionButton = %MovementOption
 @onready var screen_mode_option: OptionButton = %ScreenModeOption
+@onready var aspect_ratio_option: OptionButton = %AspectRatioOption
+@onready var resolution_option: OptionButton = %ResolutionOption
 @onready var general_volume_slider: HSlider = %GeneralVolumeSlider
 @onready var general_volume_value: Label = %GeneralVolumeValue
 @onready var dialogue_scale_slider: HSlider = %DialogueScaleSlider
@@ -90,6 +92,8 @@ func _ready() -> void:
 	dialogue_opacity_slider.step = 0.01
 
 	_populate_screen_mode_options()
+	_populate_aspect_ratio_options()
+	_populate_resolution_options()
 	_populate_language_options()
 	_populate_movement_options()
 	_populate_dialogue_reveal_options()
@@ -102,6 +106,8 @@ func _ready() -> void:
 	tabs.tab_changed.connect(_on_tab_changed)
 	general_volume_slider.value_changed.connect(_on_general_volume_changed)
 	screen_mode_option.item_selected.connect(_on_screen_mode_selected)
+	resolution_option.item_selected.connect(_on_resolution_selected)
+	aspect_ratio_option.item_selected.connect(_on_aspect_ratio_selected)
 	language_option.item_selected.connect(_on_language_selected)
 	movement_option.item_selected.connect(_on_movement_selected)
 	dialogue_scale_slider.value_changed.connect(_on_dialogue_scale_changed)
@@ -118,6 +124,7 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_TRANSLATION_CHANGED and is_node_ready():
 		_populate_screen_mode_options()
+		_populate_aspect_ratio_options()
 		_populate_language_options()
 		_populate_movement_options()
 		_populate_dialogue_reveal_options()
@@ -144,24 +151,62 @@ func _on_general_volume_changed(value: float) -> void:
 	_refresh_value_labels()
 
 
-# --- Tela Cheia / Janela ---
+# --- Vídeo (modo de janela, resolução e proporção) ---
+# As preferências de vídeo não são controladas nem salvas aqui: esta tela só reflete o valor atual
+# e repassa a escolha pro GameManager, que aplica na janela e persiste — mesma divisão do volume
+# geral e do esquema de movimentação. O catálogo de opções fica em VideoOptions.gd.
 
-# (Re)popula o dropdown de tela traduzido, preservando o índice selecionado.
-# Chamada no _ready() e sempre que o idioma muda (via _notification acima).
+# (Re)popula o dropdown de modo de janela traduzido, preservando o índice selecionado. A ordem dos
+# itens tem que bater com a do enum VideoOptions.WindowMode.
 func _populate_screen_mode_options() -> void:
 	var selected: int = screen_mode_option.selected
 	screen_mode_option.clear()
-	screen_mode_option.add_item(tr("MENU_FULLSCREEN"), 0) # índice 0 = tela cheia
-	screen_mode_option.add_item(tr("MENU_WINDOWED"), 1)   # índice 1 = janela
-	screen_mode_option.selected = selected if selected != -1 else 0
+	screen_mode_option.add_item(tr("MENU_FULLSCREEN"), 0) # VideoOptions.WindowMode.FULLSCREEN
+	screen_mode_option.add_item(tr("MENU_BORDERLESS"), 1) # VideoOptions.WindowMode.BORDERLESS
+	screen_mode_option.add_item(tr("MENU_WINDOWED"), 2)   # VideoOptions.WindowMode.WINDOWED
+	screen_mode_option.selected = selected if selected != -1 else int(GameManager.video_window_mode)
 
+# (Re)popula o dropdown de proporção. A ordem tem que bater com a do enum VideoOptions.AspectRatio;
+# só o "Automática" precisa de tradução, as proporções em si são números.
+func _populate_aspect_ratio_options() -> void:
+	var selected := aspect_ratio_option.selected
+	aspect_ratio_option.clear()
+	aspect_ratio_option.add_item(tr("MENU_ASPECT_AUTO"), 0)
+	aspect_ratio_option.add_item("16:9", 1)
+	aspect_ratio_option.add_item("16:10", 2)
+	aspect_ratio_option.add_item("4:3", 3)
+	aspect_ratio_option.add_item("21:9", 4)
+	aspect_ratio_option.selected = selected if selected != -1 else int(GameManager.video_aspect_ratio)
 
-# Aplica o modo de tela (cheia ou janela) escolhido no dropdown e persiste a escolha.
+# Popula o dropdown de resolução com as opções da proporção ativa e seleciona a resolução atual.
+# Diferente dos outros, a lista muda conforme a proporção — por isso é refeita a cada troca dela.
+# Cada item guarda o Vector2i no metadata, então o índice não precisa bater com nenhum enum.
+func _populate_resolution_options() -> void:
+	resolution_option.clear()
+	for resolution: Vector2i in VideoOptions.get_resolutions(GameManager.video_aspect_ratio):
+		resolution_option.add_item(VideoOptions.format_resolution(resolution))
+		resolution_option.set_item_metadata(resolution_option.item_count - 1, resolution)
+		if resolution == GameManager.video_resolution:
+			resolution_option.selected = resolution_option.item_count - 1
+	_update_resolution_enabled()
+
+# A resolução só vale no modo janela (nas telas cheias a janela ocupa o monitor inteiro), então o
+# dropdown fica desabilitado nos outros modos pra não parecer que a escolha não funcionou.
+func _update_resolution_enabled() -> void:
+	resolution_option.disabled = GameManager.video_window_mode != VideoOptions.WindowMode.WINDOWED
+
 func _on_screen_mode_selected(index: int) -> void:
-	var mode: DisplayServer.WindowMode = DisplayServer.WINDOW_MODE_FULLSCREEN if index == 0 else DisplayServer.WINDOW_MODE_WINDOWED
-	DisplayServer.window_set_mode(mode)
-	_save_settings()
-	print("[Settings] - Modo de tela alterado para %s" % ("Fullscreen" if index == 0 else "Windowed"))
+	GameManager.set_video_preference(&"window_mode", index as VideoOptions.WindowMode)
+	_update_resolution_enabled()
+
+func _on_resolution_selected(index: int) -> void:
+	GameManager.set_video_preference(&"resolution", resolution_option.get_item_metadata(index))
+
+# Trocar a proporção pode mudar a resolução (o GameManager escolhe a mais próxima na proporção
+# nova), então a lista de resoluções é refeita a partir do estado do GameManager.
+func _on_aspect_ratio_selected(index: int) -> void:
+	GameManager.set_video_preference(&"aspect_ratio", index as VideoOptions.AspectRatio)
+	_populate_resolution_options()
 
 
 # --- Idioma ---
@@ -206,6 +251,7 @@ func _populate_movement_options() -> void:
 	movement_option.clear()
 	movement_option.add_item(tr("MENU_MOVEMENT_KEYBOARD"), 0) # índice 0 = MovementScheme.KEYBOARD
 	movement_option.add_item(tr("MENU_MOVEMENT_CLICK"), 1)    # índice 1 = MovementScheme.CLICK
+	movement_option.add_item(tr("MENU_MOVEMENT_BOTH"), 2)     # índice 2 = MovementScheme.BOTH
 	movement_option.selected = selected if selected != -1 else int(GameManager.movement_scheme)
 
 
@@ -304,40 +350,40 @@ func _on_close_pressed() -> void:
 # --- Salvar / Carregar (arquivo local, independe de onde a cena é usada) ---
 # O volume geral NÃO é salvo aqui: quem é dono e persiste esse valor é o
 # AudioManager — evita duas fontes de verdade diferentes pro mesmo volume.
-# O esquema de movimentação também não, pelo mesmo motivo: o dono é o GameManager.
+# O esquema de movimentação e o vídeo também não, pelo mesmo motivo: o dono é o GameManager.
 # Atenção ao mexer em _save_settings(): ele grava um ConfigFile novo em cima do
 # arquivo, então qualquer seção que não seja reescrita aqui some.
 
-# Grava o modo de tela e o idioma no arquivo desta tela.
+# Grava o idioma no arquivo desta tela.
 func _save_settings() -> void:
 	var config: ConfigFile = ConfigFile.new()
-	config.set_value("video", "screen", screen_mode_option.selected)
 	config.set_value("language", "code", TranslationServer.get_locale())
 	config.save(CONFIG_PATH)
-	print("[Settings] - Configurações de vídeo/idioma salvas")
+	print("[Settings] - Configuração de idioma salva")
 
 
-# Carrega vídeo e idioma do arquivo local desta tela. O volume geral vem
+# Carrega o idioma do arquivo local desta tela. O volume geral vem
 # pronto do AudioManager (Autoload: já carregou e aplicou o valor salvo
 # antes mesmo desta cena existir).
 func _load_settings() -> void:
 	var config: ConfigFile = ConfigFile.new()
 	if config.load(CONFIG_PATH) != OK:
-		# Nenhuma config salva ainda (1ª vez rodando o jogo): usa padrão
-		screen_mode_option.selected = 0
-		# Idioma não é forçado aqui: mantém o que a engine já detectou do sistema.
-		print("[Settings] - Nenhuma configuração de vídeo/idioma salva, usando padrão")
+		# Nenhuma config salva ainda (1ª vez rodando o jogo): o idioma não é forçado
+		# aqui, mantém o que a engine já detectou do sistema.
+		print("[Settings] - Nenhuma configuração de idioma salva, usando padrão")
 	else:
-		screen_mode_option.selected = config.get_value("video", "screen", 0)
 		var saved_locale: String = config.get_value("language", "code", "")
 		if saved_locale != "":
 			TranslationServer.set_locale(saved_locale)
-		print("[Settings] - Configurações de vídeo/idioma carregadas")
+		print("[Settings] - Configuração de idioma carregada")
 
-	# Aplica de fato os valores carregados: janela e o dropdown de idioma.
 	# O slider só reflete o volume atual — quem manda nele é o AudioManager.
 	general_volume_slider.value = AudioManager.general_volume
-	_on_screen_mode_selected(screen_mode_option.selected)
+	# O vídeo já foi carregado e aplicado pelo GameManager na abertura do jogo: aqui os
+	# dropdowns só refletem os valores ativos.
+	screen_mode_option.selected = int(GameManager.video_window_mode)
+	aspect_ratio_option.selected = int(GameManager.video_aspect_ratio)
+	_populate_resolution_options()
 	language_option.selected = _locale_to_index(TranslationServer.get_locale())
 	# O esquema de movimentação já veio carregado do disco pelo GameManager (Autoload),
 	# antes mesmo desta cena existir: aqui o dropdown só reflete o valor ativo.

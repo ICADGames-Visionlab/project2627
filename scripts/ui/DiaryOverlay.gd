@@ -73,7 +73,9 @@ func _draw_current_page() -> void:
 		return
 
 	_title_label.text = tr(page.title_key) if page.title_key != &"" else ""
-	var body_text: String = tr(page.text_key)
+	# render_plain: página de evidência traz a marcação do glossário ("[FACA]"), que este Label
+	# mostraria crua. Aqui a palavra aparece só como texto.
+	var body_text: String = ClickableWordText.render_plain(tr(page.text_key))
 	if not page.format_args.is_empty():
 		body_text = body_text % page.format_args
 	_body_label.text = body_text

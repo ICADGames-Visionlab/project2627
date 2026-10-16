@@ -1,5 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
+# Gerados pelo Godot a partir dos .csv de tradução (reimport); versionar só o .csv
+*.translation
 /android/
 .DS_Store
 addons/md_previewer/.local/

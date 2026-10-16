@@ -11,6 +11,9 @@
 # antes, desliga o autosave e devolve o original no fim. Os ids de teste são prefixados por
 # "__selftest_" e não existem em nenhum .tres.
 #
+# O texto das evidências (EvidenceViewer) entra no caso das palavras em conjunto: o hover que acende
+# o par e a regra de só fechar com todas as palavras colhidas.
+#
 # Duas portas de entrada: a ação "Autoteste do profiling" no menu de debug (F4) e o script de linha
 # de comando tests/run_profiling_self_test.gd, que sai com código de erro quando algo falha.
 #
@@ -331,10 +334,22 @@ func _test_pairs() -> void:
 	var partner: GlossaryWord = paired.paired_words[0]
 	ProfilingJournal.from_dict({})
 
+	# Texto de evidência com o par separado por espaço, como o roteiro escreve "[MARCOS] [CASTRO]".
+	var evidence_text: String = "[%s] [%s]" % [String(paired.id).to_upper(), String(partner.id).to_upper()]
+	var hovered: String = ClickableWordText.render_markup(evidence_text, &"", Color.RED, Color.GRAY,
+		true, ClickableWordText.hover_group(String(paired.id)))
+	_expect_equal("O hover numa palavra acende o par junto", hovered.count("[bgcolor="), 2)
+	_expect("Evidência com palavra por colher não fecha",
+		not ClickableWordText.all_words_collected(evidence_text))
+	_expect("Palavra fora de todo pool não prende a evidência",
+		ClickableWordText.all_words_collected("[SELFTEST_INEXISTENTE]"))
+
 	_expect("Descobrir uma palavra em conjunto funciona",
 		ProfilingJournal.discover_word(paired.id, npc_id))
 	_expect("A palavra em conjunto traz o par junto",
 		ProfilingJournal.is_word_discovered(npc_id, partner.id))
+	_expect("Com o par colhido, a evidência fecha",
+		ClickableWordText.all_words_collected(evidence_text))
 	_expect("Descobrir a mesma palavra de novo não é novidade",
 		not ProfilingJournal.discover_word(paired.id, npc_id))
 	_expect("As duas palavras contam no \"23/36\"",

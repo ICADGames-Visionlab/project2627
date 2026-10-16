@@ -47,9 +47,10 @@ static func facing_from_direction(direction: Vector2) -> Facing:
 	return posmod(sector, DIRECTION_SUFFIXES.size()) as Facing
 
 
-# Monta o nome da animação a partir do prefixo (correndo/parado) e do sufixo da direção. Os nomes
-# montados aqui precisam existir na SpriteFrames do AnimatedSprite2D: idle_e, idle_se, ..., run_e,
-# run_se, ... — as 8 direções do spritesheet (ver res://resources/player_sprite_frames.tres).
+# Monta o nome da animação a partir do prefixo (parado/andando/correndo) e do sufixo da direção. Os
+# nomes montados aqui precisam existir na SpriteFrames do AnimatedSprite2D: idle_e, idle_se, ...,
+# walk_e, walk_se, ..., run_e, run_se, ... — as 8 direções do spritesheet (ver
+# res://resources/player_sprite_frames.tres).
 static func animation_name(prefix: StringName, facing: Facing) -> StringName:
 	return StringName("%s_%s" % [prefix, DIRECTION_SUFFIXES[facing]])
 
