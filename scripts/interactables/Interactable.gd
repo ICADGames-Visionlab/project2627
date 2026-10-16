@@ -4,7 +4,7 @@
 ##
 ##   INSIGHT   o jogador recebe um insight (caixa no próprio objeto, ou fala de uma cabeça)
 ##   DIALOGUE  abre uma conversa da pasta dialogue/ (narração, o jogador pensando alto)
-##   EVIDENCE  o objeto vai para o inventário como evidência e some do mundo
+##   EVIDENCE  a evidência abre de perto (EvidenceViewer) e, ao fechar, vai para o diário
 ##
 ## COMO USAR: arraste scenes/interactables/Interactable.tscn para dentro do YSort da cena, posicione e
 ## escale como qualquer prop, escolha a textura e a consequência no Inspector. O triângulo amarelo na
@@ -14,9 +14,9 @@
 ## cursor e quando brilhar é o InteractableInteractor, filho do Player. Aqui mora só o que é do
 ## objeto: a aparência do contorno e o que acontece quando ele é acionado.
 ##
-## NO SAVE: uma evidência já coletada não volta ao recarregar. Quem lembra disso é a GameSession
-## (seção "pickups"), pelo caminho do nó na cena; o objeto em si não sabe de save nenhum. Renomear ou
-## mover no editor um Interactable de evidência faz ele reaparecer para quem já o tinha coletado.
+## A evidência NÃO sai do mundo: clicar de novo reabre a mesma evidência. Por isso o objeto não tem
+## nada no save; o que a partida lembra (evidência lida, palavras colhidas) é do Diary e do
+## ProfilingJournal.
 @tool
 class_name Interactable
 extends Node2D
@@ -35,6 +35,10 @@ enum Outcome { INSIGHT, DIALOGUE, EVIDENCE }
 # objetos da cena sem ninguém manter lista nenhuma.
 const GROUP: StringName = &"interactables"
 
+# Cena da evidência vista de perto, instanciada a cada clique (ver _show_evidence). Carregada com
+# load() na hora, como a fonte de insight abaixo.
+const EVIDENCE_VIEWER_SCENE_PATH: String = "res://scenes/ui/EvidenceViewer.tscn"
+
 # Cena da fonte de insight criada sob demanda para a caixa de texto ter onde nascer (ver
 # _reveal_insight). Carregada com load() na hora, como o InsightSource faz com o marcador.
 const INSIGHT_SOURCE_SCENE_PATH: String = "res://scenes/insights/InsightSource.tscn"
@@ -51,7 +55,7 @@ const OUTLINE_PADDING: int = 8
 
 @export_group("Aparência")
 # O desenho do objeto. Pode ficar vazio num objeto de evidência: aí ele usa o ícone do ItemData,
-# que é o mesmo desenho que o jogador vai ver depois no inventário.
+# que é o mesmo desenho que o jogador vê de perto no EvidenceViewer.
 @export var texture: Texture2D:
 	set(value):
 		texture = value
@@ -85,15 +89,12 @@ const OUTLINE_PADDING: int = 8
 		conversation_id = value
 		_refresh_editor_state()
 
-# EVIDENCE: o item que vai para o inventário.
+# EVIDENCE: a evidência mostrada de perto (desenho e texto com as palavras do glossário).
 @export var evidence: ItemData:
 	set(value):
 		evidence = value
 		_apply_texture()
 		_refresh_editor_state()
-
-# EVIDENCE: quantas unidades. Quase sempre 1 (evidência é única), mas um maço de bilhetes pode dar 3.
-@export_range(1, 99, 1) var evidence_amount: int = 1
 
 # Flag de mundo concedida ao interagir, em qualquer consequência. É a costura com o resto do jogo:
 # uma opção de diálogo "Perguntar do bilhete" ou um insight que só abre depois de achar a pista
@@ -163,7 +164,6 @@ func _validate_property(property: Dictionary) -> void:
 		"insight": Outcome.INSIGHT,
 		"conversation_id": Outcome.DIALOGUE,
 		"evidence": Outcome.EVIDENCE,
-		"evidence_amount": Outcome.EVIDENCE,
 	}
 	if name_to_outcome.has(property.name) and name_to_outcome[property.name] != outcome:
 		property.usage = PROPERTY_USAGE_NO_EDITOR
@@ -256,7 +256,7 @@ func interact(player: Player) -> void:
 		_active = null
 	if not is_inside_tree() or is_queued_for_deletion():
 		return
-	_run_outcome(player)
+	_run_outcome()
 
 
 # Distância de um ponto do mundo até o retângulo do desenho (zero se o ponto está dentro dele).
@@ -280,17 +280,7 @@ func _approach_point(from: Vector2) -> Vector2:
 
 # Aplica a consequência. A flag é concedida ANTES: uma conversa aberta por este objeto pode ter
 # opção condicionada a ela, e as condições do primeiro nó são avaliadas assim que a conversa abre.
-# A evidência confere o inventário antes de tudo, para uma falha não conceder a flag de uma pista
-# que o jogador não pegou.
-func _run_outcome(player: Player) -> void:
-	var inventory: Inventory = null
-	if outcome == Outcome.EVIDENCE:
-		if player != null:
-			inventory = player.get_node_or_null(^"Inventory") as Inventory
-		if inventory == null:
-			push_warning("[Interactables] - \"%s\": jogador sem Inventory; evidência não coletada" % name)
-			return
-
+func _run_outcome() -> void:
 	if grants_flag != &"":
 		InsightJournal.grant_flag(grants_flag)
 
@@ -300,7 +290,7 @@ func _run_outcome(player: Player) -> void:
 		Outcome.DIALOGUE:
 			_start_dialogue()
 		Outcome.EVIDENCE:
-			_collect_evidence(inventory)
+			_show_evidence()
 
 
 # Entrega o insight pelo InsightDirector, o único caminho para um insight chegar à tela (diário,
@@ -334,12 +324,16 @@ func _start_dialogue() -> void:
 	EventBus.conversation_requested.emit(conversation_id, &"")
 
 
-# Põe a evidência no inventário e tira o objeto do mundo. O inventário emite item_added, que a
-# InventoryUI já escuta.
-func _collect_evidence(inventory: Inventory) -> void:
-	inventory.add_item(evidence, evidence_amount)
-	print("[Interactables] - \"%s\" coletado como evidência \"%s\" (x%d)" % [name, evidence.id, evidence_amount])
-	queue_free()
+# Abre a evidência de perto, na cena atual. Quem manda a evidência para o diário é o próprio viewer,
+# ao fechar.
+func _show_evidence() -> void:
+	var scene: PackedScene = load(EVIDENCE_VIEWER_SCENE_PATH) as PackedScene
+	if scene == null:
+		push_error("[Interactables] - ERRO: cena da evidência não encontrada em %s" % EVIDENCE_VIEWER_SCENE_PATH)
+		return
+	var viewer: EvidenceViewer = scene.instantiate() as EvidenceViewer
+	get_tree().current_scene.add_child(viewer)
+	viewer.open(evidence)
 
 
 # --- Internos ---

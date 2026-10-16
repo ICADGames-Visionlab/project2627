@@ -91,7 +91,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # O objeto sob um ponto da tela, ou null. Com dois objetos sobrepostos, ganha o de maior Y no mundo,
 # que é o desenhado por cima no Y-sort: o jogador clica no que está vendo na frente.
-# check_gui: no hover, um painel de interface (inventário aberto) na frente do objeto esconde o
+# check_gui: no hover, um painel de interface (o relógio, um menu) na frente do objeto esconde o
 # objeto. No clique não precisa: um clique que um Control pegou nem chega ao _unhandled_input.
 func _object_at(screen_point: Vector2, check_gui: bool) -> Interactable:
 	if check_gui and get_viewport().gui_get_hovered_control() != null:
