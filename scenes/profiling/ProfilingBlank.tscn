@@ -1,0 +1,30 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/ProfilingBlank.gd" id="1_blank"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_blank"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(1, 1, 1, 1)
+border_width_bottom = 2
+border_color = Color(1, 1, 1, 0.5)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="ProfilingBlank" type="PanelContainer"]
+custom_minimum_size = Vector2(150, 0)
+mouse_default_cursor_shape = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_blank")
+script = ExtResource("1_blank")
+
+[node name="WordLabel" type="Label" parent="."]
+auto_translate_mode = 2
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+vertical_alignment = 1

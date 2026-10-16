@@ -100,9 +100,15 @@ func _show_buttons() -> void:
 	_resume_button.grab_focus()
 
 
-# Volta pro menu principal. Despausa ANTES de pedir a troca, e isso não é detalhe: o GameManager
-# anima o fade com um Tween da árvore, e Tween de árvore pausada não avança. Trocando de cena com
-# o jogo ainda congelado, o jogador ficaria preso na tela preta pra sempre.
+# Grava e volta pro menu principal ("Salvar e sair para o menu"). O end_session() vem PRIMEIRO, com a
+# cena de jogo ainda viva: é ela que tem o Player e a GameSession, e a posição e a hora que entram no
+# save são as deles. Depois da troca de cena esses participantes já teriam saído da árvore. O botão
+# nunca é desabilitado: o save guarda sempre o último momento seguro, então qualquer instante é
+# consistente.
+# Despausa ANTES de pedir a troca, e isso não é detalhe: o GameManager anima o fade com um Tween da
+# árvore, e Tween de árvore pausada não avança. Trocando de cena com o jogo ainda congelado, o
+# jogador ficaria preso na tela preta pra sempre.
 func _on_back_to_menu_pressed() -> void:
+	SaveManager.end_session()
 	resume()
 	GameManager.change_scene(MAIN_MENU_SCENE)

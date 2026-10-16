@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="GlossaryWord" format=3 uid="uid://ymnmxlje0277"]
+
+[ext_resource type="Script" uid="uid://x0wnpu274mwe" path="res://scripts/profiling/GlossaryWord.gd" id="1_script"]
+[ext_resource type="Resource" path="res://resources/profiling/categorias/nome.tres" id="2_category"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"smith"
+text_key = "GLOSSARY_WORD_SMITH"
+category = ExtResource("2_category")

@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://dalu0ftdftp31"]
+
+[ext_resource type="Script" uid="uid://dk3qsj5bkqwr8" path="res://scripts/world/NightLight.gd" id="1_light"]
+
+[sub_resource type="Gradient" id="Gradient_light"]
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_light"]
+gradient = SubResource("Gradient_light")
+width = 256
+height = 256
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="NightLight" type="PointLight2D" unique_id=1362945649]
+color = Color(1, 0.85, 0.6, 1)
+energy = 0.9
+texture = SubResource("GradientTexture2D_light")
+texture_scale = 3.0
+script = ExtResource("1_light")

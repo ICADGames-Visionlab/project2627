@@ -1,0 +1,23 @@
+# PLACEHOLDER: conversa de exemplo do objeto interagível "caixa de papelão" (City.tscn, nó
+# YSort/CardboardBoxDialogue). Texto provisório, para ser reescrito; as chaves começam com
+# PLACEHOLDER_ no translations.csv.
+#
+# Não tem "participants:": quem abre é um objeto, não um NPC. Fala sem falante é narração, e
+# "player:" é o próprio jogador.
+#
+# A segunda opção mostra a costura com a evidência: ela só destrava depois que o jogador pega o
+# bilhete rasgado (o Interactable do bilhete concede a flag found_torn_note).
+
+== inicio ==
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_01
+player: PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_02
+
+- PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_OPT_LOOK => olhar
+- PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_OPT_NOTE [if:found_torn_note show_disabled reason:PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_REASON_NOTE] => bilhete
+- PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_OPT_LEAVE => END
+
+== olhar ==
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_LOOK_01
+
+== bilhete ==
+PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_NOTE_01

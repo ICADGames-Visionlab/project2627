@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="ProfilingStory" format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/ProfilingStory.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/profiling/GlossaryWord.gd" id="2_word_type"]
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_tristeza.tres" id="3_emotion"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/marcos.tres" id="4_marcos"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/castro.tres" id="5_castro"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/roberta.tres" id="6_roberta"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/smith.tres" id="7_smith"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/maria.tres" id="8_maria"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/baker.tres" id="9_baker"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/vinho.tres" id="10_vinho"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/estatua.tres" id="11_estatua"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/brian.tres" id="12_brian"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/walker.tres" id="13_walker"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"historia_policial_tristeza"
+emotion = ExtResource("3_emotion")
+template_key = "PROFILING_EXAMPLE_TEMPLATE"
+resolved_text_key = "PROFILING_EXAMPLE_RESOLVED"
+journal_entry_key = "PROFILING_EXAMPLE_JOURNAL"
+solution = Array[ExtResource("2_word_type")]([ExtResource("4_marcos"), ExtResource("5_castro"), ExtResource("6_roberta"), ExtResource("7_smith"), ExtResource("8_maria"), ExtResource("9_baker"), ExtResource("10_vinho"), ExtResource("11_estatua"), ExtResource("12_brian"), ExtResource("13_walker")])

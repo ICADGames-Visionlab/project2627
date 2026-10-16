@@ -4,8 +4,8 @@
 
 [resource]
 script = ExtResource("1_settings")
-playable_hours = 16.0
+playable_hours = 18.0
 real_minutes_per_day = 5.0
-resumo = "Dia jogável: 06:00 -> 22:00 (16.0 h de jogo)
+resumo = "Dia jogável: 06:00 -> 00:00 (18.0 h de jogo)
 Duração real: 5.0 min reais por dia
-1 h de jogo = 19 s reais  ·  1 min de jogo = 0.31 s reais"
+1 h de jogo = 17 s reais  ·  1 min de jogo = 0.28 s reais"

@@ -2,162 +2,288 @@
 
 [ext_resource type="Script" uid="uid://h4m8wx6ocg2h" path="res://scripts/settings/Settings.gd" id="1_o2bc3"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBox_tab_panel"]
+content_margin_left = 0.0
+content_margin_top = 0.0
+content_margin_right = 0.0
+content_margin_bottom = 0.0
+bg_color = Color(0.21, 0.21, 0.23, 0.97)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.36, 0.36, 0.4, 1)
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="Theme" id="Theme_settings"]
+default_font_size = 24
+
 [node name="Settings" type="Control" unique_id=1754711566]
-custom_minimum_size = Vector2(1, 0)
 layout_mode = 3
-anchor_top = -0.003
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 3.24
-size_flags_horizontal = 4
-size_flags_vertical = 4
-script = ExtResource("1_o2bc3")
-metadata/_edit_vertical_guides_ = [960.0]
-
-[node name="ColorRect" type="ColorRect" parent="." unique_id=318487817]
-layout_mode = 0
-offset_right = 1920.0
-offset_bottom = 1080.0
-color = Color(0, 0, 0, 0.15686275)
-
-[node name="VBoxContainer" type="VBoxContainer" parent="." unique_id=1754275408]
-custom_minimum_size = Vector2(5, 5)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -247.33334
-offset_top = -179.0
-offset_right = 247.33334
-offset_bottom = 179.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 45
+theme = SubResource("Theme_settings")
+script = ExtResource("1_o2bc3")
+
+[node name="Background" type="ColorRect" parent="." unique_id=318487817]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.15686275)
+
+[node name="Content" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Column" type="VBoxContainer" parent="Content" unique_id=1754275408]
+custom_minimum_size = Vector2(1000, 0)
+layout_mode = 2
+theme_override_constants/separation = 28
 accessibility_region = true
-alignment = 1
 
-[node name="Volume_Geral" type="HSlider" parent="VBoxContainer" unique_id=1214093879]
+[node name="Title" type="Label" parent="Content/Column"]
 layout_mode = 2
+theme_override_font_sizes/font_size = 44
+text = "SETTINGS_TITLE"
+horizontal_alignment = 1
 
-[node name="Label" type="Label" parent="VBoxContainer/Volume_Geral" unique_id=505754576]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -20.0
-offset_top = -29.0
-offset_right = 20.0
-offset_bottom = -6.0
-grow_horizontal = 2
-text = "MENU_VOLUME"
-
-[node name="Fullscreen_Janela" type="OptionButton" parent="VBoxContainer" unique_id=122697615]
+[node name="Tabs" type="TabContainer" parent="Content/Column"]
+unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 26
+theme_override_styles/panel = SubResource("StyleBox_tab_panel")
+current_tab = 0
+use_hidden_tabs_for_min_size = true
 
-[node name="Idioma" type="OptionButton" parent="VBoxContainer" unique_id=683947215]
+[node name="General" type="MarginContainer" parent="Content/Column/Tabs"]
 layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 32
+metadata/_tab_index = 0
+metadata/_tab_name = "SETTINGS_TAB_GENERAL"
 
-[node name="Label" type="Label" parent="VBoxContainer/Idioma" unique_id=401928374]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -20.0
-offset_top = -29.0
-offset_right = 20.0
-offset_bottom = -6.0
-grow_horizontal = 2
+[node name="Rows" type="VBoxContainer" parent="Content/Column/Tabs/General"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="LanguageRow" type="HBoxContainer" parent="Content/Column/Tabs/General/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/General/Rows/LanguageRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "MENU_LANGUAGE"
 
-[node name="Movimentacao" type="OptionButton" parent="VBoxContainer" unique_id=913476201]
+[node name="LanguageOption" type="OptionButton" parent="Content/Column/Tabs/General/Rows/LanguageRow" unique_id=683947215]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 48)
 layout_mode = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/Movimentacao" unique_id=913476202]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -20.0
-offset_top = -29.0
-offset_right = 20.0
-offset_bottom = -6.0
-grow_horizontal = 2
+[node name="MovementRow" type="HBoxContainer" parent="Content/Column/Tabs/General/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/General/Rows/MovementRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "MENU_MOVEMENT"
 
-[node name="DialogoEscala" type="HSlider" parent="VBoxContainer"]
+[node name="MovementOption" type="OptionButton" parent="Content/Column/Tabs/General/Rows/MovementRow" unique_id=913476201]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 48)
 layout_mode = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/DialogoEscala"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -20.0
-offset_top = -29.0
-offset_right = 20.0
-offset_bottom = -6.0
-grow_horizontal = 2
+[node name="Video" type="MarginContainer" parent="Content/Column/Tabs"]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 32
+metadata/_tab_index = 1
+metadata/_tab_name = "SETTINGS_TAB_VIDEO"
+
+[node name="Rows" type="VBoxContainer" parent="Content/Column/Tabs/Video"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="ScreenModeRow" type="HBoxContainer" parent="Content/Column/Tabs/Video/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Video/Rows/ScreenModeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "SETTINGS_SCREEN_MODE"
+
+[node name="ScreenModeOption" type="OptionButton" parent="Content/Column/Tabs/Video/Rows/ScreenModeRow" unique_id=122697615]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 48)
+layout_mode = 2
+
+[node name="Audio" type="MarginContainer" parent="Content/Column/Tabs"]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 32
+metadata/_tab_index = 2
+metadata/_tab_name = "SETTINGS_TAB_AUDIO"
+
+[node name="Rows" type="VBoxContainer" parent="Content/Column/Tabs/Audio"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="GeneralVolumeRow" type="HBoxContainer" parent="Content/Column/Tabs/Audio/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Audio/Rows/GeneralVolumeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "MENU_VOLUME"
+
+[node name="SliderBox" type="HBoxContainer" parent="Content/Column/Tabs/Audio/Rows/GeneralVolumeRow"]
+custom_minimum_size = Vector2(440, 48)
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="GeneralVolumeSlider" type="HSlider" parent="Content/Column/Tabs/Audio/Rows/GeneralVolumeRow/SliderBox" unique_id=1214093879]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="GeneralVolumeValue" type="Label" parent="Content/Column/Tabs/Audio/Rows/GeneralVolumeRow/SliderBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+horizontal_alignment = 2
+
+[node name="Dialogue" type="MarginContainer" parent="Content/Column/Tabs"]
+layout_mode = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 32
+metadata/_tab_index = 3
+metadata/_tab_name = "SETTINGS_TAB_DIALOGUE"
+
+[node name="Rows" type="VBoxContainer" parent="Content/Column/Tabs/Dialogue"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="TextScaleRow" type="HBoxContainer" parent="Content/Column/Tabs/Dialogue/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Dialogue/Rows/TextScaleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "SETTINGS_DIALOGUE_TEXT_SCALE"
 
-[node name="DialogoFonteAlt" type="CheckButton" parent="VBoxContainer"]
+[node name="SliderBox" type="HBoxContainer" parent="Content/Column/Tabs/Dialogue/Rows/TextScaleRow"]
+custom_minimum_size = Vector2(440, 48)
 layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="DialogueScaleSlider" type="HSlider" parent="Content/Column/Tabs/Dialogue/Rows/TextScaleRow/SliderBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="DialogueScaleValue" type="Label" parent="Content/Column/Tabs/Dialogue/Rows/TextScaleRow/SliderBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+horizontal_alignment = 2
+
+[node name="AltFontRow" type="HBoxContainer" parent="Content/Column/Tabs/Dialogue/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Dialogue/Rows/AltFontRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "SETTINGS_DIALOGUE_ALT_FONT"
 
-[node name="DialogoOpacidade" type="HSlider" parent="VBoxContainer"]
+[node name="DialogueAltFontCheck" type="CheckButton" parent="Content/Column/Tabs/Dialogue/Rows/AltFontRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 48)
 layout_mode = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/DialogoOpacidade"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -20.0
-offset_top = -29.0
-offset_right = 20.0
-offset_bottom = -6.0
-grow_horizontal = 2
+[node name="PanelOpacityRow" type="HBoxContainer" parent="Content/Column/Tabs/Dialogue/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Dialogue/Rows/PanelOpacityRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "SETTINGS_DIALOGUE_PANEL_OPACITY"
 
-[node name="DialogoRevelacao" type="OptionButton" parent="VBoxContainer"]
+[node name="SliderBox" type="HBoxContainer" parent="Content/Column/Tabs/Dialogue/Rows/PanelOpacityRow"]
+custom_minimum_size = Vector2(440, 48)
 layout_mode = 2
+theme_override_constants/separation = 16
 
-[node name="Label" type="Label" parent="VBoxContainer/DialogoRevelacao"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -20.0
-offset_top = -29.0
-offset_right = 20.0
-offset_bottom = -6.0
-grow_horizontal = 2
+[node name="DialogueOpacitySlider" type="HSlider" parent="Content/Column/Tabs/Dialogue/Rows/PanelOpacityRow/SliderBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+
+[node name="DialogueOpacityValue" type="Label" parent="Content/Column/Tabs/Dialogue/Rows/PanelOpacityRow/SliderBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+horizontal_alignment = 2
+
+[node name="TextRevealRow" type="HBoxContainer" parent="Content/Column/Tabs/Dialogue/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Dialogue/Rows/TextRevealRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "SETTINGS_DIALOGUE_REVEAL"
 
-[node name="DialogoAnimacao" type="OptionButton" parent="VBoxContainer"]
+[node name="DialogueRevealOption" type="OptionButton" parent="Content/Column/Tabs/Dialogue/Rows/TextRevealRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 48)
 layout_mode = 2
 
-[node name="Label" type="Label" parent="VBoxContainer/DialogoAnimacao"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -20.0
-offset_top = -29.0
-offset_right = 20.0
-offset_bottom = -6.0
-grow_horizontal = 2
+[node name="AnimationRow" type="HBoxContainer" parent="Content/Column/Tabs/Dialogue/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Dialogue/Rows/AnimationRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "SETTINGS_DIALOGUE_ANIMATION"
 
-[node name="Sair" type="Button" parent="." unique_id=1739624486]
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 22.257744
-offset_top = -100.0
-offset_right = 154.02362
-offset_bottom = -25.0
-grow_vertical = 0
-text = "MENU_EXIT"
+[node name="DialogueAnimationOption" type="OptionButton" parent="Content/Column/Tabs/Dialogue/Rows/AnimationRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 48)
+layout_mode = 2
+
+[node name="CloseButton" type="Button" parent="Content/Column" unique_id=1739624486]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(260, 64)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "SETTINGS_BACK"

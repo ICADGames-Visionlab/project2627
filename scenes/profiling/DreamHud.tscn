@@ -1,0 +1,108 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/DreamHud.gd" id="1_dream_hud"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_confirm"]
+bg_color = Color(0.09, 0.09, 0.11, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.6, 0.65, 1, 0.55)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="DreamHud" type="CanvasLayer"]
+layer = 80
+script = ExtResource("1_dream_hud")
+
+[node name="Root" type="Control" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="WakeButton" type="Button" parent="Root"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = -104.0
+offset_right = 268.0
+offset_bottom = -48.0
+grow_horizontal = 1
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+text = "DREAM_WAKE_UP"
+
+[node name="Confirm" type="Control" parent="Root"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="Root/Confirm"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="Panel" type="PanelContainer" parent="Root/Confirm"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -380.0
+offset_top = -140.0
+offset_right = 380.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_confirm")
+
+[node name="Margin" type="MarginContainer" parent="Root/Confirm/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 28
+
+[node name="Content" type="VBoxContainer" parent="Root/Confirm/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="Question" type="Label" parent="Root/Confirm/Panel/Margin/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "DREAM_WAKE_CONFIRM"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Buttons" type="HBoxContainer" parent="Root/Confirm/Panel/Margin/Content"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="Yes" type="Button" parent="Root/Confirm/Panel/Margin/Content/Buttons"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 52)
+theme_override_font_sizes/font_size = 24
+text = "DREAM_WAKE_YES"
+
+[node name="No" type="Button" parent="Root/Confirm/Panel/Margin/Content/Buttons"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 52)
+theme_override_font_sizes/font_size = 24
+text = "DREAM_WAKE_NO"

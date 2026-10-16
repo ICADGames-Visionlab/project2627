@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ProfilingStory" format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/ProfilingStory.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/profiling/GlossaryWord.gd" id="2_word_type"]
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_raiva.tres" id="3_emotion"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/bento.tres" id="4_bento"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/furtado.tres" id="5_furtado"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/revolver.tres" id="6_revolver"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/atirou.tres" id="7_atirou"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/gaveta.tres" id="8_gaveta"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/umidade.tres" id="9_umidade"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"historia_policial_raiva"
+emotion = ExtResource("3_emotion")
+template_key = "PROFILING_POLICIAL_RAIVA_TEMPLATE"
+resolved_text_key = "PROFILING_POLICIAL_RAIVA_RESOLVED"
+journal_entry_key = "PROFILING_POLICIAL_RAIVA_JOURNAL"
+solution = Array[ExtResource("2_word_type")]([ExtResource("4_bento"), ExtResource("5_furtado"), ExtResource("6_revolver"), ExtResource("7_atirou"), ExtResource("8_gaveta"), ExtResource("9_umidade")])

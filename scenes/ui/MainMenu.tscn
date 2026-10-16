@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://clu1cnp0eewpq" path="res://scripts/ui/MainMenu.gd" id="1_yqorp"]
 [ext_resource type="PackedScene" uid="uid://rmyf01pn70ie" path="res://scenes/ui/Settings.tscn" id="2_settings"]
+[ext_resource type="PackedScene" uid="uid://fja82fkd8flig" path="res://scenes/ui/SaveSlotMenu.tscn" id="3_saveslots"]
 
 [node name="MainMenu" type="Control" unique_id=1754711566]
 custom_minimum_size = Vector2(1, 0)
@@ -80,3 +81,9 @@ text = "MENU_EXIT"
 [node name="Settings" parent="." unique_id=564385047 instance=ExtResource("2_settings")]
 visible = false
 layout_mode = 1
+
+[node name="SaveSlotMenu" parent="." instance=ExtResource("3_saveslots")]
+visible = false
+layout_mode = 1
+offset_right = 126.36304
+offset_bottom = -2.2960205

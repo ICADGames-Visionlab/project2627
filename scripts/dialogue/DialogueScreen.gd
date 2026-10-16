@@ -509,7 +509,7 @@ func _show_choices_or_advance(step: DialogueStep) -> void:
 		_state = State.AUTO_WAIT
 		var plain: String = ""
 		if not step.lines.is_empty():
-			plain = DialogueRevealTimer.strip_bbcode(tr(step.lines[0].text_key))
+			plain = DialogueRevealTimer.strip_bbcode(ClickableWordText.render_plain(tr(step.lines[0].text_key)))
 		# Tempo já gasto revelando conta como leitura: sem isto, o AUTO somaria a animação inteira
 		# à espera de leitura de novo, dobrando o tempo parado na tela depois do texto aparecer.
 		var already_elapsed: float = _current_entry.get_reveal_duration() if _current_entry != null else 0.0

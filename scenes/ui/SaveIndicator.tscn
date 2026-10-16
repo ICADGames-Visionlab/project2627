@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://cyxggjwhu1jy8"]
+
+[ext_resource type="Script" uid="uid://cofvxi4xm3q3v" path="res://scripts/ui/SaveIndicator.gd" id="1_indicator"]
+
+[node name="SaveIndicator" type="CanvasLayer"]
+layer = 110
+script = ExtResource("1_indicator")
+
+[node name="Label" type="Label" parent="."]
+visible = false
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -544.0
+offset_top = -68.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "SAVE_INDICATOR_SAVED"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="HideTimer" type="Timer" parent="."]
+one_shot = true

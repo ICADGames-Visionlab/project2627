@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="ProfilingStory" format=3]
+
+[ext_resource type="Script" path="res://scripts/profiling/ProfilingStory.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/profiling/GlossaryWord.gd" id="2_word_type"]
+[ext_resource type="Resource" path="res://resources/emocoes/emocao_raiva.tres" id="3_emotion"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/nestor.tres" id="4_nestor"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/aguiar.tres" id="5_aguiar"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/sal.tres" id="6_sal"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/assinatura.tres" id="7_assinatura"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/rachou.tres" id="8_rachou"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/culpou.tres" id="9_culpou"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"historia_ze_raiva"
+emotion = ExtResource("3_emotion")
+template_key = "PROFILING_ZE_RAIVA_TEMPLATE"
+resolved_text_key = "PROFILING_ZE_RAIVA_RESOLVED"
+journal_entry_key = "PROFILING_ZE_RAIVA_JOURNAL"
+solution = Array[ExtResource("2_word_type")]([ExtResource("4_nestor"), ExtResource("5_aguiar"), ExtResource("6_sal"), ExtResource("7_assinatura"), ExtResource("8_rachou"), ExtResource("9_culpou")])

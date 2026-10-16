@@ -163,7 +163,7 @@ Para testar, o console (**F1**) tem `insights.conceder_flag <flag>`. Para zerar,
 Enquanto a conversa está aberta, a tela mostra um retrato por NPC do elenco, numa coluna à esquerda da coluna de diálogo, alinhada ao topo dela. A imagem vem do campo `portrait` do `NPCDefinition` (grupo Diálogo).
 
 - A imagem deve ter proporção 3:4. O slot é de 180×240 px (`DialogueStyle.portrait_slot_size`), e uma imagem em outra proporção é cortada embaixo.
-- Sem imagem, a tela desenha uma silhueta na `dialogue_color` do NPC. O boot registra no log, uma vez por NPC, que está usando essa silhueta de placeholder.
+- Sem imagem, a tela desenha uma silhueta na `color` do NPC. O boot registra no log, uma vez por NPC, que está usando essa silhueta de placeholder.
 - A ordem é a do `participants:`. Sem essa linha, há um retrato só: o do NPC em que o jogador clicou.
 - Com dois retratos, o de quem está falando fica cheio e o outro apaga para `DialogueStyle.portrait_inactive_alpha`. Falas do jogador, da narração e de cabeças de insight não mudam quem está aceso.
 - Um NPC que fala sem estar no elenco entra na coluna se ainda houver espaço; se não houver, ele assume o retrato de quem não está falando. Isso é rede de segurança para roteiro com `participants:` incompleto, não um jeito de escrever: **Validar conversas** avisa.
