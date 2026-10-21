@@ -1,0 +1,223 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/diary/DiaryPersonPage.gd" id="1_page"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/parts/DiaryGlossarySection.tscn" id="2_section"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/GlossaryWordChip.tscn" id="3_chip"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_frame"]
+content_margin_left = 6.0
+content_margin_top = 6.0
+content_margin_right = 6.0
+content_margin_bottom = 6.0
+bg_color = Color(0.45, 0.3, 0.17, 0.35)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.08, 0.05, 0.03, 1)
+
+[node name="DiaryPersonPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_page")
+section_scene = ExtResource("2_section")
+chip_scene = ExtResource("3_chip")
+
+[node name="Left" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 44.0
+offset_top = 36.0
+offset_right = -36.0
+offset_bottom = -36.0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 20
+
+[node name="Header" type="HBoxContainer" parent="Left"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="Frame" type="PanelContainer" parent="Left/Header"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_frame")
+
+[node name="Portrait" type="TextureRect" parent="Left/Header/Frame"]
+unique_name_in_owner = true
+texture_filter = 1
+custom_minimum_size = Vector2(200, 240)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="NameBlock" type="VBoxContainer" parent="Left/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+alignment = 1
+
+[node name="Name" type="Label" parent="Left/Header/NameBlock"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"DiaryTitle"
+theme_override_font_sizes/font_size = 60
+text = "Nome"
+autowrap_mode = 3
+
+[node name="Line" type="ColorRect" parent="Left/Header/NameBlock"]
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.16, 0.09, 0.05, 1)
+
+[node name="History" type="RichTextLabel" parent="Left"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_vertical = 3
+theme_type_variation = &"DiaryText"
+autowrap_mode = 3
+
+[node name="Right" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 36.0
+offset_top = 36.0
+offset_right = -52.0
+offset_bottom = -36.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="HBoxContainer" parent="Right"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Right/Header"]
+layout_mode = 2
+theme_type_variation = &"DiaryTitle"
+theme_override_font_sizes/font_size = 44
+text = "DIARY_GLOSSARY_TITLE"
+
+[node name="Count" type="Label" parent="Right/Header"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_vertical = 8
+theme_type_variation = &"DiarySmall"
+text = "0/0"
+
+[node name="Spacer" type="Control" parent="Right/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="SearchField" type="LineEdit" parent="Right/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"DiarySearch"
+placeholder_text = "DIARY_GLOSSARY_SEARCH_PLACEHOLDER"
+
+[node name="SearchButton" type="Button" parent="Right/Header"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryLink"
+theme_override_font_sizes/font_size = 22
+toggle_mode = true
+text = "DIARY_GLOSSARY_SEARCH"
+
+[node name="Line" type="ColorRect" parent="Right"]
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.16, 0.09, 0.05, 1)
+
+[node name="Scroll" type="ScrollContainer" parent="Right"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Margin" type="MarginContainer" parent="Right/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 8
+
+[node name="Sections" type="VBoxContainer" parent="Right/Scroll/Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="GlossaryEmpty" type="Label" parent="Right"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DiarySmall"
+text = "DIARY_GLOSSARY_EMPTY"
+autowrap_mode = 3
+
+[node name="Filters" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 1.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 0.0
+offset_left = 4.0
+offset_top = 70.0
+offset_right = 84.0
+offset_bottom = 300.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="AlphaFilter" type="Button" parent="Filters"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+tooltip_text = "DIARY_GLOSSARY_FILTER_ALPHA_TIP"
+theme_type_variation = &"DiaryTab"
+toggle_mode = true
+text = "A-Z"
+
+[node name="StarFilter" type="Button" parent="Filters"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+tooltip_text = "GLOSSARY_FILTER_STAR"
+theme_type_variation = &"DiaryTab"
+toggle_mode = true
+text = "★"
+
+[node name="TrashFilter" type="Button" parent="Filters"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 0)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+tooltip_text = "GLOSSARY_FILTER_TRASH"
+theme_type_variation = &"DiaryTab"
+toggle_mode = true
+text = "✗"

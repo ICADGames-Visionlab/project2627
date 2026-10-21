@@ -196,16 +196,10 @@ DIALOGUE_ZE_ANA_FEIRA_PRECO_02,Which is why I get here early.,Que é por isso qu
 DIALOGUE_ZE_ANA_FEIRA_CHUVA_01,It soaked the whole wheat crop.,Encharcou o trigo inteiro.
 DIALOGUE_ZE_ANA_FEIRA_CHUVA_02,It soaked yours. Mine was under a tarp.,Encharcou o teu. O meu estava debaixo da lona.
 DIALOGUE_ZE_ANA_FEIRA_FIM,Come back tomorrow. We will still be at it.,Volta amanhã. A gente ainda vai estar nessa.
-DIARY_EMPTY,"The diary has no pages yet.","O diário ainda não tem nenhuma página."
 DIARY_PAGE_INDICATOR,"%d / %d","%d / %d"
 DIARY_PREVIOUS,"< Previous","< Anterior"
 DIARY_CLOSE,"Close","Fechar"
 DIARY_NEXT,"Next >","Próxima >"
-DIARY_DEBUG_TEST_PAGE_TEXT,"Test page number %s, added at runtime.","Página de teste número %s, adicionada em tempo de execução."
-PLACEHOLDER_DIARY_PAGE_1_TITLE,"Placeholder - Page 1 (final content pending)","Placeholder - Página 1 (conteúdo final pendente)"
-PLACEHOLDER_DIARY_PAGE_1_TEXT,"Placeholder - This is the first page of the diary prototype. Real content will come from other systems calling Diary.add_page().","Placeholder - Esta é a primeira página do protótipo de diário. O conteúdo real virá de outros sistemas chamando Diary.add_page()."
-PLACEHOLDER_DIARY_PAGE_2_TITLE,"Placeholder - Page 2 (final content pending)","Placeholder - Página 2 (conteúdo final pendente)"
-PLACEHOLDER_DIARY_PAGE_2_TEXT,"Placeholder - Use J (or the Y button) to open and close the diary, and the left/right movement keys to flip pages.","Placeholder - Use J (ou o botão Y) para abrir e fechar o diário, e as teclas de movimento esquerda/direita para folhear as páginas."
 SAVE_SLOT_MENU_TITLE,Choose a slot,Escolha um slot
 SAVE_SLOT_TITLE,Slot %d,Slot %d
 SAVE_SLOT_EMPTY,Empty,Vazio
@@ -237,3 +231,53 @@ PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_REASON_NOTE,Placeholder - You have not found 
 PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_OPT_LEAVE,Placeholder - Leave it.,Placeholder - Deixar pra lá.
 PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_LOOK_01,Placeholder - Empty. Only a smell of the sea.,Placeholder - Vazia. Só um cheiro de mar.
 PLACEHOLDER_DIALOGUE_CARDBOARD_BOX_NOTE_01,Placeholder - The torn edge of the note matches a scrap stuck to the box.,Placeholder - A borda rasgada do bilhete bate com um pedaço preso na caixa.
+DIARY_TITLE,Diary,Diário
+DIARY_TAB_CONTENTS,Contents,Sumário
+DIARY_TAB_PEOPLE,People,Pessoas
+DIARY_TAB_NOTES,Notes,Anotações
+DIARY_CONTENTS_TITLE,Contents,Sumário
+DIARY_PEOPLE_TITLE,People,Pessoas
+DIARY_PEOPLE_EMPTY,I haven't really talked to anyone yet.,Ainda não conversei de verdade com ninguém.
+DIARY_NOTES_TITLE,Personal notes,Anotações pessoais
+DIARY_NOTES_LATEST,Latest note,Última anotação
+DIARY_NOTES_EMPTY,Nothing written here yet.,Nada anotado aqui ainda.
+DIARY_TOPIC_CHORUS,The Chorus,O Coro
+DIARY_TOPIC_CITY,The City,A Cidade
+DIARY_TOPIC_DISTORTED_CITY,The Distorted City,A Cidade Distorcida
+DIARY_TOPIC_MEMORIES,Memories,Memórias
+DIARY_TOPIC_WITH_COUNT,%s (%d),%s (%d)
+DIARY_DATE_FORMAT,{month}/{day},{day}/{month}
+DIARY_PERSON_HISTORY_EMPTY,I still know very little about this person.,Ainda sei muito pouco sobre essa pessoa.
+DIARY_GLOSSARY_TITLE,Glossary,Glossário
+DIARY_GLOSSARY_SEARCH,Search,Lupa
+DIARY_GLOSSARY_SEARCH_PLACEHOLDER,type here,digite aqui
+DIARY_GLOSSARY_FILTER_ALPHA_TIP,Sort A-Z,Ordenar de A a Z
+DIARY_GLOSSARY_EMPTY,No words discovered yet.,Nenhuma palavra descoberta ainda.
+DIARY_GLOSSARY_NO_CATEGORY,Other,Outras
+DIARY_WORD_EVIDENCE_TITLE,"Evidence with ""%s""","Evidências com ""%s"""
+DIARY_WORD_EVIDENCE_EMPTY,No evidence I've read mentions this word yet.,Nenhuma evidência que eu li menciona esta palavra ainda.
+DIARY_EVIDENCE_TITLE,Evidence,Evidências
+DIARY_EVIDENCE_EMPTY,I haven't found anything about this person yet.,Ainda não encontrei nada sobre essa pessoa.
+DIARY_ROUTINE_TITLE,Routine,Rotina
+DIARY_ROUTINE_NOW,current time,horário atual
+DIARY_ROUTINE_HINT,? = not observed yet. A stretch of routine is noted when I see the person during it.,? = ainda não observado. Um trecho da rotina é anotado quando vejo a pessoa durante ele.
+DIARY_ROUTINE_NEUTRAL,Neutral,Neutro
+DIARY_ROUTINE_WORKDAY,Workday,Trabalho
+DIARY_ROUTINE_DAY_OFF,Day off,Folga
+DIARY_ROUTINE_PATROL,Patrol,Ronda
+DIARY_ROUTINE_HOUR,%02dh,%02dh
+DIARY_PLACE_BANCO_DA_PRACA,Square bench,Banco da praça
+DIARY_PLACE_BECO,Alley,Beco
+DIARY_PLACE_CASA_DA_ANA,Ana's house,Casa da Ana
+DIARY_PLACE_CASA_DO_POLICIAL,Officer's house,Casa do policial
+DIARY_PLACE_CASA_DO_ZE,Joe's house,Casa do Zé
+DIARY_PLACE_FEIRA,Market,Feira
+DIARY_PLACE_FORNO,Oven,Forno
+DIARY_PLACE_PRACA,Square,Praça
+DIARY_PLACE_QUARTEL_PORTA,Fire station,Quartel
+DIARY_PERSON_INTRO_ZE,"Placeholder - The baker. He talks about the market as if it owed him something.","Placeholder - O padeiro. Fala da feira como se ela lhe devesse alguma coisa."
+DIARY_PERSON_INTRO_ANA,"Placeholder - The market vendor. She laughs loud, but keeps looking at the alley.","Placeholder - A feirante. Ri alto, mas não para de olhar para o beco."
+DIARY_PERSON_INTRO_POLICIAL,"Placeholder - The officer. He walks the same round every day, a little too carefully.","Placeholder - O policial. Faz a mesma ronda todo dia, com cuidado demais."
+PLACEHOLDER_DIARY_NOTE_FIRE_STATION,"Placeholder - The fire station: crooked bricks, mortar made with sea water and a wall that stays warm. Something there was done in a hurry and never fixed.","Placeholder - O quartel: tijolos tortos, argamassa feita com água do mar e uma parede que não esfria. Algo ali foi feito com pressa e nunca consertado."
+PLACEHOLDER_DIARY_NOTE_FIRST_DREAM,"Placeholder - I fell asleep and woke up in the same city, but wrong: the streets bend where they shouldn't, and the people standing still don't seem to be asleep.","Placeholder - Dormi e acordei na mesma cidade, mas errada: as ruas dobram onde não deviam, e as pessoas paradas não parecem estar dormindo."
+DIARY_NOTE_ADDED,Note added to the diary,Anotação adicionada ao diário

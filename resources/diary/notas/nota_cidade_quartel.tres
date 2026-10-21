@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="DiaryNote" format=3]
+
+[ext_resource type="Script" path="res://scripts/diary/DiaryNote.gd" id="1_note"]
+[ext_resource type="Texture2D" uid="uid://blnddfwknn2bv" path="res://images/placeholder/Isometric City/Buildings/bld_firestation_a.png" id="2_image"]
+
+[resource]
+script = ExtResource("1_note")
+id = &"cidade_quartel"
+topic = 1
+text_key = &"PLACEHOLDER_DIARY_NOTE_FIRE_STATION"
+images = Array[Texture2D]([ExtResource("2_image")])
+trigger = 2
+trigger_ids = Array[StringName]([&"city_building1_bricks", &"city_building1_mortar", &"city_building2_windows", &"city_building3_warm_wall", &"city_building3_gutter"])

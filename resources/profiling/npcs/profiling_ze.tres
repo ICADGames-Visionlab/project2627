@@ -22,6 +22,9 @@
 [ext_resource type="Resource" path="res://resources/profiling/palavras/cal.tres" id="24_cal"]
 [ext_resource type="Resource" path="res://resources/profiling/palavras/queimou.tres" id="25_queimou"]
 [ext_resource type="Resource" path="res://resources/profiling/palavras/correu.tres" id="26_correu"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/marcos.tres" id="27_marcos"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/castro.tres" id="28_castro"]
+[ext_resource type="Resource" path="res://resources/profiling/palavras/faca.tres" id="29_faca"]
 
 [resource]
 script = ExtResource("1_script")
@@ -31,5 +34,5 @@ glossary_words = Array[ExtResource("3_word_type")]([ExtResource("10_nestor"), Ex
 ExtResource("14_rachou"), ExtResource("15_culpou"), ExtResource("16_tiao"), ExtResource("17_moreira"),
 ExtResource("18_rede"), ExtResource("19_mare"), ExtResource("20_remo"), ExtResource("21_marreta"),
 ExtResource("22_formao"), ExtResource("23_andaime"), ExtResource("24_cal"), ExtResource("25_queimou"),
-ExtResource("26_correu")])
+ExtResource("26_correu"), ExtResource("27_marcos"), ExtResource("28_castro"), ExtResource("29_faca")])
 requires_real_world_meeting = true

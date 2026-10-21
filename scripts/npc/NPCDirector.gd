@@ -174,6 +174,22 @@ func get_body(id: StringName) -> NPC:
 	return _bodies.get(id) as NPC
 
 
+# Os ids dos NPCs que têm corpo nesta cena agora.
+func get_body_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for id: StringName in _bodies.keys():
+		result.append(id)
+	return result
+
+
+# A última decisão de rotina de um NPC (onde ele deveria estar e por quê), ou null antes da primeira
+# resolução e no sonho. O diário lê pra anotar o trecho de rotina que o jogador viu.
+func get_decision(id: StringName) -> NPCRoutineResolver.Decision:
+	if GameClock.is_dreaming():
+		return null
+	return _decisions.get(id) as NPCRoutineResolver.Decision
+
+
 # Escolhe a emoção vigente de cada NPC para o dia.
 #
 # ESTE É O PONTO DE EXTENSÃO DO SISTEMA DE EMOÇÃO, e quem o ocupa hoje é o profiling: a emoção de um

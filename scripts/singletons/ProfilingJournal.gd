@@ -362,6 +362,22 @@ func can_appear_in_dream(npc_id: StringName) -> bool:
 	return profile != null and not profile.requires_real_world_meeting
 
 
+# Diz se o jogador já conversou com o NPC no mundo real (sem a dispensa do perfil, que é regra do
+# sonho e não do encontro). O diário usa pra saber quem entra nas páginas de Pessoas.
+func has_met(npc_id: StringName) -> bool:
+	return _met.has(npc_id)
+
+
+# Os NPCs encontrados, em ordem alfabética de id. A ORDEM DE ENCONTRO não é guardada aqui (o save
+# grava esta lista ordenada): quem precisa dela é o diário, e ele a guarda por conta própria.
+func get_met_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for npc_id: StringName in _met.keys():
+		result.append(npc_id)
+	result.sort_custom(_compare_names)
+	return result
+
+
 # Marca que o jogador encontrou o NPC no mundo real. Quem chama é a abertura de uma conversa (ver
 # _on_conversation_started) e o menu de debug.
 func mark_met(npc_id: StringName) -> void:

@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[node name="DiaryTopicLink" type="Button"]
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryLink"
+theme_override_font_sizes/font_size = 42
+text = "Subtópico"

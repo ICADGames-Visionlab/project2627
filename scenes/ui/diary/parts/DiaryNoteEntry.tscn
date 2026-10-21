@@ -1,0 +1,58 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/diary/DiaryNoteEntry.gd" id="1_entry"]
+
+[node name="DiaryNoteEntry" type="VBoxContainer"]
+theme_override_constants/separation = 8
+script = ExtResource("1_entry")
+
+[node name="Header" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Date" type="Label" parent="Header"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"DiaryLabel"
+theme_override_font_sizes/font_size = 30
+text = "01/03"
+
+[node name="Topic" type="Label" parent="Header"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_vertical = 8
+theme_type_variation = &"DiarySmall"
+text = "Subtópico"
+
+[node name="Text" type="RichTextLabel" parent="."]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"DiaryText"
+fit_content = true
+scroll_active = false
+autowrap_mode = 3
+
+[node name="Images" type="HBoxContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ImageTemplate" type="TextureRect" parent="Images"]
+unique_name_in_owner = true
+visible = false
+texture_filter = 1
+custom_minimum_size = Vector2(200, 140)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Line" type="ColorRect" parent="."]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.16, 0.09, 0.05, 0.35)

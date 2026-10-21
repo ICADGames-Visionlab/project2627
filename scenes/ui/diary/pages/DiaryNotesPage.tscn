@@ -1,0 +1,75 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/diary/DiaryNotesPage.gd" id="1_page"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/parts/DiaryNoteEntry.tscn" id="2_entry"]
+
+[node name="DiaryNotesPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_page")
+entry_scene = ExtResource("2_entry")
+
+[node name="Left" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 52.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = -36.0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="Left"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+theme_type_variation = &"DiaryTitle"
+text = "Subtópico"
+
+[node name="Line" type="ColorRect" parent="Left"]
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.16, 0.09, 0.05, 1)
+
+[node name="LeftList" type="VBoxContainer" parent="Left"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+
+[node name="Empty" type="Label" parent="Left"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DiarySmall"
+text = "DIARY_NOTES_EMPTY"
+autowrap_mode = 3
+
+[node name="Right" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 44.0
+offset_top = 36.0
+offset_right = -52.0
+offset_bottom = -36.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+
+[node name="RightList" type="VBoxContainer" parent="Right"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
