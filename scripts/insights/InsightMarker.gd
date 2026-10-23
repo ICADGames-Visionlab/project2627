@@ -13,7 +13,7 @@
 #   anel branco em volta         = é o orbe que a tecla/botão de interagir vai acionar
 #
 # Mouse e teclado/controle nunca destacam orbes ao mesmo tempo. No modo teclado/controle (ligado pelo
-# InsightInteractor), o hover do mouse deixa de contar: sem isso, clicar num orbe e apertar Tab
+# InsightInteractor), o hover do mouse deixa de contar: sem isso, clicar num orbe e apertar E
 # deixava dois orbes em destaque — o que ficou sob o cursor parado e o que recebeu o foco.
 #
 # Não existe alcance de clique: o orbe abre de qualquer distância. Quem limita o que aparece é a

@@ -4,7 +4,7 @@
 ## COMO USAR:
 ##   1. StaticBody2D com este script, dentro de um nó com y_sort_enabled (o YSort de city.tscn).
 ##   2. Um Sprite2D filho, com a arte.
-##   3. Um CollisionPolygon2D filho, com o losango da base.
+##   3. Um CollisionPolygon2D filho, com a planta da base (o retângulo que o prédio ocupa no chão).
 ##   4. A ORIGEM DO NÓ tem que ficar no centro da base (não em 0,0 com o sprite deslocado).
 ##
 ## O passo 4 é o único fácil de errar, e é o que faz o Y-sort funcionar: o Godot ordena pelo
@@ -33,7 +33,7 @@ const ORIGIN_TOLERANCE: float = 24.0
 const AGENTS_LAYER: int = 2
 
 # Opacidade da estrutura enquanto o jogador está atrás dela. 0 some de vez; o padrão deixa a
-# silhueta visível, que é o normal em jogo isométrico — o jogador precisa continuar entendendo
+# silhueta visível, que é o normal em jogo top-down 3/4 — o jogador precisa continuar entendendo
 # que tem um prédio ali.
 @export_range(0.0, 1.0, 0.05) var occluded_alpha: float = 0.35
 
@@ -84,7 +84,7 @@ func _get_configuration_warnings() -> PackedStringArray:
 
 	var polygon: CollisionPolygon2D = _find_polygon()
 	if polygon == null:
-		warnings.append("Falta um CollisionPolygon2D filho com o losango da base.")
+		warnings.append("Falta um CollisionPolygon2D filho com a planta da base.")
 	else:
 		var base_center: Vector2 = _get_base_center(polygon)
 		if base_center.length() > ORIGIN_TOLERANCE:
@@ -141,11 +141,12 @@ func _build_player_detector() -> Area2D:
 	return detector
 
 
-# Silhueta que a estrutura ocupa na tela: o losango da base extrudado pra cima até o topo da arte.
+# Silhueta que a estrutura ocupa na tela: a planta da base extrudada pra cima até o topo da arte.
 #
-# É a forma de um prisma isométrico visto de frente — e é bem mais justa que o retângulo do
-# Sprite2D, porque a arte de um prédio em losango deixa os quatro cantos da textura vazios. Com o
-# retângulo, o jogador começava a apagar o prédio andando por um canto onde não tem prédio nenhum.
+# Com a câmera a 45°, é a fachada mais o telhado: a base empurrada pra cima até o topo do desenho.
+# É mais justa que o retângulo do Sprite2D, que inclui a sombra e a folga transparente em volta da
+# arte — com ele, o jogador começava a apagar o prédio andando por onde não tem prédio nenhum. Vale
+# pra qualquer planta convexa, então a arte placeholder (ainda isométrica) continua funcionando.
 #
 # As duas medidas já existem na cena e não precisam ser desenhadas de novo: a planta baixa vem do
 # CollisionPolygon2D que a colisão já usa, e a altura vem do pixel opaco mais alto da textura.
@@ -220,7 +221,7 @@ func _on_body_exited(body: Node2D) -> void:
 	_set_occluded(false)
 
 
-# Centro do losango da base, em coordenadas locais. É a âncora de chão que a origem do nó deveria
+# Centro da planta da base, em coordenadas locais. É a âncora de chão que a origem do nó deveria
 # estar ocupando.
 func _get_base_center(polygon: CollisionPolygon2D) -> Vector2:
 	var points: PackedVector2Array = polygon.polygon

@@ -52,8 +52,6 @@ const GROUP: StringName = &"pathfinder"
 #
 # Regra prática: meia-largura do maior agente + ~20 px de margem pro corte de curva.
 #
-# Nota pra quem for afinar: a inflação é uniforme, mas o chão é isométrico (achatado 2:1). Isso
-# deixa a folga vertical mais generosa que a horizontal — erra pro lado seguro, que é o certo aqui.
 # O custo de exagerar é fechar passagens estreitas: vãos menores que 2 x agent_radius somem do grafo.
 @export var agent_radius: float = 48.0
 
