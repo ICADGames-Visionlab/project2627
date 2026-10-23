@@ -6,7 +6,7 @@ extends CharacterBody2D
 # AnimatedSprite2D), por isso é um Signal direto e não um evento no EventBus; se no futuro outro
 # sistema precisar reagir a isso (som de passo, poeira ao correr), dá pra escutar esse mesmo sinal
 # sem mexer aqui. is_running só é verdadeiro junto com is_moving: parado nunca está "correndo".
-signal movement_state_changed(is_moving: bool, is_running: bool, facing_direction: Isometric.Facing)
+signal movement_state_changed(is_moving: bool, is_running: bool, facing_direction: TopDown.Facing)
 
 # Emitido quando start_conversation_approach() chega ao destino (ou desiste por bloqueio). Quem
 # chama dá await nele — ver NPCInteraction._start_conversation.
@@ -51,29 +51,18 @@ const SELF_TEST_PATH: String = "res://scripts/player/PlayerMovementSelfTest.gd"
 # move_run) está segurado; no esquema de clique, depois de um clique duplo (ver ClickMoveGesture).
 @export var run_speed: float = 450.0
 
-# Achatamento do eixo Y que alinha a DIREÇÃO do movimento aos eixos do losango isométrico. Não
-# mexe na velocidade (quem cuida disso é vertical_speed_factor, logo abaixo): o que ele decide é
-# o ângulo das diagonais.
-#
-# 0.5 é a razão do losango do tile (64 / 128, ver o TileSet em main.tscn) e faz W+D andar em cima
-# da diagonal do grid — a direção em que as ruas correm. A 1.0 as diagonais saem a 45° na tela,
-# ignorando o grid (movimento puro top-down). Campo de balanceamento: ajuste no Inspector.
-@export_range(0.5, 1.0, 0.01) var isometric_y_ratio: float = 0.5
-
 # Velocidade na tela do movimento puramente vertical, como fração da velocidade do movimento
-# puramente horizontal.
+# puramente horizontal. Não muda a direção (W+D sempre sai a 45° na tela), só a rapidez.
 #
-# Este é o botão de sensação, e não tem valor "certo": as duas pontas estão erradas de jeitos
-# opostos, porque chão achatado 2:1 e personagem desenhado sem achatamento são incompatíveis.
+# Este é o botão de sensação da câmera a 45°:
 #
-#   0.5  geometricamente correto — subir e descer percorre a mesma distância em TILES que andar
-#        pros lados. Parece lento: o sprite do personagem não é achatado e o olho usa ele de régua.
-#   1.0  uniforme em PIXELS DE TELA. Parece rápido, por dois motivos que se somam: o chão passa ao
-#        dobro de tiles por segundo, e a tela 16:9 é atravessada na vertical em 2.4s contra 4.27s
-#        na horizontal.
+#   0.71 geometricamente correto (cos 45°) — com a câmera inclinada, o fundo do chão aparece
+#        encurtado na tela, e andar a mesma distância no chão cobre menos pixels na vertical.
+#   1.0  uniforme em PIXELS DE TELA, como a maioria dos jogos top-down 3/4. Parece um pouco rápido
+#        na vertical: a tela 16:9 é atravessada na vertical em 2.4s contra 4.27s na horizontal.
 #
-# O padrão fica no meio dos dois. Ajuste no Inspector com o jogo rodando até parar de incomodar.
-@export_range(0.5, 1.0, 0.01) var vertical_speed_factor: float = 0.75
+# Ajuste no Inspector com o jogo rodando até parar de incomodar.
+@export_range(0.5, 1.0, 0.01) var vertical_speed_factor: float = 0.71
 
 @export_group("Esquema de clique")
 
@@ -105,7 +94,7 @@ const GROUP: StringName = &"player"
 const WORLD_COLLISION_MASK: int = 1
 
 var _is_moving: bool = false
-var _facing_direction: Isometric.Facing = Isometric.Facing.S
+var _facing_direction: TopDown.Facing = TopDown.Facing.S
 
 # Se o movimento atual é corrida. Quem decide depende da fonte: no teclado é o SHIFT, lido a cada
 # frame; no clique é o gesto que pediu o trajeto (ver _apply_click_command); na aproximação de
@@ -318,10 +307,10 @@ func _follow_pointer(delta: float) -> void:
 		_path[_path.size() - 1] = target
 
 
-# Devolve a direção cartesiana do movimento deste frame, vinda da fonte que o jogador escolheu
-# nas configurações: só teclado, só clique, ou os dois (GameManager.MovementScheme.BOTH). Daqui pra
-# frente o resto do script não sabe (nem precisa saber) de onde veio a direção — achatamento
-# isométrico e escolha de animação são iguais nos dois casos.
+# Devolve a direção do movimento deste frame, vinda da fonte que o jogador escolheu nas
+# configurações: só teclado, só clique, ou os dois (GameManager.MovementScheme.BOTH). Daqui pra
+# frente o resto do script não sabe (nem precisa saber) de onde veio a direção — velocidade e
+# escolha de animação são iguais nos dois casos.
 #
 # Com os dois ligados, o teclado manda enquanto alguma direção estiver apertada: apertar WASD no
 # meio de um trajeto de clique descarta o trajeto, como tomar o controle de volta. O botão do mouse
@@ -382,7 +371,7 @@ func _set_click_destination(destination: Vector2, log_failures: bool = true) -> 
 		print("[Player] - Sem caminho até %s" % destination)
 
 
-# Converte o ponto atual do caminho na mesma direção cartesiana que o teclado produziria pra ir
+# Converte o ponto atual do caminho na mesma direção unitária que o teclado produziria pra ir
 # até lá, avançando pro ponto seguinte conforme chega. Devolve ZERO quando o caminho acabou.
 func _get_click_direction() -> Vector2:
 	# Raio de chegada: o maior entre a folga fixa e o quanto o personagem anda num frame, pra ele
@@ -402,11 +391,7 @@ func _get_click_direction() -> Vector2:
 			_is_running = false
 		return Vector2.ZERO
 
-	var to_waypoint: Vector2 = _path[_path_index] - global_position
-
-	# to_waypoint é uma distância medida na tela, onde o chão já está achatado, e o resto do fluxo
-	# espera uma direção cartesiana como a que vem do teclado (ver Isometric.to_cartesian).
-	return Isometric.to_cartesian(to_waypoint, isometric_y_ratio)
+	return (_path[_path_index] - global_position).normalized()
 
 
 # Desiste do caminho quando o personagem trava. Com o Pathfinder o traçado já desvia da geometria
@@ -497,8 +482,7 @@ func _get_approach_direction() -> Vector2:
 		conversation_approach_arrived.emit()
 		return Vector2.ZERO
 
-	var to_waypoint: Vector2 = _approach_path[_approach_index] - global_position
-	return Isometric.to_cartesian(to_waypoint, isometric_y_ratio)
+	return (_approach_path[_approach_index] - global_position).normalized()
 
 
 # Desiste da aproximação se o personagem travar por tempo demais (NPC cercado, cenário mudou desde
@@ -537,11 +521,11 @@ func _on_conversation_ended(_conversation_id: StringName, _end_node_id: StringNa
 	_is_running = false
 
 
-# Converte a direção cartesiana do input na velocidade final, em pixels de tela por segundo. A
-# conta em si mora em Isometric porque é a mesma para todo agente que anda neste chão (o NPC usa
-# a mesma); o que é do Player são os números que entram nela.
+# Converte a direção do input na velocidade final, em pixels de tela por segundo. A conta em si
+# mora em TopDown porque é a mesma para todo agente que anda neste chão (o NPC usa a mesma); o que
+# é do Player são os números que entram nela.
 func _to_screen_velocity(direction: Vector2) -> Vector2:
-	return Isometric.screen_velocity(direction, _current_speed(), isometric_y_ratio, vertical_speed_factor)
+	return TopDown.screen_velocity(direction, _current_speed(), vertical_speed_factor)
 
 
 # Velocidade do movimento atual: corrida ou caminhada. Ponto único pra todo lugar que precisa dela
@@ -593,10 +577,10 @@ func _configure_click_gesture() -> void:
 func _update_movement_state(input_direction: Vector2) -> void:
 	var is_moving: bool = input_direction != Vector2.ZERO
 	var is_running: bool = is_moving and _is_running
-	var facing_direction: Isometric.Facing = _facing_direction
+	var facing_direction: TopDown.Facing = _facing_direction
 
 	if is_moving:
-		facing_direction = Isometric.facing_from_direction(input_direction)
+		facing_direction = TopDown.facing_from_direction(input_direction)
 
 	if is_moving == _is_moving and is_running == _is_running_emitted and facing_direction == _facing_direction:
 		return
@@ -612,11 +596,11 @@ func _update_movement_state(input_direction: Vector2) -> void:
 
 # Reage à mudança de estado de movimento tocando a animação correspondente. Só roda quando
 # movement_state_changed é emitido (ou seja, quando o estado muda de verdade), não a cada frame.
-func _on_movement_state_changed(is_moving: bool, is_running: bool, facing_direction: Isometric.Facing) -> void:
+func _on_movement_state_changed(is_moving: bool, is_running: bool, facing_direction: TopDown.Facing) -> void:
 	var prefix: StringName = &"idle"
 	if is_moving:
 		prefix = &"run" if is_running else &"walk"
-	_animated_sprite.play(Isometric.animation_name(prefix, facing_direction))
+	_animated_sprite.play(TopDown.animation_name(prefix, facing_direction))
 
 
 # [DEBUG] Setters e getters dos campos de velocidade do menu de debug (F4).

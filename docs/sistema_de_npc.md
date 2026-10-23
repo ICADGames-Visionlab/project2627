@@ -79,7 +79,7 @@ mesmo preço que Stardew Valley paga ao teleportar o NPC quando a location é ca
 | `scripts/npc/NPCDirector.gd` | Nó da cena de gameplay: povoa a cena, move os NPCs quando o relógio anda, registra o debug. |
 | `scripts/npc/NPC.gd` | O corpo: anda pelo `Pathfinder`, toca animação, mostra o nome. |
 | `scripts/world/Waypoint.gd` | `Marker2D` nomeado que as rotinas apontam. |
-| `scripts/shared/Isometric.gd` | Direção → animação e direção → velocidade achatada. Compartilhado com o `Player`. |
+| `scripts/shared/TopDown.gd` | Direção → animação e direção → velocidade (mais lenta na vertical, câmera a 45°). Compartilhado com o `Player`. |
 | `scenes/npc/NPC.tscn` | A cena do corpo. |
 | `scripts/npc/NPCRoutineSelfTest.gd` | O autoteste da resolução, exceções incluídas. Roda pelo menu de debug ou por `tests/run_npc_routine_self_test.gd`. |
 | `resources/npcs/`, `resources/emocoes/` | Os dados: 3 NPCs de exemplo (Zé, Ana e o policial, que tem ronda), 17 rotinas, 3 rondas, 4 emoções, o roster. |
@@ -182,7 +182,7 @@ o tempo parado**, e a ronda passa pelas paradas em ordem, dando a volta na lista
 
 A caminhada é **calculada**, e não medida com o NPC andando: o `NPCDirector` acha o caminho de verdade
 (Pathfinder) entre os dois pontos, percorre na velocidade do NPC (a mesma conta do movimento,
-`Isometric.walk_seconds`) e arredonda **pra cima** em blocos de 10 minutos, o passo do relógio. A primeira
+`TopDown.walk_seconds`) e arredonda **pra cima** em blocos de 10 minutos, o passo do relógio. A primeira
 parada caminha desde onde ele estava quando a faixa abriu (a entrada da rotina padrão do minuto anterior); se
 ele já estava no primeiro ponto, ou vinha de outra cena, não caminha.
 

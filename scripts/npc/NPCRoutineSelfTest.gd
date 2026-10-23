@@ -285,16 +285,16 @@ func _test_travel_consistency() -> void:
 		problems.is_empty(), "; ".join(PackedStringArray(problems.slice(0, 3))))
 
 
-# A conta do tempo de caminhada é a do movimento (Isometric.screen_velocity): mais lenta quanto mais vertical.
+# A conta do tempo de caminhada é a do movimento (TopDown.screen_velocity): mais lenta quanto mais vertical.
 func _test_walk_seconds() -> void:
 	_expect_true("Horizontal: 300 px a 200 px/s levam 1,5 s",
-		is_equal_approx(Isometric.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(300, 0)]), 200.0, 0.5, 0.75), 1.5))
+		is_equal_approx(TopDown.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(300, 0)]), 200.0, 0.75), 1.5))
 	_expect_true("Vertical: 100 px a 200 px/s x 0,75 levam 0,667 s",
-		absf(Isometric.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(0, 100)]), 200.0, 0.5, 0.75) - 100.0 / 150.0) < 0.0001)
+		absf(TopDown.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(0, 100)]), 200.0, 0.75) - 100.0 / 150.0) < 0.0001)
 	_expect_true("Um caminho de dois trechos soma os dois",
-		absf(Isometric.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(300, 0), Vector2(300, 100)]), 200.0, 0.5, 0.75)
+		absf(TopDown.walk_seconds(Vector2.ZERO, PackedVector2Array([Vector2(300, 0), Vector2(300, 100)]), 200.0, 0.75)
 			- (1.5 + 100.0 / 150.0)) < 0.0001)
-	_expect_true("Caminho vazio leva zero", Isometric.walk_seconds(Vector2.ZERO, PackedVector2Array(), 200.0, 0.5, 0.75) == 0.0)
+	_expect_true("Caminho vazio leva zero", TopDown.walk_seconds(Vector2.ZERO, PackedVector2Array(), 200.0, 0.75) == 0.0)
 
 	var nothing: NPCRoutineException.TravelTimes = NPCRoutineException.TravelTimes.new()
 	_expect_true("TravelTimes sem lookup responde zero (não sabe, então não anda)", nothing.minutes(&"a", &"b") == 0)

@@ -376,7 +376,7 @@ func _apply_texture() -> void:
 
 
 # A textura com uma borda transparente em volta. O shader de contorno só pinta DENTRO da textura (ele
-# acende o texel transparente vizinho de um opaco), e os props do pacote isométrico são recortados
+# acende o texel transparente vizinho de um opaco), e os props do pacote placeholder são recortados
 # rente ao desenho: sem folga, o contorno sairia cortado justamente nas bordas de fora. A folga é a
 # espessura máxima do contorno (8 texels, o teto de outline_width), então qualquer espessura cabe.
 # O Sprite2D é centralizado, então a borda cresce igual para os dois lados e o desenho não sai do

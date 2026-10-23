@@ -97,8 +97,7 @@ de um clique duplo) continua valendo.
 |---|---|---|
 | `walk_speed` | 225 | Velocidade andando (px/s de tela, no movimento horizontal) |
 | `run_speed` | 450 | Velocidade correndo, mesma unidade |
-| `isometric_y_ratio` | 0.5 | Ângulo das diagonais (ver comentário no script) |
-| `vertical_speed_factor` | 0.75 | Velocidade vertical como fração da horizontal |
+| `vertical_speed_factor` | 0.71 | Velocidade vertical como fração da horizontal (0.71 = cos 45°, o encurtamento da câmera; 1.0 = uniforme na tela) |
 | **Esquema de clique** | | |
 | `click_hold_seconds` | 0.25 | Quanto tempo apertado vira "segurar" |
 | `double_click_seconds` | 0.4 | Intervalo máximo do clique duplo |
@@ -146,7 +145,7 @@ quando ele pausa.
 
 `movement_state_changed(is_moving, is_running, facing_direction)` é emitido só quando o estado muda. O
 próprio `Player` escuta e toca `idle_<dir>`, `walk_<dir>` ou `run_<dir>` (nomes montados por
-`Isometric.animation_name`). `is_running` só é verdadeiro junto com `is_moving`: SHIFT segurado parado
+`TopDown.animation_name`). `is_running` só é verdadeiro junto com `is_moving`: SHIFT segurado parado
 não toca animação de corrida.
 
 ---

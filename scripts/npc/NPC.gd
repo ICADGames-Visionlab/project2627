@@ -28,7 +28,7 @@ signal arrived
 
 # Emitido só quando o estado de movimento muda — mesma ideia do sinal homônimo do Player: a troca
 # de animação não precisa (e não deve) rodar a cada frame.
-signal movement_state_changed(is_moving: bool, facing_direction: Isometric.Facing)
+signal movement_state_changed(is_moving: bool, facing_direction: TopDown.Facing)
 
 ## Espaço para constantes
 
@@ -46,13 +46,9 @@ const INSIGHT_SOURCE_SCENE: PackedScene = preload("res://scenes/insights/Insight
 
 ## Espaço para variáveis exportadas
 
-## Achatamento do eixo Y que alinha a direção do movimento aos eixos do losango isométrico. Mesmo
-## significado (e mesmo valor padrão) do campo homônimo do Player — ver Isometric.gd.
-@export_range(0.5, 1.0, 0.01) var isometric_y_ratio: float = 0.5
-
-## Velocidade do movimento vertical como fração da horizontal. Ver o comentário longo no Player:
-## é o botão de sensação, não tem valor geometricamente "certo".
-@export_range(0.5, 1.0, 0.01) var vertical_speed_factor: float = 0.75
+## Velocidade do movimento vertical como fração da horizontal. Mesmo significado (e mesmo valor
+## padrão) do campo homônimo do Player — ver o comentário longo lá e TopDown.gd.
+@export_range(0.5, 1.0, 0.01) var vertical_speed_factor: float = 0.71
 
 ## Quanto tempo ele espera antes de tentar traçar o caminho de novo depois de falhar ou travar.
 @export var repath_interval: float = 1.5
@@ -101,7 +97,7 @@ var _retry_time: float = 0.0
 var _attempts: int = 0
 
 var _is_moving: bool = false
-var _facing: Isometric.Facing = Isometric.Facing.S
+var _facing: TopDown.Facing = TopDown.Facing.S
 
 # Segurado por uma conversa (SPEC §11.4): cancela o caminho e ignora walk_to() até release().
 var _is_held: bool = false
@@ -125,7 +121,7 @@ func _physics_process(delta: float) -> void:
 		return
 
 	var direction: Vector2 = _get_path_direction()
-	velocity = Isometric.screen_velocity(direction, _speed, isometric_y_ratio, vertical_speed_factor)
+	velocity = TopDown.screen_velocity(direction, _speed, vertical_speed_factor)
 	move_and_slide()
 
 	_handle_blocked(delta)
@@ -211,7 +207,7 @@ func face_toward(world_position: Vector2) -> void:
 	var to_target: Vector2 = world_position - global_position
 	if to_target.is_zero_approx():
 		return
-	_facing = Isometric.facing_from_direction(Isometric.to_cartesian(to_target, isometric_y_ratio))
+	_facing = TopDown.facing_from_direction(to_target)
 	_play_animation()
 
 
@@ -295,7 +291,7 @@ func _request_path() -> void:
 		_give_up_or_retry("sem caminho até o destino")
 
 
-# Converte o ponto atual do caminho na direção cartesiana equivalente, avançando pro ponto seguinte
+# Converte o ponto atual do caminho na direção unitária até ele, avançando pro ponto seguinte
 # conforme chega. Devolve ZERO quando não há caminho a percorrer. Mesma mecânica do Player no
 # esquema de clique — a diferença é só de onde vem o destino.
 func _get_path_direction() -> Vector2:
@@ -313,8 +309,7 @@ func _get_path_direction() -> Vector2:
 		_arrive()
 		return Vector2.ZERO
 
-	var to_waypoint: Vector2 = _path[_path_index] - global_position
-	return Isometric.to_cartesian(to_waypoint, isometric_y_ratio)
+	return (_path[_path_index] - global_position).normalized()
 
 
 func _arrive() -> void:
@@ -383,10 +378,10 @@ func _clear_path() -> void:
 # quando está parado, e só emite quando algo muda de verdade.
 func _update_movement_state(direction: Vector2) -> void:
 	var is_moving: bool = direction != Vector2.ZERO
-	var facing: Isometric.Facing = _facing
+	var facing: TopDown.Facing = _facing
 
 	if is_moving:
-		facing = Isometric.facing_from_direction(direction)
+		facing = TopDown.facing_from_direction(direction)
 
 	if is_moving == _is_moving and facing == _facing:
 		return
@@ -396,10 +391,10 @@ func _update_movement_state(direction: Vector2) -> void:
 	movement_state_changed.emit(_is_moving, _facing)
 
 
-func _on_movement_state_changed(_is_moving_now: bool, _facing_now: Isometric.Facing) -> void:
+func _on_movement_state_changed(_is_moving_now: bool, _facing_now: TopDown.Facing) -> void:
 	_play_animation()
 
 
 func _play_animation() -> void:
 	var prefix: StringName = &"run" if _is_moving else &"idle"
-	_animated_sprite.play(Isometric.animation_name(prefix, _facing))
+	_animated_sprite.play(TopDown.animation_name(prefix, _facing))

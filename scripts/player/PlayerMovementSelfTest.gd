@@ -27,7 +27,7 @@ const CROSS: String = "✗"
 const SPRITE_FRAMES_PATH: String = "res://resources/player_sprite_frames.tres"
 
 # Folga na comparação de velocidades, em pixels por segundo. As velocidades testadas saem exatas da
-# conta do Isometric (movimento puramente horizontal), então a folga só cobre arredondamento.
+# conta do TopDown (movimento puramente horizontal), então a folga só cobre arredondamento.
 const SPEED_TOLERANCE: float = 1.0
 
 # Frames de física usados pelos casos do Player. Contados em frames, e não em segundos, porque o
