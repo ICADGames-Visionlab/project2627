@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[node name="DiaryLink" type="Button"]
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryLink"
+text = "Link"
+alignment = 0

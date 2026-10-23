@@ -206,8 +206,8 @@ O perfil **não** mora dentro do `NPCDefinition`: o NPC existe no mundo acordado
 profiling, e um NPC novo entra na cidade sem obrigar ninguém a escrever história nenhuma. NPC sem
 perfil simplesmente não tem espírito no sonho.
 
-**Cada NPC tem o pool dele**, e os pools não precisam ser iguais: hoje o Zé tem 17 palavras, a Ana 16
-e o policial 20, com algumas palavras aparecendo em mais de um pool (`VINHO` está no da Ana e no do
+**Cada NPC tem o pool dele**, e os pools não precisam ser iguais: hoje o Zé tem 20 palavras, a Ana 16
+e o policial 20, com algumas palavras aparecendo em mais de um pool (`VINHO` está no da Ana e no do policial; `MARCOS`, `CASTRO` e `FACA`, do bilhete rasgado, no do Zé e no do
 policial). O glossário é por NPC — descobrir uma palavra para o Zé não a põe no glossário da Ana.
 
 **As emoções vêm do NPC, não de uma lista fixa.** O GDD fala de três emoções por NPC; o projeto usa

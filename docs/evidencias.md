@@ -12,7 +12,7 @@ contato. Uma evidência é um objeto do mundo que o jogador examina de perto:
    `WordDiscoveryToast`, e ela deixa de ser sublinhada.
 4. Palavras em par (`MARCOS` + `CASTRO`) acendem juntas no hover e entram juntas com um clique só.
 5. **Só dá para fechar depois de colher todas as palavras** daquela evidência (botão "Fechar" ou Esc).
-6. Ao fechar, a evidência vai para o **diário** (título = nome, texto = o que está escrito nela).
+6. Ao fechar, a evidência vai para o **diário**: aparece nas Evidências de cada pessoa que tem no glossário uma palavra dela, e no pop-up dessas palavras (ver `docs/diary.md`).
 7. A evidência **continua no mundo**. Clicar de novo reabre, já com as palavras colhidas e o fechar
    liberado; o diário não ganha página repetida.
 
@@ -23,7 +23,7 @@ contato. Uma evidência é um objeto do mundo que o jogador examina de perto:
 | `scripts/interactables/Interactable.gd` | O objeto no mundo. Na consequência **Evidência**, abre o `EvidenceViewer`. |
 | `scripts/ui/EvidenceViewer.gd` + `scenes/ui/EvidenceViewer.tscn` | A evidência de perto: escurecer, zoom, arrasto, a regra do fechar e o envio ao diário. |
 | `scripts/profiling/ClickableWordText.gd` | O texto com palavras clicáveis (sublinhado, hover dos pares, clique). É o mesmo nó da história resolvida do profiling. |
-| `scripts/singletons/Diary.gd` | `add_evidence()` e a seção `evidences` do save. |
+| `scripts/singletons/Diary.gd` | `add_evidence()` e as evidências da seção `diary` do save. Ver `docs/diary.md`. |
 | `items/TornNote.tres` | Evidência placeholder da cidade (`TornNoteEvidence` em `City.tscn`). |
 
 ---
@@ -62,7 +62,7 @@ contato. Uma evidência é um objeto do mundo que o jogador examina de perto:
 
 - **Na cidade:** o bilhete rasgado (`TornNoteEvidence`) tem `[MARCOS] [CASTRO]` e `[FACA]`. Clique
   nele, confira que o "Fechar" está desabilitado, passe o mouse em "Marcos" (as duas acendem), colha
-  tudo, feche e abra o diário (**J**).
+  tudo, feche e abra o diário (**L**): o bilhete aparece nas Evidências do policial e no pop-up das palavras dele.
 - **Autoteste do profiling** (F4, ou `godot --headless --path . --script res://tests/run_profiling_self_test.gd`):
   confere o hover do par e a regra do fechar (casos "O hover numa palavra acende o par junto",
   "Evidência com palavra por colher não fecha" e vizinhos).
@@ -71,7 +71,7 @@ contato. Uma evidência é um objeto do mundo que o jogador examina de perto:
 
 ## Save
 
-- **Evidência lida:** o `Diary` guarda os ids na seção `evidences` (`{ "ids": ["torn_note"] }`) e
+- **Evidência lida:** o `Diary` guarda os ids na seção `diary` (`{ "evidences": ["torn_note"], ... }`) e
   refaz as páginas ao abrir a partida, pelo `ItemCatalog`. Id que não existe mais é ignorado.
 - **Palavras colhidas:** são do `ProfilingJournal` (seção `profiling`), como qualquer palavra.
 - **A evidência no mundo:** não tem save nenhum, porque nunca sai do mundo.
@@ -87,8 +87,6 @@ até o jogador abrir e fechar a evidência de novo.
 - **Uma imagem só.** O `icon` serve para o objeto no mundo e para a vista de perto. Se a arte de perto
   for outra (um bilhete aberto, frente e verso), é um campo `closeup: Texture2D` a mais no `ItemData`
   e uma linha no `EvidenceViewer.open()`.
-- **Página do diário só com texto.** O diário de hoje desenha título e texto; a imagem da evidência
-  entra quando o diário ganhar páginas com ícone (ver `docs/diary.md`, "Como escalar").
 - **Glossário por pool.** Se uma palavra estiver no pool de dois NPCs, ela vai para os dois. Se uma
   evidência precisar mandar para um NPC específico, é um campo `npc_id` no `ItemData` passado para
   `set_marked_text()`.

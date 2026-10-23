@@ -1,0 +1,283 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/diary/DiaryBook.gd" id="1_book"]
+[ext_resource type="Theme" path="res://resources/diary/diary_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/pages/DiaryCoverPage.tscn" id="3_cover"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/pages/DiaryContentsPage.tscn" id="4_contents"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/pages/DiaryPeoplePage.tscn" id="5_people"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/pages/DiaryPersonPage.tscn" id="6_person"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/pages/DiaryEvidencePage.tscn" id="7_evidence"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/pages/DiaryRoutinePage.tscn" id="8_routine"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/pages/DiaryNotesIndexPage.tscn" id="9_notes_index"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/pages/DiaryNotesPage.tscn" id="10_notes"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/parts/DiaryWordEvidencePopup.tscn" id="11_popup"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/parts/DiaryEvidenceZoom.tscn" id="12_zoom"]
+[ext_resource type="PackedScene" path="res://scenes/profiling/GlossaryMarkMenu.tscn" id="13_mark_menu"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_leather"]
+bg_color = Color(0.29, 0.17, 0.09, 1)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.17, 0.09, 0.05, 1)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+corner_radius_bottom_right = 14
+corner_radius_bottom_left = 14
+shadow_color = Color(0, 0, 0, 0.5)
+shadow_size = 24
+shadow_offset = Vector2(6, 10)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_paper_left"]
+bg_color = Color(0.82, 0.71, 0.53, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_bottom = 3
+border_color = Color(0.45, 0.32, 0.19, 1)
+corner_radius_top_left = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_paper_right"]
+bg_color = Color(0.82, 0.71, 0.53, 1)
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.45, 0.32, 0.19, 1)
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+
+[node name="DiaryBook" type="CanvasLayer"]
+layer = 90
+script = ExtResource("1_book")
+cover_scene = ExtResource("3_cover")
+contents_scene = ExtResource("4_contents")
+people_scene = ExtResource("5_people")
+person_scene = ExtResource("6_person")
+person_evidence_scene = ExtResource("7_evidence")
+person_routine_scene = ExtResource("8_routine")
+notes_index_scene = ExtResource("9_notes_index")
+notes_scene = ExtResource("10_notes")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.65)
+
+[node name="Book" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -820.0
+offset_top = -470.0
+offset_right = 820.0
+offset_bottom = 470.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Paper" type="Control" parent="Root/Book"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Leather" type="Panel" parent="Root/Book/Paper"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_leather")
+
+[node name="LeftPaper" type="Panel" parent="Root/Book/Paper"]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_bottom = -24.0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_paper_left")
+
+[node name="RightPaper" type="Panel" parent="Root/Book/Paper"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_paper_right")
+
+[node name="Spine" type="ColorRect" parent="Root/Book/Paper"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -4.0
+offset_top = 20.0
+offset_right = 4.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.25, 0.14, 0.07, 1)
+
+[node name="PageHost" type="Control" parent="Root/Book"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Tabs" type="HBoxContainer" parent="Root/Book"]
+unique_name_in_owner = true
+layout_mode = 1
+offset_left = 70.0
+offset_top = -50.0
+offset_right = 760.0
+offset_bottom = 2.0
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 0
+
+[node name="ContentsTab" type="Button" parent="Root/Book/Tabs"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryTab"
+toggle_mode = true
+text = "DIARY_TAB_CONTENTS"
+
+[node name="PeopleTab" type="Button" parent="Root/Book/Tabs"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryTab"
+toggle_mode = true
+text = "DIARY_TAB_PEOPLE"
+
+[node name="NotesTab" type="Button" parent="Root/Book/Tabs"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryTab"
+toggle_mode = true
+text = "DIARY_TAB_NOTES"
+
+[node name="PreviousButton" type="Button" parent="Root/Book"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 14.0
+offset_right = 224.0
+offset_bottom = 62.0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryNav"
+text = "DIARY_PREVIOUS"
+
+[node name="PageIndicator" type="Label" parent="Root/Book"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = 18.0
+offset_right = 120.0
+offset_bottom = 58.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_type_variation = &"DiaryLight"
+text = "1 / 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="NextButton" type="Button" parent="Root/Book"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -224.0
+offset_top = 14.0
+offset_right = -24.0
+offset_bottom = 62.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryNav"
+text = "DIARY_NEXT"
+
+[node name="CloseButton" type="Button" parent="Root/Book"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -184.0
+offset_top = -56.0
+offset_right = -24.0
+offset_bottom = -8.0
+grow_horizontal = 0
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryNav"
+text = "DIARY_CLOSE"
+
+[node name="WordPopup" parent="Root" instance=ExtResource("11_popup")]
+unique_name_in_owner = true
+layout_mode = 1
+
+[node name="EvidenceZoom" parent="Root" instance=ExtResource("12_zoom")]
+unique_name_in_owner = true
+layout_mode = 1
+
+[node name="MarkMenu" parent="Root" instance=ExtResource("13_mark_menu")]
+unique_name_in_owner = true
+layout_mode = 0

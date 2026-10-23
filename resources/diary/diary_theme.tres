@@ -1,0 +1,176 @@
+[gd_resource type="Theme" format=3]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_link"]
+content_margin_left = 6.0
+content_margin_top = 2.0
+content_margin_right = 6.0
+content_margin_bottom = 2.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_link_hover"]
+content_margin_left = 6.0
+content_margin_top = 2.0
+content_margin_right = 6.0
+content_margin_bottom = 2.0
+bg_color = Color(0.35, 0.2, 0.1, 0.18)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab"]
+content_margin_left = 22.0
+content_margin_top = 8.0
+content_margin_right = 22.0
+content_margin_bottom = 8.0
+bg_color = Color(0.72, 0.6, 0.42, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_color = Color(0.3, 0.18, 0.09, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tab_active"]
+content_margin_left = 22.0
+content_margin_top = 8.0
+content_margin_right = 22.0
+content_margin_bottom = 8.0
+bg_color = Color(0.84, 0.73, 0.54, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_color = Color(0.3, 0.18, 0.09, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nav"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.29, 0.17, 0.09, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.6, 0.42, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nav_hover"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.42, 0.26, 0.14, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.9, 0.8, 0.6, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nav_disabled"]
+content_margin_left = 18.0
+content_margin_top = 8.0
+content_margin_right = 18.0
+content_margin_bottom = 8.0
+bg_color = Color(0.29, 0.17, 0.09, 0.4)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.72, 0.6, 0.42, 0.3)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_search"]
+content_margin_left = 10.0
+content_margin_top = 4.0
+content_margin_right = 10.0
+content_margin_bottom = 4.0
+bg_color = Color(0.93, 0.86, 0.72, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.3, 0.18, 0.09, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[resource]
+DiaryLabel/base_type = &"Label"
+DiaryLabel/colors/font_color = Color(0.16, 0.09, 0.05, 1)
+DiaryLabel/font_sizes/font_size = 24
+DiarySmall/base_type = &"Label"
+DiarySmall/colors/font_color = Color(0.35, 0.24, 0.15, 1)
+DiarySmall/font_sizes/font_size = 20
+DiaryTitle/base_type = &"Label"
+DiaryTitle/colors/font_color = Color(0.16, 0.09, 0.05, 1)
+DiaryTitle/font_sizes/font_size = 52
+DiarySubtitle/base_type = &"Label"
+DiarySubtitle/colors/font_color = Color(0.16, 0.09, 0.05, 1)
+DiarySubtitle/font_sizes/font_size = 32
+DiaryLight/base_type = &"Label"
+DiaryLight/colors/font_color = Color(0.93, 0.86, 0.72, 1)
+DiaryLight/font_sizes/font_size = 24
+DiaryText/base_type = &"RichTextLabel"
+DiaryText/colors/default_color = Color(0.16, 0.09, 0.05, 1)
+DiaryText/font_sizes/normal_font_size = 22
+DiaryText/font_sizes/bold_font_size = 22
+DiaryText/font_sizes/italics_font_size = 22
+DiaryLink/base_type = &"Button"
+DiaryLink/colors/font_color = Color(0.16, 0.09, 0.05, 1)
+DiaryLink/colors/font_hover_color = Color(0.5, 0.12, 0.06, 1)
+DiaryLink/colors/font_pressed_color = Color(0.5, 0.12, 0.06, 1)
+DiaryLink/colors/font_focus_color = Color(0.16, 0.09, 0.05, 1)
+DiaryLink/colors/font_hover_pressed_color = Color(0.5, 0.12, 0.06, 1)
+DiaryLink/colors/font_disabled_color = Color(0.35, 0.24, 0.15, 0.6)
+DiaryLink/font_sizes/font_size = 28
+DiaryLink/styles/normal = SubResource("StyleBoxEmpty_link")
+DiaryLink/styles/hover = SubResource("StyleBoxFlat_link_hover")
+DiaryLink/styles/pressed = SubResource("StyleBoxFlat_link_hover")
+DiaryLink/styles/hover_pressed = SubResource("StyleBoxFlat_link_hover")
+DiaryLink/styles/focus = SubResource("StyleBoxEmpty_link")
+DiaryLink/styles/disabled = SubResource("StyleBoxEmpty_link")
+DiaryTab/base_type = &"Button"
+DiaryTab/colors/font_color = Color(0.16, 0.09, 0.05, 1)
+DiaryTab/colors/font_hover_color = Color(0.5, 0.12, 0.06, 1)
+DiaryTab/colors/font_pressed_color = Color(0.16, 0.09, 0.05, 1)
+DiaryTab/colors/font_hover_pressed_color = Color(0.5, 0.12, 0.06, 1)
+DiaryTab/colors/font_focus_color = Color(0.16, 0.09, 0.05, 1)
+DiaryTab/font_sizes/font_size = 24
+DiaryTab/styles/normal = SubResource("StyleBoxFlat_tab")
+DiaryTab/styles/hover = SubResource("StyleBoxFlat_tab_active")
+DiaryTab/styles/pressed = SubResource("StyleBoxFlat_tab_active")
+DiaryTab/styles/hover_pressed = SubResource("StyleBoxFlat_tab_active")
+DiaryTab/styles/focus = SubResource("StyleBoxFlat_tab")
+DiaryNav/base_type = &"Button"
+DiaryNav/colors/font_color = Color(0.93, 0.86, 0.72, 1)
+DiaryNav/colors/font_hover_color = Color(1, 0.95, 0.85, 1)
+DiaryNav/colors/font_pressed_color = Color(1, 0.95, 0.85, 1)
+DiaryNav/colors/font_focus_color = Color(0.93, 0.86, 0.72, 1)
+DiaryNav/colors/font_disabled_color = Color(0.93, 0.86, 0.72, 0.35)
+DiaryNav/font_sizes/font_size = 24
+DiaryNav/styles/normal = SubResource("StyleBoxFlat_nav")
+DiaryNav/styles/hover = SubResource("StyleBoxFlat_nav_hover")
+DiaryNav/styles/pressed = SubResource("StyleBoxFlat_nav_hover")
+DiaryNav/styles/hover_pressed = SubResource("StyleBoxFlat_nav_hover")
+DiaryNav/styles/focus = SubResource("StyleBoxFlat_nav")
+DiaryNav/styles/disabled = SubResource("StyleBoxFlat_nav_disabled")
+DiarySearch/base_type = &"LineEdit"
+DiarySearch/colors/font_color = Color(0.16, 0.09, 0.05, 1)
+DiarySearch/colors/font_placeholder_color = Color(0.35, 0.24, 0.15, 0.6)
+DiarySearch/colors/caret_color = Color(0.16, 0.09, 0.05, 1)
+DiarySearch/font_sizes/font_size = 22
+DiarySearch/styles/normal = SubResource("StyleBoxFlat_search")
+DiarySearch/styles/focus = SubResource("StyleBoxFlat_search")

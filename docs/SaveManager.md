@@ -17,7 +17,7 @@ aberto, junta o que cada sistema tem a guardar e é o **único** que escreve e l
  PauseMenu: end_session                        ProfilingJournal   "profiling"
  Janela fechando: save_now                     DialogueState      "dialogue"
  EventBus.day_changed: request_save            GameSession        "world" (+ Player)
-                                               Diary              "evidences"
+                                               Diary              "diary"
             |                                              |
             |        register_participant(chave, to_dict, from_dict)
             |        request_save() a cada mudança de fato
@@ -241,8 +241,8 @@ func _on_session_opened(_slot: int) -> void:
 	clear()   # e refaz o que deriva dos fatos, se houver
 ```
 
-Hoje só o `Diary` escuta. Ele grava só os ids das evidências lidas (seção `evidences`) e refaz as
-páginas ali, a partir deles; as páginas em si nunca vão para o arquivo. É signal direto do
+Hoje só o `Diary` escuta. Ele grava os fatos que são só dele (seção `diary`) e, ao abrir a partida, volta o livro
+pra capa; as páginas em si nunca vão para o arquivo (derivam dos fatos). É signal direto do
 `SaveManager`, não evento de bus: a relação é direta e permanente.
 
 ### Quem já participa
@@ -253,7 +253,7 @@ páginas ali, a partir deles; as páginas em si nunca vão para o arquivo. É si
 | `insights` | `InsightJournal` | Autoload | `read` (ids lidos), `flags` |
 | `profiling` | `ProfilingJournal` | Autoload | `discovered`, `fills`, `solved`, `marks`, `emotions`, `met` |
 | `dialogue` | `DialogueState` | static, primeira consulta | `chosen`, `visited` |
-| `evidences` | `Diary` | Autoload | `ids` (evidências que o jogador já fechou, na ordem) |
+| `diary` | `Diary` | Autoload | `people` (ordem de descoberta), `evidences` (fechadas, na ordem), `notes` (`id` + `day`), `routines` (trechos vistos por NPC) |
 | `world` | `GameSession` | nó de cena | `location` (id do local), `position` `[x, y]` |
 
 ### Antes de abrir PR com um participante novo
@@ -310,7 +310,7 @@ arquivo real sai com um item por linha):
 | `clock.total_minutes` | int | Único estado do relógio. 6260 = dia 5, sexta, 14:20 |
 | `world.location` | String | Id do local, não caminho de cena: renomear o `.tscn` não quebra o save |
 | `world.position` | [float, float] | Última posição segura. `Vector2` não sobrevive ao JSON |
-| `evidences.ids` | [String] | Evidências fechadas pelo jogador (id do `ItemData`). O diário refaz as páginas delas pelo `ItemCatalog` |
+| `diary.evidences` | [String] | Evidências fechadas pelo jogador (id do `ItemData`). Saves antigos com a seção `evidences` (`ids`) são lidos uma vez pelo `Diary` |
 
 O rótulo do slot ("Dia 5, Sexta, 14:20 — Cidade") é **derivado** de `clock` e `world` na hora de
 desenhar. Nada derivado é gravado, então trocar o idioma com slots cheios não toca o arquivo.
@@ -526,5 +526,5 @@ significar outra coisa. Use o literal.
 | [`SaveSlotMenu.gd`](../scripts/ui/SaveSlotMenu.gd) | A tela de slots (Continuar, Novo jogo, Apagar) |
 | [`SaveIndicator.gd`](../scripts/ui/SaveIndicator.gd) | O aviso "Jogo salvo" / "Falha ao salvar" |
 | [`GameSession.gd`](../scripts/world/GameSession.gd) | Participante `world` e a tabela de locais |
-| [`Diary.gd`](../scripts/singletons/Diary.gd) | Participante `evidences` |
+| [`Diary.gd`](../scripts/singletons/Diary.gd) | Participante `diary` |
 | [`ItemCatalog.gd`](../scripts/items/ItemCatalog.gd) | Do id da evidência de volta ao `ItemData`, para o diário refazer as páginas |

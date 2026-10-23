@@ -1,149 +1,105 @@
-# Diary (Protótipo de Diário) — Issue #30
+# Diário do jogador — Issue #60
 
-Autoload (singleton) que guarda as páginas de um diário/livro navegável e decide quando ele está
-aberto ou fechado. Qualquer script do projeto pode adicionar conteúdo chamando
-`Diary.add_page(...)`, sem precisar conhecer a UI nem esperar o diário estar aberto.
+O livro que o jogador abre com **L** (botão **Y** no controle) e folheia com as **setas**. Ele
+reúne, numa sequência só, o que o jogador sabe de cada pessoa e as anotações pessoais dele.
 
-Script: `res://scripts/singletons/Diary.gd`
-UI (instanciada sob demanda): `res://scripts/ui/DiaryOverlay.gd` + `res://scenes/ui/DiaryOverlay.tscn`
+| Peça | Arquivo |
+| --- | --- |
+| Estado, ordem das páginas, gatilhos, save | `scripts/singletons/Diary.gd` (Autoload `Diary`) |
+| Endereço de uma página | `scripts/diary/DiaryPage.gd` |
+| Anotação pessoal (conteúdo) | `scripts/diary/DiaryNote.gd` + `.tres` em `resources/diary/notas/` |
+| Catálogo das anotações | `scripts/diary/DiaryNoteCatalog.gd` |
+| O livro na tela | `scenes/ui/diary/DiaryBook.tscn` + `scripts/ui/diary/DiaryBook.gd` |
+| Uma cena por tipo de página | `scenes/ui/diary/pages/` + `scripts/ui/diary/Diary*Page.gd` |
+| Peças repetidas (cartões, seções, pop-ups) | `scenes/ui/diary/parts/` |
+| Cores e fontes | `resources/diary/diary_theme.tres` (variações `DiaryLabel`, `DiaryTitle`, `DiaryLink`...) |
 
-> ⚠️ **Não confundir com o `InsightJournal`.** Aquele autoload (`scripts/singletons/InsightJournal.gd`)
-> é apelidado de "diário" só nos comentários internos dele, e cuida de outra coisa: quais insights o
-> jogador já leu, sem UI própria. Este `Diary` é a peça de UI navegável (livro com páginas) pedida
-> na issue #30 — os dois sistemas não têm relação hoje (ver "Como escalar" mais abaixo se um dia
-> fizer sentido ligar os dois).
+## A sequência do livro
 
-## Configuração inicial
-
-Já registrado no `project.godot` deste PR:
-
-1. `Diary` no Autoload, apontando para `res://scripts/singletons/Diary.gd`.
-2. Ação de input `diary_toggle` (tecla **J**, ou botão **Y** no controle).
-
-Se precisar refazer manualmente: **Project > Project Settings > Autoload**, path apontando pro
-script, Node Name exatamente `Diary`. Não adicione `class_name Diary` — o nome do Autoload já cria
-a referência global (mesma regra do AudioManager, ver `docs/AudioManager.md`).
-
-## Como o jogador interage
-
-- **J** (ou botão **Y** no controle) abre e fecha o diário — funciona em qualquer cena de gameplay,
-  sem precisar instanciar nada à mão.
-- Com o diário aberto: as teclas de movimento **esquerda/direita** (ou o D-pad/analógico
-  correspondente) folheiam as páginas; não voltam ao início ao passar da última nem da primeira.
-- **Esc** fecha o diário (mesmo padrão do menu de pausa e da tela de diálogo).
-- Por padrão, abrir o diário pausa o jogo (`Diary.pause_game_on_open`) — ver "Como escalar" para
-  desligar isso.
-
-## API pública
-
-| Membro | Descrição |
-|---|---|
-| `add_page(text_key, title_key = "", format_args = []) -> int` | Adiciona uma página ao final e devolve o índice dela. Não muda a página que o jogador está lendo. |
-| `insert_page(index, text_key, title_key = "", format_args = [])` | Insere numa posição específica, empurrando as seguintes. |
-| `remove_page(index)` | Remove a página do índice (silencioso se o índice for inválido). |
-| `add_evidence(item: ItemData)` | Põe uma evidência no diário (título = nome, texto = o que está escrito nela). Chamado pelo `EvidenceViewer` ao fechar; a mesma evidência não entra duas vezes. Vai para o save. |
-| `clear()` | Esvazia o diário inteiro. |
-| `get_page_count() -> int` | Número de páginas atuais. |
-| `get_page(index) -> Diary.DiaryPage` | Devolve a página (ou `null` se o índice for inválido). |
-| `get_current_page_index() -> int` | Índice da página sendo exibida. |
-| `next_page()` / `previous_page()` | Navega uma página (não dá a volta nas pontas). |
-| `go_to_page(index)` | Vai direto para uma página, com clamp nos limites. |
-| `open_diary()` / `close_diary()` / `toggle_diary()` | Abre, fecha ou alterna a UI. |
-| `is_open() -> bool` | Se o diário está aberto agora. |
-| `pages_changed` (signal) | Lista de páginas mudou (adição, remoção, limpar). |
-| `current_page_changed(index)` (signal) | A página exibida mudou. |
-| `diary_opened` / `diary_closed` (signal) | O diário abriu ou fechou. |
-
-### `text_key` e `title_key` são chaves de tradução, nunca texto pronto
-
-Segue a regra do `GUIDELINE_PROGRAMACAO.md` ("Strings e Localização"): nenhum texto exibido ao
-jogador pode estar hardcoded. `title_key` vazio (`""`) significa página sem título.
-
-```gdscript
-# Errado — texto pronto direto no código:
-Diary.add_page("Encontrei uma pista sobre o poço.")
-
-# Certo — chave do translations.csv:
-Diary.add_page(&"DIARY_CLUE_WELL_TEXT", &"DIARY_CLUE_WELL_TITLE")
+```
+capa -> sumário (+ primeiras pessoas) -> mais pessoas -> [geral -> evidências -> rotina] x cada pessoa
+     -> anotações pessoais -> coro -> cidade -> cidade distorcida -> memórias
 ```
 
-`format_args` existe pro mesmo caso que o `DYNAMIC_EXAMPLE` do CSV já cobre (texto com uma parte
-variável, tipo nome de NPC ou quantidade):
+- As pessoas entram **na ordem em que o jogador as conheceu**. "Conheceu" é o mesmo fato que leva o
+  NPC ao sonho: uma conversa no mundo real em que ele foi abordado (`ProfilingJournal.has_met`). O
+  diário só guarda a ordem.
+- Seção que não cabe num par de folhas vira várias páginas (`people_per_spread`,
+  `evidence_per_spread`, `notes_per_spread`, no `Diary`).
+- A lista de páginas nunca é guardada: é refeita dos fatos (`Diary.get_pages()`). A página atual é
+  lembrada pela chave (`DiaryPage.get_key()`), então conteúdo novo no meio do livro não tira o
+  jogador da página que ele está lendo.
+- A primeira abertura da partida mostra a capa; as seguintes voltam na página em que ele parou.
 
-```gdscript
-# CSV: DIARY_MET_NPC_TEXT,"I met %s today.","Conheci %s hoje."
-Diary.add_page(&"DIARY_MET_NPC_TEXT", &"", [tr(HeadRegistry.get_display_name_key(head_id))])
-```
+## As páginas
 
-## Quando usar
+| Página | O que mostra |
+| --- | --- |
+| Sumário | Esquerda: o título e os links Pessoas (vai pra primeira pessoa) e Anotações pessoais. Direita: o primeiro grupo de pessoas (`people_on_contents`, 4), pra não sobrar folha vazia. A aba Pessoas abre aqui |
+| Pessoas | Só existe quando há mais pessoas do que cabem ao lado do sumário, e continua a lista dali. Grupos de 4 por folha: na coluna da esquerda nome e depois retrato, na da direita retrato e depois nome. Clicar abre a pessoa |
+| Pessoa (geral) | Esquerda: retrato (`NPCDefinition.portrait`), nome e a história. Direita: o glossário por categoria, com lupa e os filtros A-Z / ★ / ✗ na borda |
+| Pessoa (evidências) | As evidências lidas que têm palavra do glossário dela. Clicar amplia, escurecendo o fundo |
+| Pessoa (rotina) | Tabela das 6 rotinas (emoção x trabalho/folga) nas horas do dia, com "?" no que ainda não foi visto e a linha do horário atual |
+| Anotações pessoais | Os subtópicos com a contagem, e a última anotação |
+| Subtópico | As anotações, com a data (dia/mês) no canto, o texto e as imagens |
 
-- Qualquer sistema que precise registrar algo que o jogador vai querer reler depois (pista,
-  anotação de missão, entrada de lore) e que caiba num texto com título opcional.
-- Conteúdo que nasce em momentos diferentes e de sistemas diferentes — é exatamente pra isso que a
-  API é "chamar uma função de qualquer lugar", em vez de a UI conhecer o conteúdo de antemão.
+**História da pessoa:** não tem ficha (nome, profissão, idade) de propósito. É a apresentação
+`DIARY_PERSON_INTRO_<ID>` do CSV, se existir, mais a entrada de diário de cada história de profiling
+resolvida (`ProfilingStory.journal_entry_key`).
 
-## Quando não usar
+**Glossário:** é o do `ProfilingJournal`, com os mesmos chips do sonho. Clique numa palavra abre o
+pop-up com as evidências que a mencionam; botão direito abre o menu de lixo/estrela.
 
-- Conteúdo com layout próprio (imagem, mapa, formulário) — o protótipo só desenha título + texto.
-  Nesse caso, ou estende `Diary.DiaryPage`/`DiaryOverlay`, ou é melhor uma tela própria (como a
-  `PlaceholderDialogueScreen`).
-- Estado que precisa ser consultado por lógica de jogo (ex: "o jogador já leu isso?", flags que
-  abrem porta) — isso é o `InsightJournal`, não este sistema. `Diary` não sabe nada sobre "lido"
-  nem grava nada no save (ver "Como escalar").
+**Rotina:** um trecho de rotina vira conhecido quando o NPC **está na tela** enquanto ele vale
+(conferido a cada passo do relógio e ao abrir o diário), ou quando o jogador conversa com ele. O
+resto fica "?". A tabela usa a mesma resolução do `NPCRoutineResolver` (fallback, exceções como a
+ronda).
 
-## Prós e contras de ser um Autoload
+## Anotações pessoais: criar uma nova (sem código)
 
-**Prós**
-- Qualquer script chama `Diary.add_page(...)` sem precisar de referência nem saber se a UI existe.
-- Sobrevive a trocas de cena — o diário não esvazia ao trocar de tela, igual ao `InsightJournal`.
-  Só recomeça quando uma partida abre (ver "Como escalar", **Persistência**).
-- UI instanciada sob demanda (só na primeira vez que a tecla é apertada): enquanto ninguém abre o
-  diário, ele não custa nada além do array de páginas em memória.
-- Tecla funciona em qualquer cena de gameplay sem precisar instanciar `DiaryOverlay.tscn` à mão
-  (diferente do `PauseMenu`, que precisa ser colocado em cada cena).
+1. Escreva o texto no `translations/translations.csv`.
+2. `res://resources/diary/notas/` → *New Resource* → `DiaryNote`. Preencha `id`, `topic`,
+   `text_key`, as `images` e o gatilho:
 
-**Contras**
-- Estado global: nada impede um sistema de adicionar página em duplicidade ou no momento errado —
-  não há deduplicação nem validação de conteúdo hoje.
-- `_overlay` nunca é destruído depois de criado (mesma armadilha documentada no `AudioManager.md`):
-  não é um problema sério aqui (é só um punhado de `Label`/`Button`), mas vale saber.
-- Só as evidências persistem: as outras páginas adicionadas em runtime somem ao abrir uma partida, e
-  fechar e reabrir o jogo também as apaga (ver "Como escalar").
+| Gatilho | Quando entra |
+| --- | --- |
+| `MANUAL` | Só com `Diary.add_note(&"id")` (ou o menu de debug) |
+| `DREAM_ENTERED` | Ao entrar no mundo dos sonhos (`EventBus.dream_started`) |
+| `INSIGHT_READ` | Ao ler um dos insights de `trigger_ids` |
+| `CONVERSATION_STARTED` | Ao abrir uma das conversas de `trigger_ids` |
 
-## Como escalar
+Cada anotação entra uma vez, com a data do dia de jogo. O dia 1 é `calendar_start_day` /
+`calendar_start_month` no `Diary` (01/03 por padrão).
 
-- **Persistência:** as **páginas** nunca vão para o save: elas derivam de fatos, e gravar as duas
-  coisas criaria duas fontes de verdade. O único fato que o próprio `Diary` guarda é "o jogador já
-  fechou esta evidência" (seção `evidences`, só os ids, ver `docs/evidencias.md`): ele é o dono desse
-  fato porque a evidência fica no mundo e não tem outro lugar onde morar. O ponto de recomeço é
-  `SaveManager.session_opened`, que chega quando uma partida abre (novo jogo ou continuar) e depois de
-  todos os participantes do save receberem a sua seção: ali o `Diary` esvazia, repõe as páginas de
-  exemplo do debug e refaz uma página por evidência salva. Página derivada de outro fato (insight lido,
-  por exemplo) entra no mesmo `_on_session_opened()`, lida do dono do fato, que a essa altura já está
-  carregado.
-- **Categorias/capítulos:** hoje é uma lista única. Pra separar em seções (ex: "Missões",
-  "Personagens"), o caminho mais simples é adicionar um campo `category: StringName` em
-  `DiaryPage` e a `DiaryOverlay` filtrar por aba, no mesmo espírito da coluna de seções do
-  `DebugMenuOverlay`.
-- **Condição de desbloqueio:** se alguma página só deve aparecer depois de um evento (ex: uma
-  flag do `InsightJournal`), o dono do conteúdo decide isso ANTES de chamar `add_page()` — o
-  `Diary` continua sem saber de flag nenhuma, só guarda o que mandaram guardar. É a mesma divisão
-  de responsabilidade que o `EventBus` recomenda entre "quem decide" e "quem guarda".
-- **Três ou mais sistemas reagindo a abrir/fechar o diário** (ex: SFX de virar página, pausar
-  música, achievement de primeira leitura): nesse ponto `diary_opened`/`diary_closed` deixam de ser
-  relação direta com um único ouvinte e passam a fazer sentido no `EventBus` — mover pra lá segue a
-  regra de `docs/event_bus.md` ("três ou mais sistemas reagem ao mesmo fato").
-- **`pause_game_on_open = false`:** se o diário passar a ser lido sem pausar o jogo (ex: HUD
-  permanente), troque a leitura de página de `move_left`/`move_right` (usada hoje em
-  `DiaryOverlay._unhandled_input`) por ações de input dedicadas — do jeito que está, um jogador
-  segurando "mover para a direita" também folhearia página, porque o mundo continuaria rodando ao
-  mesmo tempo que o diário.
-- **Conteúdo não-textual (imagem, ícone):** dá pra adicionar um campo opcional em `DiaryPage` (ex:
-  `icon: Texture2D`) e a `DiaryOverlay` desenhar condicionalmente — o array de páginas já é
-  genérico o bastante pra isso sem quebrar quem só usa texto.
+Anotações de teste (placeholders): `cidade_quartel` (ler qualquer insight do quartel de bombeiros) e
+`cidade_distorcida_primeiro_sonho` (entrar no sonho).
+
+## API
+
+| Membro | Para quê |
+| --- | --- |
+| `open_diary()` / `close_diary()` / `toggle_diary()` / `is_open()` | Abrir e fechar (pausa o jogo) |
+| `next_page()` / `previous_page()` / `go_to_page(i)` / `go_to_key(key)` | Navegar |
+| `add_evidence(item)` | Chamado pelo `EvidenceViewer` ao fechar uma evidência |
+| `get_evidence_for_npc(id)` / `get_evidence_for_word(id)` | O que as páginas de evidência e o pop-up mostram |
+| `add_note(id)` / `get_notes(topic)` / `format_date(day)` | Anotações |
+| `mark_routine_seen(id, key)` / `is_routine_seen(id, key)` | Rotina observada |
+| `content_changed`, `page_changed`, `diary_opened`, `diary_closed`, `note_added` | Sinais diretos |
+
+## Save
+
+Seção `diary`: `people` (ordem), `evidences`, `notes` (`id` + `day`) e `routines` (chaves dos
+trechos vistos por NPC). Glossário, marcas e histórias continuam no `profiling`. Um save do
+protótipo antigo (seção `evidences` com `ids`) tem as evidências lidas na primeira abertura.
 
 ## Depurar
 
-Com `Diary` registrado no `DebugMenu` (seção "Diário", ver `docs/debug_menu.md`): abrir/fechar,
-avançar/voltar página, adicionar uma página de teste, limpar o diário e listar o estado atual no
-log — tudo sem precisar reproduzir a condição de jogo que adicionaria conteúdo de verdade.
+Seção **Diário** do menu (F4): abrir/fechar, folhear, adicionar uma ou todas as anotações, revelar as
+rotinas inteiras, validar as anotações, listar o estado e resetar. Para ter pessoas sem conversa
+escrita (o policial), use **Profiling → Marcar NPC como encontrado**.
+
+## Placeholders
+
+Tudo é desenhado com `StyleBox` e cor, sem arte. Retratos vêm do `NPCDefinition` (hoje o
+placeholder), as imagens das anotações de teste reaproveitam imagens placeholder do projeto, e os
+textos novos com `Placeholder -` no CSV são provisórios.
