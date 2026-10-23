@@ -135,6 +135,34 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(440, 48)
 layout_mode = 2
 
+[node name="AspectRatioRow" type="HBoxContainer" parent="Content/Column/Tabs/Video/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Video/Rows/AspectRatioRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "MENU_ASPECT_RATIO"
+
+[node name="AspectRatioOption" type="OptionButton" parent="Content/Column/Tabs/Video/Rows/AspectRatioRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 48)
+layout_mode = 2
+
+[node name="ResolutionRow" type="HBoxContainer" parent="Content/Column/Tabs/Video/Rows"]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="Label" type="Label" parent="Content/Column/Tabs/Video/Rows/ResolutionRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "MENU_RESOLUTION"
+
+[node name="ResolutionOption" type="OptionButton" parent="Content/Column/Tabs/Video/Rows/ResolutionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(440, 48)
+layout_mode = 2
+
 [node name="Audio" type="MarginContainer" parent="Content/Column/Tabs"]
 layout_mode = 2
 theme_override_constants/margin_left = 40

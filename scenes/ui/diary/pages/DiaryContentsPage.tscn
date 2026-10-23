@@ -1,0 +1,105 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/diary/DiaryContentsPage.gd" id="1_page"]
+[ext_resource type="PackedScene" path="res://scenes/ui/diary/parts/DiaryPersonCard.tscn" id="2_card"]
+
+[node name="DiaryContentsPage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_page")
+card_scene = ExtResource("2_card")
+
+[node name="Left" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = 56.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -36.0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Left"]
+layout_mode = 2
+theme_type_variation = &"DiaryTitle"
+text = "DIARY_CONTENTS_TITLE"
+horizontal_alignment = 1
+
+[node name="Line" type="ColorRect" parent="Left"]
+custom_minimum_size = Vector2(0, 5)
+layout_mode = 2
+mouse_filter = 2
+color = Color(0.16, 0.09, 0.05, 1)
+
+[node name="Spacer" type="Control" parent="Left"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PeopleLink" type="Button" parent="Left"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryLink"
+theme_override_font_sizes/font_size = 46
+text = "DIARY_PEOPLE_TITLE"
+
+[node name="Gap" type="Control" parent="Left"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="NotesLink" type="Button" parent="Left"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_default_cursor_shape = 2
+theme_type_variation = &"DiaryLink"
+theme_override_font_sizes/font_size = 46
+text = "DIARY_NOTES_TITLE"
+
+[node name="Right" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = -36.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+
+[node name="Title" type="Label" parent="Right"]
+layout_mode = 2
+theme_type_variation = &"DiaryTitle"
+text = "DIARY_PEOPLE_TITLE"
+horizontal_alignment = 1
+
+[node name="PeopleGrid" type="GridContainer" parent="Right"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/h_separation = 24
+theme_override_constants/v_separation = 40
+columns = 2
+
+[node name="PeopleEmpty" type="Label" parent="Right"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"DiarySmall"
+text = "DIARY_PEOPLE_EMPTY"
+horizontal_alignment = 1
+autowrap_mode = 3

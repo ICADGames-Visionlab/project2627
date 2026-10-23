@@ -1,0 +1,2715 @@
+From 447e0885db0d9b2d86b376447e600d489ee83917 Mon Sep 17 00:00:00 2001
+From: Enzl2 <enzotoscanodantas@gmail.com>
+Date: Mon, 12 Oct 2026 14:58:56 -0300
+Subject: [Feat] - Adiciona corrida no teclado (SHIFT) e no clique (clique
+ duplo) e acompanhar o mouse segurando
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Implementa a issue #54 nos dois esquemas de movimentação:
+- Teclado: WASD/setas/analógico andam; segurando SHIFT (nova ação move_run), corre. Soltar o SHIFT no
+  meio do caminho volta a andar na hora, e SHIFT parado não toca animação de corrida.
+- Clique: um clique anda até o ponto; dois cliques rápidos no mesmo lugar correm; segurar o botão faz o
+  personagem acompanhar o mouse andando; segurar o segundo clique de um clique duplo acompanha correndo.
+  Soltar termina o trajeto no ponto em que soltou.
+- Nova opção de movimentação "Teclado + clique do mouse" (MovementScheme.BOTH), além de "Teclado" e
+  "Clique do mouse": cada um mantém as próprias regras; apertar WASD no meio de um trajeto de clique
+  assume o controle e descarta o trajeto, e soltar o WASD com o botão do mouse ainda segurado volta a
+  acompanhar o mouse.
+
+A regra de tempo do clique (o que é clique, clique duplo e segurar) mora numa classe separada,
+ClickMoveGesture, que recebe o instante por parâmetro e não conhece cena nem Input, para poder ser
+testada sem esperar relógio. O relógio é a soma dos delta de física, então "segurar" e "clique duplo"
+congelam junto com o jogo na pausa. O primeiro clique sai andando na hora (não espera para ver se vem o
+segundo), o que evita atraso em todo clique simples. Acompanhar o mouse retraça o caminho pelo
+Pathfinder a cada 0.1 s para desviar dos prédios, e entre um retraçado e outro a ponta do caminho segue
+o mouse frame a frame — sem isso, com o mouse perto do personagem ele alcançava o alvo velho e parava
+um frame a cada retraçado, e a animação piscava andando/parado.
+
+Redes de segurança: o botão é lido em _unhandled_input (clique consumido pela UI, por um orbe ou por um
+objeto interagível não anda); o soltar só é aceito se o apertar passou pelo Player; o estado real do
+botão é conferido a cada frame, e se ele subiu sem o evento chegar (jogo pausado, janela sem foco) o
+personagem para onde está, em vez de andar até o mouse, que pode estar em cima do "Resume" do menu de
+pausa; conversa e troca de esquema zeram o gesto. A aproximação de conversa herda o passo de quem vinha
+andando ou correndo.
+
+Testado com autoteste (78 casos) e no jogo rodando com mouse e teclado reais: clique simples/duplo
+(rápido, lento, longe), segurar perto e longe do personagem, mouse em cima de prédio, orbe de insight,
+objeto interagível (clique, clique duplo e segurar), clique em NPC, fim de conversa, pausa no meio do
+"segurar", o esquema teclado + clique (escolhido pela tela de Options, salvo e recarregado). Autotestes de NPC, insights e profiling continuam passando; nenhum erro ou
+warning nos scripts alterados.
+
+Arquivos:
+- project.godot: nova ação move_run (SHIFT).
+- scripts/singletons/GameManager.gd: novo MovementScheme.BOTH e is_keyboard_movement_enabled() /
+  is_click_movement_enabled(), para ninguém precisar listar à mão quais esquemas incluem cada input.
+- scripts/settings/Settings.gd: terceira opção no dropdown de movimentação.
+- translations/translations.csv (+ .translation): chave MENU_MOVEMENT_BOTH em en e pt_BR.
+- scenes/player/Player.tscn: remove o override speed = 450 (o campo virou walk_speed/run_speed).
+- resources/player_sprite_frames.tres: animações walk_* nas 8 direções, com a folha "walk" do mesmo
+  pacote placeholder das animações idle_* e run_*.
+- scripts/shared/Isometric.gd: comentário de animation_name() passa a citar o prefixo walk_.
+- scripts/player/ClickMoveGesture.gd (+ .uid): novo; traduz apertar/soltar/tempo em GO_TO,
+  START_FOLLOW, STOP_FOLLOW e CANCEL_FOLLOW.
+- scripts/player/Player.gd: speed vira walk_speed (225) e run_speed (450); variáveis do esquema de
+  clique expostas no Inspector; lê SHIFT no teclado e o ClickMoveGesture no clique (ou os dois, com o teclado mandando enquanto
+  tiver direção apertada); acompanha o mouse;
+  movement_state_changed ganha is_running e a animação escolhe idle_/walk_/run_; prints de debug de cada
+  decisão; velocidades ajustáveis e "Autoteste do clique" no menu de debug (F4, seção Jogador).
+- scripts/player/PlayerMovementSelfTest.gd (+ .uid): autoteste do gesto e de um Player de verdade
+  andando frame a frame.
+- tests/run_player_movement_self_test.gd (+ .uid): roda o autoteste pela linha de comando.
+- docs/movimentacao_do_jogador.md: documentação das regras, do balanceamento e de como testar.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PSTJmphrYtyjVvM8XhRCUs
+---
+ docs/movimentacao_do_jogador.md              | 184 +++++
+ project.godot                                |   5 +
+ resources/player_sprite_frames.tres          | 489 ++++++++++++
+ scenes/player/Player.tscn                    |   1 -
+ scripts/player/ClickMoveGesture.gd           | 160 ++++
+ scripts/player/ClickMoveGesture.gd.uid       |   1 +
+ scripts/player/Player.gd                     | 410 ++++++++--
+ scripts/player/PlayerMovementSelfTest.gd     | 758 +++++++++++++++++++
+ scripts/player/PlayerMovementSelfTest.gd.uid |   1 +
+ scripts/settings/Settings.gd                 |   1 +
+ scripts/shared/Isometric.gd                  |   7 +-
+ scripts/singletons/GameManager.gd            |  20 +-
+ tests/run_player_movement_self_test.gd       |  36 +
+ tests/run_player_movement_self_test.gd.uid   |   1 +
+ translations/translations.csv                |   1 +
+ translations/translations.en.translation     | Bin 12288 -> 12332 bytes
+ translations/translations.pt_BR.translation  | Bin 13374 -> 13418 bytes
+ 17 files changed, 2010 insertions(+), 65 deletions(-)
+ create mode 100644 docs/movimentacao_do_jogador.md
+ create mode 100644 scripts/player/ClickMoveGesture.gd
+ create mode 100644 scripts/player/ClickMoveGesture.gd.uid
+ create mode 100644 scripts/player/PlayerMovementSelfTest.gd
+ create mode 100644 scripts/player/PlayerMovementSelfTest.gd.uid
+ create mode 100644 tests/run_player_movement_self_test.gd
+ create mode 100644 tests/run_player_movement_self_test.gd.uid
+
+diff --git a/docs/movimentacao_do_jogador.md b/docs/movimentacao_do_jogador.md
+new file mode 100644
+index 0000000..bd8a8fe
+--- /dev/null
++++ b/docs/movimentacao_do_jogador.md
+@@ -0,0 +1,184 @@
++#Feito pelo Enzo com uso do Claude — issue #54
++
++# Movimentação do Jogador (andar e correr)
++
++Como o `Player` anda e corre nos esquemas de movimentação que o jogador escolhe nas configurações
++(Options → Movimentação, `GameManager.movement_scheme`):
++
++| Opção na tela | `MovementScheme` | O que vale |
++|---|---|---|
++| Teclado (WASD) | `KEYBOARD` (padrão) | Só WASD/setas/analógico |
++| Clique do mouse | `CLICK` | Só point and click |
++| Teclado + clique do mouse | `BOTH` | Os dois ao mesmo tempo (ver [Teclado + clique](#teclado--clique)) |
++
++Quem precisa saber se o teclado ou o clique estão ligados pergunta ao `GameManager`
++(`is_keyboard_movement_enabled()` / `is_click_movement_enabled()`), em vez de comparar com cada esquema.
++
++Peças do sistema:
++
++| Arquivo | Papel |
++|---|---|
++| `scripts/player/Player.gd` | O personagem: lê o input do esquema ativo, anda/corre, escolhe a animação. Dono de todas as variáveis de balanceamento. |
++| `scripts/player/ClickMoveGesture.gd` | Intérprete do botão do mouse no esquema de clique: decide o que é clique, clique duplo e "segurar". Lógica pura (`RefCounted`), sem cena nem Input. |
++| `scripts/player/PlayerMovementSelfTest.gd` | Autoteste de tudo o que está descrito aqui (ver [Testando](#testando)). |
++| `tests/run_player_movement_self_test.gd` | Roda o autoteste completo pela linha de comando. |
++| `resources/player_sprite_frames.tres` | Animações `idle_*`, `walk_*` e `run_*`, nas 8 direções. |
++| `project.godot` (Input Map) | Ação `move_run` (SHIFT) e `move_click` (botão esquerdo). |
++
++---
++
++## As regras
++
++### Teclado
++
++| O jogador faz | O personagem |
++|---|---|
++| WASD / setas / analógico | **Anda** (`walk_speed`) |
++| Mesma coisa segurando **SHIFT** | **Corre** (`run_speed`) |
++| Solta o SHIFT no meio do caminho | Volta a andar na hora |
++| Segura o SHIFT parado | Continua parado, com animação de parado |
++
++O SHIFT é lido a cada frame, então não tem estado nenhum para guardar. No clique o SHIFT não faz nada
++(nem no esquema só de clique, nem no de teclado + clique): lá quem pede corrida é o clique duplo.
++
++### Clique
++
++| O jogador faz | O personagem |
++|---|---|
++| **Um clique** | **Anda** até o ponto clicado e para |
++| **Dois cliques rápidos** no mesmo lugar | **Corre** até o ponto |
++| **Segura** o botão em vez de clicar | **Acompanha o mouse andando** enquanto o botão estiver apertado |
++| **Clique duplo e segura** o segundo clique | **Acompanha o mouse correndo** |
++| Solta o botão depois de segurar | Termina o trajeto no ponto em que soltou (andando ou correndo, como vinha) |
++
++Detalhes que valem a pena saber:
++
++- **O primeiro clique não espera.** O personagem sai andando no mesmo instante; se vier o segundo clique,
++  ele só troca a caminhada em andamento por corrida. Esperar para descobrir se vem um segundo clique
++  deixaria todo clique simples com atraso perceptível.
++- **"Rápido" e "mesmo lugar"** são `double_click_seconds` (0.4 s) entre os dois apertos e
++  `double_click_distance` (24 px) entre eles. A distância é medida na **tela** (na resolução base do
++  projeto, 1920x1080, independente do tamanho da janela), não no mundo: a câmera segue o personagem,
++  então o mesmo ponto da tela aponta para lugares diferentes do mundo entre um clique e outro.
++- **"Segurar"** é o botão ficar apertado por `click_hold_seconds` (0.25 s). Um clique normal dura
++  ~0.1 s.
++- **Terceiro clique rápido no mesmo lugar continua correndo** (forma par com o segundo). Clicar várias
++  vezes não alterna corre/anda/corre.
++- **Um "segurar" nunca conta como primeiro clique** de um clique duplo: segurar, soltar e clicar logo em
++  seguida anda.
++- **Chegar ao destino encerra a corrida.** O próximo clique decide de novo.
++- **Acompanhar o mouse usa o Pathfinder**: o caminho é retraçado a cada `follow_repath_seconds` (0.1 s)
++  para desviar dos prédios, e entre um retraçado e outro o fim do caminho acompanha o mouse frame a
++  frame. Com o mouse em cima do personagem, ele fica parado.
++
++### Teclado + clique
++
++Cada um continua com as próprias regras das tabelas acima. Quando os dois disputam o personagem:
++
++| O jogador faz | O personagem |
++|---|---|
++| Aperta WASD no meio de um trajeto de clique | **O teclado manda**: o trajeto é descartado |
++| Solta o WASD depois disso | Para (o trajeto antigo não é retomado) |
++| Aperta WASD com o botão do mouse **segurado** | O teclado manda enquanto estiver apertado |
++| Solta o WASD com o botão ainda segurado | Volta a acompanhar o mouse |
++
++### Conversa com NPC
++
++Clicar num NPC (em qualquer esquema) trava o input e faz o personagem se aproximar dele. A aproximação
++herda o passo de como o jogador vinha se movendo: quem corria chega correndo. O fim da conversa devolve
++o controle sempre andando, e nada do que estava acontecendo antes dela (botão segurado, primeiro clique
++de um clique duplo) continua valendo.
++
++---
++
++## Variáveis de balanceamento (Inspector do `Player`)
++
++| Variável | Padrão | O que faz |
++|---|---|---|
++| `walk_speed` | 225 | Velocidade andando (px/s de tela, no movimento horizontal) |
++| `run_speed` | 450 | Velocidade correndo, mesma unidade |
++| `isometric_y_ratio` | 0.5 | Ângulo das diagonais (ver comentário no script) |
++| `vertical_speed_factor` | 0.75 | Velocidade vertical como fração da horizontal |
++| **Esquema de clique** | | |
++| `click_hold_seconds` | 0.25 | Quanto tempo apertado vira "segurar" |
++| `double_click_seconds` | 0.4 | Intervalo máximo do clique duplo |
++| `double_click_distance` | 24 | Distância máxima (px de tela) entre os dois cliques |
++| `follow_repath_seconds` | 0.1 | Intervalo entre buscas no Pathfinder enquanto acompanha o mouse |
++
++`walk_speed` e `run_speed` também podem ser ajustados com o jogo rodando, no menu de debug (**F4**,
++seção "Jogador").
++
++---
++
++## Como funciona por dentro
++
++### Por que o gesto de clique é uma classe separada
++
++A parte difícil de acertar é o **tempo** (quanto é "segurar", quanto é "rápido"). O `ClickMoveGesture`
++recebe só três coisas — apertou, soltou e "o tempo passou" — sempre com o instante informado por quem
++chama, e devolve um `Command`:
++
++| Command | Quando | O `Player` faz |
++|---|---|---|
++| `GO_TO` | Todo apertar | Traça caminho até o mouse, andando ou correndo (`is_running`) |
++| `START_FOLLOW` | O botão passou de `hold_seconds` apertado | Passa a acompanhar o mouse |
++| `STOP_FOLLOW` | Soltou depois de segurar | Termina o trajeto no ponto em que soltou |
++| `CANCEL_FOLLOW` | O botão subiu mas o evento de soltar **nunca chegou** | Para onde está |
++
++Como o instante entra por parâmetro, o autoteste encena qualquer sequência de cliques em microssegundos,
++sem esperar relógio nenhum. O relógio que o `Player` passa é a soma dos `delta` de física
++(`_click_clock`), e não o relógio do sistema: assim "segurar" e "clique duplo" congelam junto com o jogo
++quando ele pausa.
++
++### Redes de segurança
++
++- **Clique na interface não anda.** O `Player` lê o botão em `_unhandled_input`: um clique consumido por
++  um botão, um menu ou um orbe de insight nunca chega nele. O soltar só é repassado ao gesto se o apertar
++  correspondente passou por ali.
++- **Soltar que se perdeu** (jogo pausado, janela sem foco, soltou em cima de um menu): a cada frame o
++  gesto também recebe o estado real do botão (`Input.is_action_pressed`). Se o botão subiu sem o evento
++  chegar, o acompanhamento é **cancelado** (`CANCEL_FOLLOW`) e o personagem para onde está — ele não vai
++  até o mouse, porque a essa altura o mouse pode estar em cima do "Continuar" do menu de pausa.
++- **Conversa e troca de esquema** zeram o gesto: um botão segurado não volta a puxar o personagem quando
++  a conversa acaba, nem um clique de antes forma clique duplo com um de depois.
++
++### Animação
++
++`movement_state_changed(is_moving, is_running, facing_direction)` é emitido só quando o estado muda. O
++próprio `Player` escuta e toca `idle_<dir>`, `walk_<dir>` ou `run_<dir>` (nomes montados por
++`Isometric.animation_name`). `is_running` só é verdadeiro junto com `is_moving`: SHIFT segurado parado
++não toca animação de corrida.
++
++---
++
++## Testando
++
++### Autoteste (linha de comando)
++
++```
++godot --headless --path . --script res://tests/run_player_movement_self_test.gd
++```
++
++Sai com código 0 quando tudo passa. Cobre as duas partes:
++
++1. **Gesto** — a regra de tempo do `ClickMoveGesture` (instantâneo).
++2. **Player de verdade** — um `Player` criado só para o teste, andando frame a frame, com as teclas e o
++   botão simulados pelo próprio Input Map. Confere velocidade e animação de cada regra acima, inclusive
++   segurar com o mouse perto do personagem (que antes fazia a animação piscar), soltar perdido,
++   conversa e troca de esquema no meio do movimento.
++
++### Pelo menu de debug
++
++**F4 → Jogador → "Autoteste do clique"** roda só a parte do gesto (a que não mexe no personagem da
++partida) e imprime o relatório no log.
++
++### Na mão
++
++1. Configurações → Movimentação → **Clique do mouse**.
++2. Um clique longe: anda. Dois cliques rápidos: corre. Segurar: o personagem acompanha o mouse andando.
++   Clique duplo e segurar: acompanha correndo.
++3. Configurações → Movimentação → **Teclado (WASD)**. WASD anda; com SHIFT corre.
++4. Configurações → Movimentação → **Teclado + clique do mouse**. Tudo dos passos 2 e 3 vale junto;
++   apertar WASD no meio de um trajeto de clique assume o controle.
++5. Os prints `[Player] - ...` no log mostram cada decisão (clique simples/duplo, começou/parou de
++   correr, começou/parou de acompanhar o mouse).
+diff --git a/project.godot b/project.godot
+index 4603ae9..bf7064c 100644
+--- a/project.godot
++++ b/project.godot
+@@ -133,6 +133,11 @@ move_right={
+ , Object(InputEventJoypadMotion,"resource_local_to_scene":false,"resource_name":"","device":-1,"axis":0,"axis_value":1.0,"script":null)
+ ]
+ }
++move_run={
++"deadzone": 0.2,
++"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194325,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
++]
++}
+ move_up={
+ "deadzone": 0.2,
+ "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":87,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+diff --git a/resources/player_sprite_frames.tres b/resources/player_sprite_frames.tres
+index ccda1a9..d7fe6f0 100644
+--- a/resources/player_sprite_frames.tres
++++ b/resources/player_sprite_frames.tres
+@@ -2,6 +2,7 @@
+ 
+ [ext_resource type="Texture2D" uid="uid://bi1amch3axeaw" path="res://images/placeholder/Top-Down Asset Pack (Oct 2025)/idle/idle full sprite sheet (transparent BG).png" id="1_idle"]
+ [ext_resource type="Texture2D" uid="uid://wamull3pntox" path="res://images/placeholder/Top-Down Asset Pack (Oct 2025)/run/run complete sprite sheet (transparent BG).png" id="2_run"]
++[ext_resource type="Texture2D" uid="uid://dk3h6p0kd7ve1" path="res://images/placeholder/Top-Down Asset Pack (Oct 2025)/walk/walk complete sprite sheet (transparent BG).png" id="3_walk"]
+ 
+ [sub_resource type="AtlasTexture" id="AtlasTexture_4gydf"]
+ atlas = ExtResource("1_idle")
+@@ -643,6 +644,262 @@ region = Rect2(384, 64, 64, 64)
+ atlas = ExtResource("2_run")
+ region = Rect2(448, 64, 64, 64)
+ 
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_0"]
++atlas = ExtResource("3_walk")
++region = Rect2(0, 320, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_1"]
++atlas = ExtResource("3_walk")
++region = Rect2(64, 320, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_2"]
++atlas = ExtResource("3_walk")
++region = Rect2(128, 320, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_3"]
++atlas = ExtResource("3_walk")
++region = Rect2(192, 320, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_4"]
++atlas = ExtResource("3_walk")
++region = Rect2(256, 320, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_5"]
++atlas = ExtResource("3_walk")
++region = Rect2(320, 320, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_6"]
++atlas = ExtResource("3_walk")
++region = Rect2(384, 320, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_7"]
++atlas = ExtResource("3_walk")
++region = Rect2(448, 320, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_n_0"]
++atlas = ExtResource("3_walk")
++region = Rect2(0, 448, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_n_1"]
++atlas = ExtResource("3_walk")
++region = Rect2(64, 448, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_n_2"]
++atlas = ExtResource("3_walk")
++region = Rect2(128, 448, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_n_3"]
++atlas = ExtResource("3_walk")
++region = Rect2(192, 448, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_n_4"]
++atlas = ExtResource("3_walk")
++region = Rect2(256, 448, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_n_5"]
++atlas = ExtResource("3_walk")
++region = Rect2(320, 448, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_n_6"]
++atlas = ExtResource("3_walk")
++region = Rect2(384, 448, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_n_7"]
++atlas = ExtResource("3_walk")
++region = Rect2(448, 448, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_ne_0"]
++atlas = ExtResource("3_walk")
++region = Rect2(0, 384, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_ne_1"]
++atlas = ExtResource("3_walk")
++region = Rect2(64, 384, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_ne_2"]
++atlas = ExtResource("3_walk")
++region = Rect2(128, 384, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_ne_3"]
++atlas = ExtResource("3_walk")
++region = Rect2(192, 384, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_ne_4"]
++atlas = ExtResource("3_walk")
++region = Rect2(256, 384, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_ne_5"]
++atlas = ExtResource("3_walk")
++region = Rect2(320, 384, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_ne_6"]
++atlas = ExtResource("3_walk")
++region = Rect2(384, 384, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_ne_7"]
++atlas = ExtResource("3_walk")
++region = Rect2(448, 384, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_nw_0"]
++atlas = ExtResource("3_walk")
++region = Rect2(0, 0, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_nw_1"]
++atlas = ExtResource("3_walk")
++region = Rect2(64, 0, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_nw_2"]
++atlas = ExtResource("3_walk")
++region = Rect2(128, 0, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_nw_3"]
++atlas = ExtResource("3_walk")
++region = Rect2(192, 0, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_nw_4"]
++atlas = ExtResource("3_walk")
++region = Rect2(256, 0, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_nw_5"]
++atlas = ExtResource("3_walk")
++region = Rect2(320, 0, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_nw_6"]
++atlas = ExtResource("3_walk")
++region = Rect2(384, 0, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_nw_7"]
++atlas = ExtResource("3_walk")
++region = Rect2(448, 0, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_s_0"]
++atlas = ExtResource("3_walk")
++region = Rect2(0, 192, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_s_1"]
++atlas = ExtResource("3_walk")
++region = Rect2(64, 192, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_s_2"]
++atlas = ExtResource("3_walk")
++region = Rect2(128, 192, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_s_3"]
++atlas = ExtResource("3_walk")
++region = Rect2(192, 192, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_s_4"]
++atlas = ExtResource("3_walk")
++region = Rect2(256, 192, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_s_5"]
++atlas = ExtResource("3_walk")
++region = Rect2(320, 192, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_s_6"]
++atlas = ExtResource("3_walk")
++region = Rect2(384, 192, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_s_7"]
++atlas = ExtResource("3_walk")
++region = Rect2(448, 192, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_se_0"]
++atlas = ExtResource("3_walk")
++region = Rect2(0, 256, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_se_1"]
++atlas = ExtResource("3_walk")
++region = Rect2(64, 256, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_se_2"]
++atlas = ExtResource("3_walk")
++region = Rect2(128, 256, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_se_3"]
++atlas = ExtResource("3_walk")
++region = Rect2(192, 256, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_se_4"]
++atlas = ExtResource("3_walk")
++region = Rect2(256, 256, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_se_5"]
++atlas = ExtResource("3_walk")
++region = Rect2(320, 256, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_se_6"]
++atlas = ExtResource("3_walk")
++region = Rect2(384, 256, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_se_7"]
++atlas = ExtResource("3_walk")
++region = Rect2(448, 256, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_sw_0"]
++atlas = ExtResource("3_walk")
++region = Rect2(0, 128, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_sw_1"]
++atlas = ExtResource("3_walk")
++region = Rect2(64, 128, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_sw_2"]
++atlas = ExtResource("3_walk")
++region = Rect2(128, 128, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_sw_3"]
++atlas = ExtResource("3_walk")
++region = Rect2(192, 128, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_sw_4"]
++atlas = ExtResource("3_walk")
++region = Rect2(256, 128, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_sw_5"]
++atlas = ExtResource("3_walk")
++region = Rect2(320, 128, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_sw_6"]
++atlas = ExtResource("3_walk")
++region = Rect2(384, 128, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_sw_7"]
++atlas = ExtResource("3_walk")
++region = Rect2(448, 128, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_w_0"]
++atlas = ExtResource("3_walk")
++region = Rect2(0, 64, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_w_1"]
++atlas = ExtResource("3_walk")
++region = Rect2(64, 64, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_w_2"]
++atlas = ExtResource("3_walk")
++region = Rect2(128, 64, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_w_3"]
++atlas = ExtResource("3_walk")
++region = Rect2(192, 64, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_w_4"]
++atlas = ExtResource("3_walk")
++region = Rect2(256, 64, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_w_5"]
++atlas = ExtResource("3_walk")
++region = Rect2(320, 64, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_w_6"]
++atlas = ExtResource("3_walk")
++region = Rect2(384, 64, 64, 64)
++
++[sub_resource type="AtlasTexture" id="AtlasTexture_walk_w_7"]
++atlas = ExtResource("3_walk")
++region = Rect2(448, 64, 64, 64)
++
+ [resource]
+ animations = [{
+ "frames": [{
+@@ -1204,4 +1461,236 @@ animations = [{
+ "loop": 1,
+ "name": &"run_w",
+ "speed": 10.0
++}, {
++"frames": [{
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_e_0")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_e_1")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_e_2")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_e_3")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_e_4")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_e_5")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_e_6")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_e_7")
++}],
++"loop": 1,
++"name": &"walk_e",
++"speed": 10.0
++}, {
++"frames": [{
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_n_0")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_n_1")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_n_2")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_n_3")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_n_4")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_n_5")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_n_6")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_n_7")
++}],
++"loop": 1,
++"name": &"walk_n",
++"speed": 10.0
++}, {
++"frames": [{
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_ne_0")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_ne_1")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_ne_2")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_ne_3")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_ne_4")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_ne_5")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_ne_6")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_ne_7")
++}],
++"loop": 1,
++"name": &"walk_ne",
++"speed": 10.0
++}, {
++"frames": [{
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_nw_0")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_nw_1")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_nw_2")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_nw_3")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_nw_4")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_nw_5")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_nw_6")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_nw_7")
++}],
++"loop": 1,
++"name": &"walk_nw",
++"speed": 10.0
++}, {
++"frames": [{
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_s_0")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_s_1")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_s_2")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_s_3")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_s_4")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_s_5")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_s_6")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_s_7")
++}],
++"loop": 1,
++"name": &"walk_s",
++"speed": 10.0
++}, {
++"frames": [{
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_se_0")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_se_1")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_se_2")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_se_3")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_se_4")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_se_5")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_se_6")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_se_7")
++}],
++"loop": 1,
++"name": &"walk_se",
++"speed": 10.0
++}, {
++"frames": [{
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_sw_0")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_sw_1")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_sw_2")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_sw_3")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_sw_4")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_sw_5")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_sw_6")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_sw_7")
++}],
++"loop": 1,
++"name": &"walk_sw",
++"speed": 10.0
++}, {
++"frames": [{
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_w_0")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_w_1")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_w_2")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_w_3")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_w_4")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_w_5")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_w_6")
++}, {
++"duration": 1.0,
++"texture": SubResource("AtlasTexture_walk_w_7")
++}],
++"loop": 1,
++"name": &"walk_w",
++"speed": 10.0
+ }]
+diff --git a/scenes/player/Player.tscn b/scenes/player/Player.tscn
+index f2b6953..d7a21a6 100644
+--- a/scenes/player/Player.tscn
++++ b/scenes/player/Player.tscn
+@@ -21,7 +21,6 @@ collision_layer = 2
+ collision_mask = 3
+ motion_mode = 1
+ script = ExtResource("1_player_script")
+-speed = 450.0
+ 
+ [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1028819920]
+ texture_filter = 1
+diff --git a/scripts/player/ClickMoveGesture.gd b/scripts/player/ClickMoveGesture.gd
+new file mode 100644
+index 0000000..3dad2eb
+--- /dev/null
++++ b/scripts/player/ClickMoveGesture.gd
+@@ -0,0 +1,160 @@
++## ClickMoveGesture - traduz o botão do mouse do esquema de clique em intenção de movimento.
++##
++## Recebe só três coisas — apertou, soltou e "o tempo passou" — sempre com o instante informado por
++## quem chama, e devolve um Command dizendo o que o personagem deve fazer. Não conhece o Player, a
++## cena nem o Input: quem chama (Player._unhandled_input e Player._update_click_gesture) é quem lê o
++## mouse e decide para onde ir.
++##
++## AS QUATRO REGRAS DO ESQUEMA DE CLIQUE
++##
++##   1. Um clique ANDA até o ponto clicado.
++##   2. Dois cliques rápidos no mesmo lugar CORREM até lá.
++##   3. Segurar em vez de clicar faz o personagem ACOMPANHAR o mouse, andando.
++##   4. Segurar o segundo clique de um clique duplo acompanha o mouse CORRENDO.
++##
++## COMO USAR:
++##
++##     var gesture: ClickMoveGesture = ClickMoveGesture.new()
++##     match gesture.press(now, mouse_screen_position):
++##         ClickMoveGesture.Command.GO_TO: ...           # anda/corre até o mouse (gesture.is_running)
++##     match gesture.update(now, Input.is_action_pressed(&"move_click")):
++##         ClickMoveGesture.Command.START_FOLLOW: ...    # passa a acompanhar o mouse
++##         ClickMoveGesture.Command.CANCEL_FOLLOW: ...   # parou de segurar sem o soltar chegar
++##     match gesture.release(now):
++##         ClickMoveGesture.Command.STOP_FOLLOW: ...     # soltou depois de segurar
++##
++## POR QUE É UMA CLASSE SEPARADA: a parte difícil de acertar aqui é o TEMPO (quanto é "segurar",
++## quanto é "rápido"), e testar tempo passando por input de verdade é lento e frágil. Como o instante
++## entra por parâmetro, o PlayerMovementSelfTest encena qualquer sequência de cliques em
++## microssegundos, sem esperar relógio nenhum.
++class_name ClickMoveGesture
++extends RefCounted
++
++## Espaço para enums
++
++# O que o personagem deve fazer em resposta ao que acabou de acontecer com o botão.
++#   NONE          nada muda.
++#   GO_TO         ir até onde o mouse está agora (andando ou correndo, ver is_running).
++#   START_FOLLOW  o botão foi segurado: passar a acompanhar o mouse enquanto ele estiver apertado.
++#   STOP_FOLLOW   o botão foi solto depois de segurado: parar de acompanhar, terminando no mouse.
++#   CANCEL_FOLLOW o botão subiu depois de segurado, mas o evento de soltar nunca chegou (jogo pausado,
++#                 janela sem foco, soltou em cima de um menu): parar de acompanhar SEM ir até o mouse,
++#                 que a essa altura pode estar em cima de um botão da interface — o "Continuar" do menu
++#                 de pausa, por exemplo — e não num lugar do mundo escolhido pelo jogador.
++enum Command { NONE, GO_TO, START_FOLLOW, STOP_FOLLOW, CANCEL_FOLLOW }
++
++## Espaço para variáveis
++
++# Os três números abaixo são balanceamento, mas esta classe não é um Node e não aparece no
++# Inspector: quem os expõe com @export é o Player, que copia os valores para cá (ver
++# Player._configure_click_gesture). Os padrões daqui só valem para quem usar a classe sozinha.
++
++# Quanto tempo o botão precisa ficar apertado para deixar de ser clique e virar "segurar".
++var hold_seconds: float = 0.25
++
++# Intervalo máximo entre dois cliques para eles contarem como clique duplo.
++var double_click_seconds: float = 0.4
++
++# Distância máxima, em pixels de TELA, entre os dois cliques de um clique duplo. É medida na tela, e
++# não no mundo, de propósito: a câmera segue o personagem, então o mesmo ponto da tela aponta pra
++# lugares diferentes do mundo entre um clique e outro — o que importa é a mão do jogador não ter
++# saído do lugar. A unidade é a da posição do evento de mouse no viewport: pixels da resolução base
++# do projeto (1920x1080), então o limite vale o mesmo em janela pequena ou tela cheia.
++var double_click_distance: float = 24.0
++
++# Verdadeiro quando o gesto em andamento (o clique atual, ou o segurar atual) é de corrida. Continua
++# valendo depois de o botão ser solto, até o próximo press(): é o que o Player consulta para saber a
++# velocidade do trajeto que acabou de ser pedido.
++var is_running: bool = false
++
++# Verdadeiro enquanto o personagem deve acompanhar o mouse (regras 3 e 4).
++var is_following: bool = false
++
++var _is_pressed: bool = false
++var _press_time: float = 0.0
++
++# Último clique CURTO (que não virou segurar): é a primeira metade candidata de um clique duplo.
++var _has_previous_click: bool = false
++var _previous_click_time: float = 0.0
++var _previous_click_position: Vector2 = Vector2.ZERO
++
++## Espaço para funções personalizadas
++
++# Registra o botão sendo apertado. Sempre devolve GO_TO: o personagem sai andando no mesmo instante,
++# sem esperar para descobrir se vem um segundo clique ou se o botão vai ser segurado — esperar
++# deixaria todo clique simples com um atraso perceptível. Se vier o segundo clique, ele só troca a
++# caminhada em andamento por corrida; se o botão for segurado, update() troca o destino por "seguir".
++func press(time: float, screen_position: Vector2) -> Command:
++	var is_double_click: bool = _has_previous_click \
++		and time - _previous_click_time <= double_click_seconds \
++		and screen_position.distance_to(_previous_click_position) <= double_click_distance
++
++	_is_pressed = true
++	_press_time = time
++	is_running = is_double_click
++	is_following = false
++
++	# Não zera nada depois de um clique duplo: um terceiro clique rápido no mesmo lugar forma par com
++	# o segundo e continua correndo. Zerar faria quem clica repetidas vezes alternar corre/anda/corre.
++	_has_previous_click = true
++	_previous_click_time = time
++	_previous_click_position = screen_position
++	return Command.GO_TO
++
++
++# Avança o tempo com o botão no estado informado. Chamado a cada frame de física pelo Player.
++#
++# is_button_down é o estado real do botão, lido do Input, e serve de rede de segurança: se o evento
++# de soltar se perder (a janela perdeu o foco, o jogo pausou, ou o botão foi solto em cima de um menu
++# que engoliu o evento), o personagem não fica seguindo o mouse para sempre. Nesse caso a resposta é
++# CANCEL_FOLLOW, e não STOP_FOLLOW: ninguém soltou o botão num ponto do mundo pra ele ir até lá.
++func update(time: float, is_button_down: bool) -> Command:
++	if not _is_pressed:
++		return Command.NONE
++
++	if not is_button_down:
++		var was_following: bool = is_following
++		release(time)
++		return Command.CANCEL_FOLLOW if was_following else Command.NONE
++
++	if is_following or time - _press_time < hold_seconds:
++		return Command.NONE
++
++	is_following = true
++	# Um botão segurado não pode ser a primeira metade de um clique duplo: soltar e clicar logo em
++	# seguida seria lido como "clique duplo" e correria sem o jogador ter pedido.
++	_has_previous_click = false
++	return Command.START_FOLLOW
++
++
++# Registra o botão sendo solto. Só interessa se ele estava sendo segurado; soltar um clique curto
++# não muda nada, porque o destino já foi pedido no press().
++func release(_time: float) -> Command:
++	if not _is_pressed:
++		return Command.NONE
++
++	_is_pressed = false
++	if not is_following:
++		return Command.NONE
++
++	is_following = false
++	return Command.STOP_FOLLOW
++
++
++# Esquece tudo: o gesto em andamento e o clique anterior. Usado quando o movimento é interrompido
++# por fora (conversa começou, troca de esquema de movimento), para que o próximo clique comece do
++# zero em vez de completar um clique duplo ou retomar um "segurar" de antes da interrupção.
++func reset() -> void:
++	_is_pressed = false
++	_press_time = 0.0
++	is_running = false
++	is_following = false
++	_has_previous_click = false
++	_previous_click_time = 0.0
++	_previous_click_position = Vector2.ZERO
++
++
++# Diz se o botão está registrado como apertado. O Player usa para só repassar ao gesto o soltar de
++# um press que ele mesmo viu (um press consumido pela interface nunca chega aqui).
++func is_pressed() -> bool:
++	return _is_pressed
+diff --git a/scripts/player/ClickMoveGesture.gd.uid b/scripts/player/ClickMoveGesture.gd.uid
+new file mode 100644
+index 0000000..88e435f
+--- /dev/null
++++ b/scripts/player/ClickMoveGesture.gd.uid
+@@ -0,0 +1 @@
++uid://dgf6d5hbe51ty
+diff --git a/scripts/player/Player.gd b/scripts/player/Player.gd
+index 5ff7dce..3b6820e 100644
+--- a/scripts/player/Player.gd
++++ b/scripts/player/Player.gd
+@@ -1,18 +1,63 @@
+ class_name Player
+ extends CharacterBody2D
+ 
+-# Emitido só quando o estado de movimento (parado/andando, direção encarada) muda — não a cada
+-# frame. Emissor e ouvinte são o próprio Player (relação direta e permanente com o seu
++# Emitido só quando o estado de movimento (parado/andando/correndo, direção encarada) muda — não a
++# cada frame. Emissor e ouvinte são o próprio Player (relação direta e permanente com o seu
+ # AnimatedSprite2D), por isso é um Signal direto e não um evento no EventBus; se no futuro outro
+ # sistema precisar reagir a isso (som de passo, poeira ao correr), dá pra escutar esse mesmo sinal
+-# sem mexer aqui.
+-signal movement_state_changed(is_moving: bool, facing_direction: Isometric.Facing)
++# sem mexer aqui. is_running só é verdadeiro junto com is_moving: parado nunca está "correndo".
++signal movement_state_changed(is_moving: bool, is_running: bool, facing_direction: Isometric.Facing)
+ 
+ # Emitido quando start_conversation_approach() chega ao destino (ou desiste por bloqueio). Quem
+ # chama dá await nele — ver NPCInteraction._start_conversation.
+ signal conversation_approach_arrived
+ 
+-@export var speed: float = 300.0
++# Distância da tela até o ponto clicado abaixo da qual o destino é considerado alcançado. Não é
++# variável de balanceamento: é a folga técnica que impede o personagem de ficar oscilando em
++# volta do alvo por nunca cair exatamente em cima dele.
++const CLICK_ARRIVAL_DISTANCE: float = 8.0
++
++# Fração da velocidade atual abaixo da qual o personagem indo até um ponto clicado é considerado
++# travado. Ver _cancel_click_target_if_blocked().
++const BLOCKED_SPEED_FRACTION: float = 0.1
++
++# Quanto tempo ele precisa ficar travado antes de o caminho ser descartado. Existe porque roçar
++# numa quina derruba a velocidade por um ou dois frames, e antes disso bastava um único frame
++# lento pra jogar fora um trajeto inteiro que estava indo bem.
++const BLOCKED_GRACE_SECONDS: float = 0.25
++
++# Mesma ideia de BLOCKED_GRACE_SECONDS, mas pra aproximação de conversa (ver
++# start_conversation_approach()): mais tolerante, porque desistir aqui abre o diálogo um pouco
++# longe demais do NPC, em vez de só descartar um trajeto e parar.
++const APPROACH_BLOCKED_GRACE_SECONDS: float = 1.0
++
++# Grupo pelo qual o resto do jogo acha o Player (a GameSession, para o save; o NPCInteraction, para a
++# abordagem). A cena já marca o grupo; o _enter_tree() garante para quem instanciar o script sem ela.
++const GROUP: StringName = &"player"
++
++# Camada 1 ("world" em project.godot): só a geometria do mapa. É a máscara que valida a posição
++# restaurada de um save — um NPC parado ali (camada 2, "Agentes") não pode invalidar a posição.
++const WORLD_COLLISION_MASK: int = 1
++
++# Quanto o mouse precisa se mover no mundo, enquanto o botão está segurado, para o caminho ser
++# retraçado antes de o anterior acabar. Folga técnica, não balanceamento: só evita pedir ao
++# Pathfinder o mesmo caminho de novo quando a mão do jogador está parada.
++const FOLLOW_RETARGET_DISTANCE: float = 4.0
++
++# Seção em que os controles do Player aparecem no menu de debug (F4).
++const DEBUG_SECTION: StringName = &"Jogador"
++
++# Autoteste da movimentação, rodado pela ação "Autoteste do clique" do menu de debug.
++const SELF_TEST_PATH: String = "res://scripts/player/PlayerMovementSelfTest.gd"
++
++# Velocidade andando, em pixels de tela por segundo, no movimento puramente horizontal (o vertical
++# é reduzido por vertical_speed_factor). É a velocidade padrão dos dois esquemas: o teclado anda
++# enquanto o SHIFT não está segurado, e o clique simples anda.
++@export var walk_speed: float = 225.0
++
++# Velocidade correndo, na mesma unidade de walk_speed. No teclado vale enquanto o SHIFT (ação
++# move_run) está segurado; no esquema de clique, depois de um clique duplo (ver ClickMoveGesture).
++@export var run_speed: float = 450.0
+ 
+ # Achatamento do eixo Y que alinha a DIREÇÃO do movimento aos eixos do losango isométrico. Não
+ # mexe na velocidade (quem cuida disso é vertical_speed_factor, logo abaixo): o que ele decide é
+@@ -38,36 +83,40 @@ signal conversation_approach_arrived
+ # O padrão fica no meio dos dois. Ajuste no Inspector com o jogo rodando até parar de incomodar.
+ @export_range(0.5, 1.0, 0.01) var vertical_speed_factor: float = 0.75
+ 
+-# Distância da tela até o ponto clicado abaixo da qual o destino é considerado alcançado. Não é
+-# variável de balanceamento: é a folga técnica que impede o personagem de ficar oscilando em
+-# volta do alvo por nunca cair exatamente em cima dele.
+-const CLICK_ARRIVAL_DISTANCE: float = 8.0
++@export_group("Esquema de clique")
+ 
+-# Fração de speed abaixo da qual o personagem indo até um ponto clicado é considerado travado.
+-# Ver _cancel_click_target_if_blocked().
+-const BLOCKED_SPEED_FRACTION: float = 0.1
+-
+-# Quanto tempo ele precisa ficar travado antes de o caminho ser descartado. Existe porque roçar
+-# numa quina derruba a velocidade por um ou dois frames, e antes disso bastava um único frame
+-# lento pra jogar fora um trajeto inteiro que estava indo bem.
+-const BLOCKED_GRACE_SECONDS: float = 0.25
++# Quanto tempo o botão do mouse precisa ficar apertado para deixar de ser um clique e passar a
++# "segurar" — o personagem para de ir até o ponto clicado e passa a acompanhar o mouse. Baixo demais
++# e cliques normais (que duram ~0.1s) viram "segurar"; alto demais e o acompanhamento demora a pegar.
++@export_range(0.1, 1.0, 0.01) var click_hold_seconds: float = 0.25
+ 
+-# Mesma ideia de BLOCKED_GRACE_SECONDS, mas pra aproximação de conversa (ver
+-# start_conversation_approach()): mais tolerante, porque desistir aqui abre o diálogo um pouco
+-# longe demais do NPC, em vez de só descartar um trajeto e parar.
+-const APPROACH_BLOCKED_GRACE_SECONDS: float = 1.0
++# Intervalo máximo entre dois cliques para contarem como clique duplo (correr). Não atrasa o clique
++# simples — o personagem sai andando no primeiro clique e só troca para corrida no segundo — então o
++# único custo de aumentar é dois cliques separados no mesmo lugar virarem corrida sem querer.
++@export_range(0.1, 1.0, 0.01) var double_click_seconds: float = 0.4
+ 
+-# Grupo pelo qual o resto do jogo acha o Player (a GameSession, para o save; o NPCInteraction, para a
+-# abordagem). A cena já marca o grupo; o _enter_tree() garante para quem instanciar o script sem ela.
+-const GROUP: StringName = &"player"
++# Distância máxima, em pixels de tela na resolução base do projeto (1920x1080, a mesma em qualquer
++# tamanho de janela, por causa do stretch), entre os dois cliques de um clique duplo. Clicar em dois
++# pontos diferentes rapidamente é trocar de destino, não pedir corrida.
++@export_range(0.0, 200.0, 1.0) var double_click_distance: float = 24.0
+ 
+-# Camada 1 ("world" em project.godot): só a geometria do mapa. É a máscara que valida a posição
+-# restaurada de um save — um NPC parado ali (camada 2, "Agentes") não pode invalidar a posição.
+-const WORLD_COLLISION_MASK: int = 1
++# De quanto em quanto tempo o caminho é retraçado até o mouse enquanto o botão está segurado. Mais
++# baixo acompanha curvas rápidas do mouse com mais fidelidade e pede mais buscas ao Pathfinder.
++@export_range(0.02, 0.5, 0.01) var follow_repath_seconds: float = 0.1
+ 
+ var _is_moving: bool = false
+ var _facing_direction: Isometric.Facing = Isometric.Facing.S
+ 
++# Se o movimento atual é corrida. Quem decide depende da fonte: no teclado é o SHIFT, lido a cada
++# frame; no clique é o gesto que pediu o trajeto (ver _apply_click_command); na aproximação de
++# conversa é herdado de como o jogador vinha se movendo. Só tem efeito enquanto há movimento.
++var _is_running: bool = false
++
++# Corrida EFETIVA (em movimento E correndo) do último movement_state_changed emitido. Separada de
++# _is_running porque parado com o SHIFT segurado não está correndo: é esta que decide a animação e
++# o log de "começou/parou de correr".
++var _is_running_emitted: bool = false
++
+ # Verdadeiro enquanto uma conversa está aberta: nenhum esquema de movimento responde (SPEC §11.5).
+ var _is_input_locked: bool = false
+ 
+@@ -80,6 +129,24 @@ var _path_index: int = 0
+ # Há quanto tempo ele está travado indo até o ponto atual. Ver _cancel_click_target_if_blocked().
+ var _blocked_time: float = 0.0
+ 
++# Intérprete do botão do mouse no esquema de clique: clique, clique duplo e segurar. O relógio que
++# ele recebe é _click_clock, e não o relógio do sistema, pelos motivos explicados lá.
++var _click_gesture: ClickMoveGesture = ClickMoveGesture.new()
++
++# Relógio do gesto de clique, em segundos: soma dos delta de física. Usar o tempo do próprio jogo
++# (e não Time.get_ticks_msec) faz "segurar" e "clique duplo" congelarem junto com o jogo quando ele
++# pausa, e deixa o autoteste avançar o tempo de forma determinística, frame a frame.
++var _click_clock: float = 0.0
++
++# Acompanhamento do mouse (botão segurado): tempo desde o último caminho traçado e o ponto do mundo
++# para onde ele foi traçado. Ver _follow_pointer().
++var _follow_repath_elapsed: float = 0.0
++var _follow_target: Vector2 = Vector2.ZERO
++
++# Se o último ponto do caminho atual é o próprio mouse — e pode, portanto, acompanhá-lo a cada frame
++# entre um retraçado e outro. Falso quando o Pathfinder trocou o destino (mouse em cima de um prédio).
++var _is_follow_path_end_live: bool = false
++
+ # Trilha própria da aproximação de conversa — não é _path/_path_index de propósito: aqueles somem
+ # numa troca de esquema de movimento (ver _get_movement_direction()), e a aproximação precisa
+ # sobreviver a isso, já que ela nem é um dos dois esquemas.
+@@ -119,16 +186,30 @@ func _enter_tree() -> void:
+ 
+ 
+ func _ready() -> void:
++	_configure_click_gesture()
+ 	movement_state_changed.connect(_on_movement_state_changed)
+ 	EventBus.conversation_approach_started.connect(_on_conversation_started)
+ 	EventBus.conversation_started.connect(_on_conversation_started)
+ 	EventBus.conversation_ended.connect(_on_conversation_ended)
+-	print("[Player] - Controlador inicializado na posição %s" % [global_position])
++
++	if OS.has_feature("editor") or OS.is_debug_build():
++		# [DEBUG] Velocidades ajustáveis com o jogo rodando e o autoteste do gesto de clique (F4).
++		DebugMenu.register_value(DEBUG_SECTION, "Velocidade andando", _set_walk_speed,
++			DebugParam.float_value("", walk_speed, 0.0, 2000.0, 10.0), _get_walk_speed)
++		DebugMenu.register_value(DEBUG_SECTION, "Velocidade correndo", _set_run_speed,
++			DebugParam.float_value("", run_speed, 0.0, 2000.0, 10.0), _get_run_speed)
++		DebugMenu.register_action(DEBUG_SECTION, "Autoteste do clique", _run_click_gesture_self_test)
++
++	print("[Player] - Controlador inicializado na posição %s (andando %.0f, correndo %.0f)"
++		% [global_position, walk_speed, run_speed])
+ 
+ 
+ func _physics_process(delta: float) -> void:
+ 	if _needs_position_check:
+ 		_validate_restored_position()
++	_click_clock += delta
++	_update_click_gesture(delta)
++
+ 	var input_direction: Vector2 = _get_movement_direction()
+ 	velocity = _to_screen_velocity(input_direction)
+ 	move_and_slide()
+@@ -139,23 +220,112 @@ func _physics_process(delta: float) -> void:
+ 		_last_safe_position = global_position
+ 
+ 
+-# Marca o destino do esquema de clique. Roda em _unhandled_input (e não em _input) de propósito:
+-# assim um clique consumido pela interface — um botão, um menu aberto por cima do jogo — não faz
+-# o personagem sair andando pra trás da UI.
++# Repassa o botão do esquema de clique para o ClickMoveGesture. Roda em _unhandled_input (e não em
++# _input) de propósito: assim um clique consumido pela interface — um botão, um menu aberto por cima
++# do jogo, um orbe de insight — não faz o personagem sair andando pra trás da UI.
++#
++# O soltar só é repassado se o apertar correspondente passou por aqui: um apertar engolido pela UI
++# não pode deixar um soltar órfão encerrar um "segurar" que nem começou.
+ func _unhandled_input(event: InputEvent) -> void:
+ 	if _is_input_locked:
+ 		return
+-	if GameManager.movement_scheme != GameManager.MovementScheme.CLICK:
++	if not GameManager.is_click_movement_enabled():
+ 		return
+ 
+ 	if event.is_action_pressed(&"move_click"):
+-		_set_click_destination(get_global_mouse_position())
++		_apply_click_command(_click_gesture.press(_click_clock, _get_event_screen_position(event)))
++	elif event.is_action_released(&"move_click") and _click_gesture.is_pressed():
++		_apply_click_command(_click_gesture.release(_click_clock))
++
++
++# Avança o gesto de clique no tempo (é aqui que um clique vira "segurar") e, enquanto o botão está
++# segurado, mantém o caminho apontado para o mouse. Fora do esquema de clique ou com o input travado
++# não faz nada: o gesto é zerado por quem trava (_on_conversation_started) ou troca de esquema
++# (_get_movement_direction).
++func _update_click_gesture(delta: float) -> void:
++	if _is_input_locked or not GameManager.is_click_movement_enabled():
++		return
++
++	_apply_click_command(_click_gesture.update(_click_clock, _is_click_button_down()))
++	if _click_gesture.is_following:
++		_follow_pointer(delta)
++
++
++# Executa o que o gesto de clique pediu. Todo destino é o ponto do mundo sob o mouse NESTE momento.
++func _apply_click_command(command: ClickMoveGesture.Command) -> void:
++	match command:
++		ClickMoveGesture.Command.GO_TO:
++			_is_running = _click_gesture.is_running
++			var destination: Vector2 = _get_pointer_world_position()
++			_set_click_destination(destination)
++			print("[Player] - Clique %s: %s até %s"
++				% ["duplo" if _is_running else "simples", _gait_label(), destination])
++		ClickMoveGesture.Command.START_FOLLOW:
++			_is_running = _click_gesture.is_running
++			# Força o primeiro caminho no próximo _follow_pointer, sem esperar o intervalo e sem
++			# aproveitar nada de um "segurar" anterior (alvo e ponta viva do caminho antigos).
++			_follow_repath_elapsed = follow_repath_seconds
++			_follow_target = Vector2.INF
++			_is_follow_path_end_live = false
++			print("[Player] - Clique segurado: acompanhando o mouse %s" % _gait_label())
++		ClickMoveGesture.Command.STOP_FOLLOW:
++			# Soltar termina o trajeto no ponto em que o mouse está, em vez de parar seco: é o mesmo
++			# que um último clique ali, e evita o tranco de frear no meio da passada.
++			var release_point: Vector2 = _get_pointer_world_position()
++			_set_click_destination(release_point, false)
++			print("[Player] - Clique solto: parou de acompanhar o mouse, %s até %s"
++				% [_gait_label(), release_point])
++		ClickMoveGesture.Command.CANCEL_FOLLOW:
++			# O botão subiu sem o evento chegar aqui (pausa, janela sem foco, menu por cima): para onde
++			# está. O mouse agora pode estar num botão da interface, e ir até ele seria andar até o
++			# "Continuar" do menu de pausa.
++			_clear_path()
++			_is_running = false
++			print("[Player] - Botão solto sem o evento chegar (pausa/foco/menu): parou de acompanhar o mouse")
++
++
++# Mantém o caminho apontado para o mouse enquanto o botão está segurado, em duas velocidades:
++#
++#   - A cada frame, o último ponto do caminho é trocado pelo mouse de agora. Sem isso o destino seria
++#     o mouse de até follow_repath_seconds atrás, e com o mouse perto do personagem (a câmera o segue,
++#     então o mouse parado na tela anda junto com ele) ele alcançava esse ponto velho antes do
++#     retraçado seguinte e parava um frame — a animação piscava andando/parado sem parar.
++#   - Em intervalos de follow_repath_seconds, o caminho inteiro é retraçado pelo Pathfinder, que é
++#     quem desvia dos prédios. Não retraça a cada frame porque cada traçado é uma busca no grafo.
++#
++# Com o mouse em cima do personagem não há para onde ir: para, e não pede caminho nenhum.
++func _follow_pointer(delta: float) -> void:
++	var target: Vector2 = _get_pointer_world_position()
++	_follow_repath_elapsed += delta
++
++	if global_position.distance_to(target) <= CLICK_ARRIVAL_DISTANCE:
++		_clear_path()
++		# O mouse saindo de cima do personagem é traçado na hora, sem esperar o intervalo.
++		_follow_repath_elapsed = follow_repath_seconds
++		return
++
++	if _follow_repath_elapsed >= follow_repath_seconds \
++			and (_path.is_empty() or target.distance_to(_follow_target) >= FOLLOW_RETARGET_DISTANCE):
++		_follow_repath_elapsed = 0.0
++		_follow_target = target
++		_set_click_destination(target, false)
++		# O Pathfinder troca um destino dentro de um prédio pelo ponto acessível mais próximo; aí o
++		# último ponto já não é o mouse e não pode ser sobrescrito por ele até o próximo retraçado.
++		_is_follow_path_end_live = not _path.is_empty() and _path[_path.size() - 1].is_equal_approx(target)
++		return
++
++	if _is_follow_path_end_live and not _path.is_empty():
++		_path[_path.size() - 1] = target
+ 
+ 
+ # Devolve a direção cartesiana do movimento deste frame, vinda da fonte que o jogador escolheu
+-# nas configurações. Os dois esquemas são exclusivos: no modo clique o teclado não anda, e
+-# vice-versa. Daqui pra frente o resto do script não sabe (nem precisa saber) de onde veio a
+-# direção — achatamento isométrico e escolha de animação são iguais nos dois casos.
++# nas configurações: só teclado, só clique, ou os dois (GameManager.MovementScheme.BOTH). Daqui pra
++# frente o resto do script não sabe (nem precisa saber) de onde veio a direção — achatamento
++# isométrico e escolha de animação são iguais nos dois casos.
++#
++# Com os dois ligados, o teclado manda enquanto alguma direção estiver apertada: apertar WASD no
++# meio de um trajeto de clique descarta o trajeto, como tomar o controle de volta. O botão do mouse
++# segurado continua valendo, então soltar o teclado com ele ainda apertado volta a seguir o mouse.
+ #
+ # A aproximação de conversa vem ANTES de tudo isso, inclusive de _is_input_locked: é justamente
+ # por estar travado que o personagem só anda pela aproximação (script), nunca por input do
+@@ -165,13 +335,22 @@ func _get_movement_direction() -> Vector2:
+ 		return _get_approach_direction()
+ 	if _is_input_locked:
+ 		return Vector2.ZERO
+-	if GameManager.movement_scheme == GameManager.MovementScheme.CLICK:
+-		return _get_click_direction()
+ 
+-	# Voltou pro teclado com um caminho pendente: descarta, senão ele seria retomado do nada se o
+-	# jogador trocasse de esquema outra vez.
+-	_clear_path()
+-	return _get_input_direction()
++	if GameManager.is_keyboard_movement_enabled():
++		var keyboard_direction: Vector2 = _get_input_direction()
++		if keyboard_direction != Vector2.ZERO or not GameManager.is_click_movement_enabled():
++			# Teclado: anda por padrão e corre enquanto o SHIFT estiver segurado. Lido a cada frame,
++			# então soltar o SHIFT no meio do caminho volta a andar na hora.
++			_is_running = Input.is_action_pressed(&"move_run")
++			# Um trajeto de clique pendente é descartado: no esquema só de teclado, senão ele seria
++			# retomado do nada se o jogador trocasse de esquema outra vez; nos dois, porque o
++			# jogador acabou de tomar o controle pelo teclado.
++			_clear_path()
++			if not GameManager.is_click_movement_enabled():
++				_click_gesture.reset()
++			return keyboard_direction
++
++	return _get_click_direction()
+ 
+ 
+ # Lê o input de movimento (AWSD, setinhas e analógico esquerdo do joystick, configurados juntos
+@@ -181,12 +360,13 @@ func _get_input_direction() -> Vector2:
+ 	return Input.get_vector("move_left", "move_right", "move_up", "move_down")
+ 
+ 
+-# Traça o caminho até o ponto clicado e começa a percorrê-lo.
++# Traça o caminho até "destination" e começa a percorrê-lo. log_failures desliga o aviso de "sem
++# caminho" para quem traça várias vezes por segundo (acompanhar o mouse), onde ele viraria spam.
+ #
+ # O Pathfinder é procurado por grupo, e não guardado numa referência exportada, pra que o Player
+ # funcione igual numa cena que não tenha nenhum: sem Pathfinder o caminho vira o ponto clicado
+ # sozinho, que é exatamente o comportamento em linha reta de antes.
+-func _set_click_destination(destination: Vector2) -> void:
++func _set_click_destination(destination: Vector2, log_failures: bool = true) -> void:
+ 	var pathfinder: Pathfinder = get_tree().get_first_node_in_group(Pathfinder.GROUP) as Pathfinder
+ 
+ 	if pathfinder == null:
+@@ -197,7 +377,8 @@ func _set_click_destination(destination: Vector2) -> void:
+ 		_path = pathfinder.find_path(global_position, destination, [get_rid()])
+ 
+ 	_path_index = 0
+-	if _path.is_empty():
++	_blocked_time = 0.0
++	if _path.is_empty() and log_failures:
+ 		print("[Player] - Sem caminho até %s" % destination)
+ 
+ 
+@@ -205,8 +386,8 @@ func _set_click_destination(destination: Vector2) -> void:
+ # até lá, avançando pro ponto seguinte conforme chega. Devolve ZERO quando o caminho acabou.
+ func _get_click_direction() -> Vector2:
+ 	# Raio de chegada: o maior entre a folga fixa e o quanto o personagem anda num frame, pra ele
+-	# não passar do ponto e ficar voltando em looping quando speed for alto.
+-	var arrival_distance: float = maxf(CLICK_ARRIVAL_DISTANCE, speed * get_physics_process_delta_time())
++	# não passar do ponto e ficar voltando em looping quando a velocidade for alta.
++	var arrival_distance: float = maxf(CLICK_ARRIVAL_DISTANCE, _current_speed() * get_physics_process_delta_time())
+ 
+ 	# Laço, e não if: com os pontos do caminho próximos entre si, um único frame pode vencer mais
+ 	# de um de uma vez.
+@@ -215,6 +396,10 @@ func _get_click_direction() -> Vector2:
+ 
+ 	if _path_index >= _path.size():
+ 		_clear_path()
++		# Chegou. Seguindo o mouse, a corrida continua valendo pro próximo trecho (o mouse ainda está
++		# segurado); fora isso o trajeto acabou, e o próximo clique decide de novo.
++		if not _click_gesture.is_following:
++			_is_running = false
+ 		return Vector2.ZERO
+ 
+ 	var to_waypoint: Vector2 = _path[_path_index] - global_position
+@@ -228,6 +413,10 @@ func _get_click_direction() -> Vector2:
+ # estática, então travar aqui quer dizer que apareceu algo que o grafo não conhece — outro corpo no
+ # caminho, ou cenário que mudou desde o último rebuild(). Sem isso o personagem empurraria o
+ # obstáculo pra sempre.
++#
++# Acompanhando o mouse, desistir só descarta o trecho: _follow_pointer traça de novo no intervalo
++# seguinte, e o personagem volta a tentar enquanto o botão estiver segurado. Por isso não loga nesse
++# caso — seria uma linha a cada tentativa enquanto ele empurra a parede.
+ func _cancel_click_target_if_blocked(delta: float) -> void:
+ 	if _path.is_empty():
+ 		_blocked_time = 0.0
+@@ -235,16 +424,19 @@ func _cancel_click_target_if_blocked(delta: float) -> void:
+ 
+ 	# Andando: zera o cronômetro. Só conta como travado o tempo CONTÍNUO parado — roçar numa quina
+ 	# custa um ou dois frames lentos e não pode custar o trajeto inteiro.
+-	if get_real_velocity().length() >= speed * BLOCKED_SPEED_FRACTION:
++	if get_real_velocity().length() >= _current_speed() * BLOCKED_SPEED_FRACTION:
+ 		_blocked_time = 0.0
+ 		return
+ 
+ 	_blocked_time += delta
+ 	if _blocked_time >= BLOCKED_GRACE_SECONDS:
+ 		_clear_path()
+-		print("[Player] - Caminho descartado: passagem bloqueada")
++		if not _click_gesture.is_following:
++			_is_running = false
++			print("[Player] - Caminho descartado: passagem bloqueada")
+ 
+ 
++# Descarta o caminho do esquema de clique (e o cronômetro de travamento que pertence a ele).
+ func _clear_path() -> void:
+ 	_path = PackedVector2Array()
+ 	_path_index = 0
+@@ -263,6 +455,9 @@ func cancel_click_destination() -> void:
+ # Emite conversation_approach_arrived ao chegar. _is_input_locked já precisa estar true antes de
+ # chamar (quem inicia a abordagem trava o input via conversation_approach_started); este método só
+ # cuida do caminho.
++#
++# A velocidade é herdada de como o jogador vinha se movendo (_is_running não é mexido aqui): quem
++# corria até o NPC chega correndo, quem andava chega andando.
+ func start_conversation_approach(target: Vector2) -> void:
+ 	var pathfinder: Pathfinder = get_tree().get_first_node_in_group(Pathfinder.GROUP) as Pathfinder
+ 
+@@ -284,19 +479,21 @@ func start_conversation_approach(target: Vector2) -> void:
+ 
+ # Só o corpo do adiamento acima — ver o comentário em start_conversation_approach().
+ func _deferred_approach_arrived() -> void:
++	_is_running = false
+ 	conversation_approach_arrived.emit()
+ 
+ 
+ # Mesma mecânica de _get_click_direction, mas sobre _approach_path (ver o comentário dela lá em
+ # cima pra saber por que ela é separada de _path).
+ func _get_approach_direction() -> Vector2:
+-	var arrival_distance: float = maxf(CLICK_ARRIVAL_DISTANCE, speed * get_physics_process_delta_time())
++	var arrival_distance: float = maxf(CLICK_ARRIVAL_DISTANCE, _current_speed() * get_physics_process_delta_time())
+ 
+ 	while _approach_index < _approach_path.size() and global_position.distance_to(_approach_path[_approach_index]) <= arrival_distance:
+ 		_approach_index += 1
+ 
+ 	if _approach_index >= _approach_path.size():
+ 		_is_approaching = false
++		_is_running = false
+ 		conversation_approach_arrived.emit()
+ 		return Vector2.ZERO
+ 
+@@ -312,56 +509,113 @@ func _cancel_approach_if_blocked(delta: float) -> void:
+ 		_approach_blocked_time = 0.0
+ 		return
+ 
+-	if get_real_velocity().length() >= speed * BLOCKED_SPEED_FRACTION:
++	if get_real_velocity().length() >= _current_speed() * BLOCKED_SPEED_FRACTION:
+ 		_approach_blocked_time = 0.0
+ 		return
+ 
+ 	_approach_blocked_time += delta
+ 	if _approach_blocked_time >= APPROACH_BLOCKED_GRACE_SECONDS:
+ 		_is_approaching = false
++		_is_running = false
+ 		print("[Player] - Aproximação de conversa travada; abrindo diálogo daqui mesmo")
+ 		conversation_approach_arrived.emit()
+ 
+ 
++# Trava o movimento do jogador quando uma conversa (ou a aproximação dela) começa. O gesto de clique
++# é zerado junto: um botão que estava segurado não pode voltar a puxar o personagem quando a conversa
++# acabar, nem um clique de antes da conversa formar clique duplo com um de depois.
+ func _on_conversation_started(_conversation_id: StringName, _initiator_id: StringName) -> void:
+ 	_is_input_locked = true
+ 	_clear_path()
++	_click_gesture.reset()
+ 
+ 
++# Devolve o controle ao jogador no fim da conversa, sempre andando: nada do que ele fazia antes da
++# conversa continua valendo.
+ func _on_conversation_ended(_conversation_id: StringName, _end_node_id: StringName) -> void:
+ 	_is_input_locked = false
++	_is_running = false
+ 
+ 
+ # Converte a direção cartesiana do input na velocidade final, em pixels de tela por segundo. A
+ # conta em si mora em Isometric porque é a mesma para todo agente que anda neste chão (o NPC usa
+-# a mesma); o que é do Player são os três números que entram nela.
++# a mesma); o que é do Player são os números que entram nela.
+ func _to_screen_velocity(direction: Vector2) -> Vector2:
+-	return Isometric.screen_velocity(direction, speed, isometric_y_ratio, vertical_speed_factor)
++	return Isometric.screen_velocity(direction, _current_speed(), isometric_y_ratio, vertical_speed_factor)
+ 
+ 
+-# Calcula o estado de movimento (parado/andando + direção encarada) a partir do input deste
+-# frame. Sem input, mantém a última direção encarada. Só emite movement_state_changed quando
++# Velocidade do movimento atual: corrida ou caminhada. Ponto único pra todo lugar que precisa dela
++# (velocidade de tela, raio de chegada, detecção de travamento), pra nenhum deles usar a errada.
++func _current_speed() -> float:
++	return run_speed if _is_running else walk_speed
++
++
++# Rótulo do passo atual para os prints de debug.
++func _gait_label() -> String:
++	return "correndo" if _is_running else "andando"
++
++
++# Ponto do mundo sob o mouse. Isolado num método (em vez de get_global_mouse_position() espalhado)
++# porque é a única leitura do esquema de clique que depende do ponteiro físico: o autoteste da
++# movimentação sobrescreve este método para apontar o "mouse" onde quiser, inclusive rodando em
++# --headless, onde não existe ponteiro nenhum.
++func _get_pointer_world_position() -> Vector2:
++	return get_global_mouse_position()
++
++
++# Estado real do botão do esquema de clique, repassado ao gesto a cada frame (ver
++# ClickMoveGesture.update, rede de segurança contra o evento de soltar se perder).
++func _is_click_button_down() -> bool:
++	return Input.is_action_pressed(&"move_click")
++
++
++# Posição do evento na tela (viewport), usada só para medir a distância entre os dois cliques de um
++# clique duplo. Um evento de ação sem posição (ação disparada por código) cai na posição do mouse.
++func _get_event_screen_position(event: InputEvent) -> Vector2:
++	var mouse_event: InputEventMouse = event as InputEventMouse
++	if mouse_event != null:
++		return mouse_event.position
++	return get_viewport().get_mouse_position()
++
++
++# Copia para o ClickMoveGesture os tempos e distâncias expostos no Inspector. O gesto não é um Node
++# e não aparece no Inspector, então o dono dos valores é o Player.
++func _configure_click_gesture() -> void:
++	_click_gesture.hold_seconds = click_hold_seconds
++	_click_gesture.double_click_seconds = double_click_seconds
++	_click_gesture.double_click_distance = double_click_distance
++
++
++# Calcula o estado de movimento (parado/andando/correndo + direção encarada) a partir do input
++# deste frame. Sem input, mantém a última direção encarada. Só emite movement_state_changed quando
+ # esse estado é diferente do frame anterior — a troca de animação não precisa (e não deve) rodar
+ # a cada frame, só quando muda.
+ func _update_movement_state(input_direction: Vector2) -> void:
+ 	var is_moving: bool = input_direction != Vector2.ZERO
++	var is_running: bool = is_moving and _is_running
+ 	var facing_direction: Isometric.Facing = _facing_direction
+ 
+ 	if is_moving:
+ 		facing_direction = Isometric.facing_from_direction(input_direction)
+ 
+-	if is_moving == _is_moving and facing_direction == _facing_direction:
++	if is_moving == _is_moving and is_running == _is_running_emitted and facing_direction == _facing_direction:
+ 		return
+ 
++	if is_running != _is_running_emitted:
++		print("[Player] - %s" % ("Começou a correr" if is_running else "Parou de correr"))
++
+ 	_is_moving = is_moving
++	_is_running_emitted = is_running
+ 	_facing_direction = facing_direction
+-	movement_state_changed.emit(_is_moving, _facing_direction)
++	movement_state_changed.emit(_is_moving, _is_running_emitted, _facing_direction)
+ 
+ 
+ # Reage à mudança de estado de movimento tocando a animação correspondente. Só roda quando
+ # movement_state_changed é emitido (ou seja, quando o estado muda de verdade), não a cada frame.
+-func _on_movement_state_changed(is_moving: bool, facing_direction: Isometric.Facing) -> void:
+-	var prefix: StringName = &"run" if is_moving else &"idle"
++func _on_movement_state_changed(is_moving: bool, is_running: bool, facing_direction: Isometric.Facing) -> void:
++	var prefix: StringName = &"idle"
++	if is_moving:
++		prefix = &"run" if is_running else &"walk"
+ 	_animated_sprite.play(Isometric.animation_name(prefix, facing_direction))
+ 
+ 
+@@ -407,3 +661,41 @@ func _validate_restored_position() -> void:
+ 	global_position = _spawn_position
+ 	_last_safe_position = _spawn_position
+ 	print("[Player] - Posição salva inválida, voltando ao ponto de partida")
++
++
++# [DEBUG] Setters e getters dos campos de velocidade do menu de debug (F4).
++func _set_walk_speed(value: float) -> void:
++	walk_speed = value
++	print("[Player] - Velocidade andando ajustada para %.0f" % value)
++
++
++# [DEBUG] Ver _set_walk_speed.
++func _get_walk_speed() -> float:
++	return walk_speed
++
++
++# [DEBUG] Ver _set_walk_speed.
++func _set_run_speed(value: float) -> void:
++	run_speed = value
++	print("[Player] - Velocidade correndo ajustada para %.0f" % value)
++
++
++# [DEBUG] Ver _set_walk_speed.
++func _get_run_speed() -> float:
++	return run_speed
++
++
++# [DEBUG] Roda a parte do autoteste que não mexe no jogo (a regra de tempo do ClickMoveGesture) e
++# imprime o relatório no log. A parte que move um Player de verdade só roda pela linha de comando
++# (tests/run_player_movement_self_test.gd), pra não sair empurrando o personagem da partida.
++#
++# Carregado por caminho, e não pelo nome da classe: o autoteste declara uma subclasse do Player, e
++# citá-lo aqui pelo nome faria cada um dos dois scripts depender do outro pra compilar.
++func _run_click_gesture_self_test() -> void:
++	var self_test_script: GDScript = load(SELF_TEST_PATH) as GDScript
++	if self_test_script == null or not self_test_script.can_instantiate():
++		push_error("[Player] - ERRO: autoteste da movimentação não compilou (%s)" % SELF_TEST_PATH)
++		return
++	var self_test: RefCounted = self_test_script.new()
++	self_test.call(&"run_gesture_cases")
++	print(self_test.call(&"report"))
+diff --git a/scripts/player/PlayerMovementSelfTest.gd b/scripts/player/PlayerMovementSelfTest.gd
+new file mode 100644
+index 0000000..cc56b89
+--- /dev/null
++++ b/scripts/player/PlayerMovementSelfTest.gd
+@@ -0,0 +1,758 @@
++# PlayerMovementSelfTest.gd — Autoteste da movimentação do jogador: andar e correr nos dois esquemas.
++#
++# Duas partes, com custos bem diferentes:
++#
++#   1. Gesto (run_gesture_cases): a regra de TEMPO do ClickMoveGesture — o que é clique, clique duplo e
++#      segurar. Lógica pura, com o instante passado por parâmetro: roda instantâneo e não toca em nada
++#      do jogo, por isso é a única parte exposta no menu de debug ("Autoteste do clique").
++#
++#   2. Player (run_player_cases): um Player de verdade, criado só para o teste e solto na raiz da
++#      árvore, andando frame a frame. Confere o que o jogador VÊ: velocidade de caminhada ou corrida,
++#      animação walk_/run_/idle_, seguir o mouse, parar ao soltar, conversa travando o movimento. Leva
++#      alguns segundos de frames de física, e por isso só roda pela linha de comando
++#      (tests/run_player_movement_self_test.gd).
++#
++# O "mouse" do Player de teste é um ponto qualquer escolhido pelo caso (ver FakePointerPlayer), o que
++# deixa o teste rodar em --headless, onde não existe ponteiro. O botão do mouse e as teclas são
++# simulados pelas próprias ações do Input Map (Input.action_press), então o Player lê o input pelo
++# mesmo caminho do jogo; só o evento do clique é entregue direto no _unhandled_input dele.
++#
++# Os textos são hardcoded em português: são texto de ferramenta, que nunca chega ao jogador — ver
++# docs/debug_menu.md, "Os textos da ferramenta não passam por tr()".
++extends RefCounted
++
++const CHECK: String = "✓"
++const CROSS: String = "✗"
++
++const SPRITE_FRAMES_PATH: String = "res://resources/player_sprite_frames.tres"
++
++# Folga na comparação de velocidades, em pixels por segundo. As velocidades testadas saem exatas da
++# conta do Isometric (movimento puramente horizontal), então a folga só cobre arredondamento.
++const SPEED_TOLERANCE: float = 1.0
++
++# Frames de física usados pelos casos do Player. Contados em frames, e não em segundos, porque o
++# relógio do gesto de clique é a soma dos delta de física (ver Player._click_clock): a 60 ticks por
++# segundo, 1 frame = 1/60 s, com ou sem --fixed-fps.
++const FRAMES_TAP: int = 3            # quanto dura um clique normal com o botão apertado
++const FRAMES_SETTLE: int = 4         # o bastante para velocidade e animação refletirem uma mudança
++const FRAMES_PAST_HOLD: int = 20     # passa com folga do click_hold_seconds padrão (0.25 s = 15)
++const FRAMES_PAST_DOUBLE: int = 30   # passa com folga do double_click_seconds padrão (0.4 s = 24)
++const FRAMES_ARRIVE: int = 90        # chega a um destino próximo (até ~300 px andando)
++
++# Longe o bastante para o personagem nunca chegar durante um caso: medir velocidade exige que ele
++# ainda esteja a caminho.
++const FAR: float = 5000.0
++
++var passed_count: int = 0
++var failed_count: int = 0
++
++var _lines: PackedStringArray = PackedStringArray()
++var _tree: SceneTree = null
++
++
++# Player de teste: idêntico ao do jogo, exceto pela posição do "mouse", que o caso define à mão.
++class FakePointerPlayer extends Player:
++	var fake_pointer: Vector2 = Vector2.ZERO
++
++	# Quando ligado, o "mouse" anda junto com o personagem, a pointer_offset dele — é o que acontece no
++	# jogo com o mouse parado na tela, porque a câmera segue o personagem. Liga os casos de "segurar"
++	# com o mouse perto do personagem, onde um alvo velho faz ele chegar e parar a cada retraçado.
++	var pointer_follows_player: bool = false
++	var pointer_offset: Vector2 = Vector2.ZERO
++
++	# Troca o mouse de verdade pelo ponto escolhido pelo caso (ver Player._get_pointer_world_position).
++	func _get_pointer_world_position() -> Vector2:
++		if pointer_follows_player:
++			return global_position + pointer_offset
++		return fake_pointer
++
++
++# Roda as duas partes. Assíncrono: a parte do Player espera frames de física de verdade, então quem
++# chama precisa de await.
++func run(tree: SceneTree) -> void:
++	passed_count = 0
++	failed_count = 0
++	_lines.clear()
++	_run_gesture_cases_into_report()
++	await _run_player_cases_into_report(tree)
++
++
++# Só a parte do gesto (instantânea, sem árvore de cena). É o que o menu de debug roda.
++func run_gesture_cases() -> void:
++	passed_count = 0
++	failed_count = 0
++	_lines.clear()
++	_run_gesture_cases_into_report()
++
++
++# Relatório da última execução, pronto para print(): o resumo na primeira linha e um ✓/✗ por caso.
++func report() -> String:
++	var lines: PackedStringArray = PackedStringArray()
++	lines.append("[Player] - Autoteste da movimentação: %d ok, %d falha(s)" % [passed_count, failed_count])
++	lines.append_array(_lines)
++	return "\n".join(lines)
++
++
++# ---------------------------------------------------------------------------------------------------
++# Parte 1 — ClickMoveGesture
++# ---------------------------------------------------------------------------------------------------
++
++# Todos os casos do gesto, na ordem em que aparecem no relatório.
++func _run_gesture_cases_into_report() -> void:
++	_lines.append("  Gesto de clique (ClickMoveGesture):")
++	_test_gesture_single_and_double_click()
++	_test_gesture_double_click_limits()
++	_test_gesture_hold()
++	_test_gesture_hold_after_double_click()
++	_test_gesture_lost_release_and_reset()
++
++
++# Clique simples anda, dois cliques rápidos no mesmo lugar correm, e o terceiro continua correndo.
++func _test_gesture_single_and_double_click() -> void:
++	var gesture: ClickMoveGesture = _make_gesture()
++	var first: ClickMoveGesture.Command = gesture.press(0.0, Vector2(100, 100))
++	_expect("Primeiro clique pede destino, andando",
++		first == ClickMoveGesture.Command.GO_TO and not gesture.is_running,
++		"veio %s, correndo=%s" % [_command_name(first), gesture.is_running])
++	gesture.release(0.05)
++
++	var second: ClickMoveGesture.Command = gesture.press(0.2, Vector2(103, 98))
++	_expect("Segundo clique rápido perto do primeiro pede destino, correndo",
++		second == ClickMoveGesture.Command.GO_TO and gesture.is_running,
++		"veio %s, correndo=%s" % [_command_name(second), gesture.is_running])
++	gesture.release(0.25)
++
++	gesture.press(0.4, Vector2(100, 100))
++	_expect("Terceiro clique rápido no mesmo lugar continua correndo", gesture.is_running, "voltou a andar")
++	gesture.release(0.45)
++
++	var late: ClickMoveGesture.Command = gesture.release(0.5)
++	_expect("Soltar sem nada apertado não faz nada", late == ClickMoveGesture.Command.NONE,
++		"veio %s" % _command_name(late))
++	_expect("update() sem nada apertado não faz nada",
++		gesture.update(10.0, false) == ClickMoveGesture.Command.NONE and not gesture.is_following,
++		"começou a seguir o mouse sozinho")
++
++
++# Os dois limites do clique duplo: tempo e distância na tela.
++func _test_gesture_double_click_limits() -> void:
++	var gesture: ClickMoveGesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	gesture.release(0.05)
++	gesture.press(0.0 + gesture.double_click_seconds, Vector2(100, 100))
++	_expect("Segundo clique exatamente no limite de tempo ainda é clique duplo", gesture.is_running, "andou")
++
++	gesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	gesture.release(0.05)
++	gesture.press(gesture.double_click_seconds + 0.05, Vector2(100, 100))
++	_expect("Segundo clique depois do limite de tempo anda", not gesture.is_running, "correu")
++
++	gesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	gesture.release(0.05)
++	gesture.press(0.15, Vector2(100 + gesture.double_click_distance + 1.0, 100))
++	_expect("Segundo clique rápido longe do primeiro (outro destino) anda", not gesture.is_running, "correu")
++
++
++# Segurar: vira "seguir o mouse" só depois de hold_seconds, e soltar para de seguir.
++func _test_gesture_hold() -> void:
++	var gesture: ClickMoveGesture = _make_gesture()
++	gesture.press(1.0, Vector2(100, 100))
++
++	var early: ClickMoveGesture.Command = gesture.update(1.0 + gesture.hold_seconds * 0.5, true)
++	_expect("Antes do tempo de segurar ainda é clique", early == ClickMoveGesture.Command.NONE
++		and not gesture.is_following, "veio %s" % _command_name(early))
++
++	var start: ClickMoveGesture.Command = gesture.update(1.0 + gesture.hold_seconds, true)
++	_expect("Ao atingir o tempo de segurar passa a seguir o mouse, andando",
++		start == ClickMoveGesture.Command.START_FOLLOW and gesture.is_following and not gesture.is_running,
++		"veio %s, seguindo=%s, correndo=%s" % [_command_name(start), gesture.is_following, gesture.is_running])
++
++	var again: ClickMoveGesture.Command = gesture.update(2.0, true)
++	_expect("Continuar segurando não repete o START_FOLLOW", again == ClickMoveGesture.Command.NONE,
++		"veio %s" % _command_name(again))
++
++	var stop: ClickMoveGesture.Command = gesture.release(2.5)
++	_expect("Soltar depois de segurar para de seguir o mouse",
++		stop == ClickMoveGesture.Command.STOP_FOLLOW and not gesture.is_following,
++		"veio %s" % _command_name(stop))
++
++	var quick: ClickMoveGesture.Command = gesture.press(10.0, Vector2(300, 300))
++	_expect("Clique logo depois de um segurar não vira clique duplo",
++		quick == ClickMoveGesture.Command.GO_TO and not gesture.is_running, "correu")
++	var quick_release: ClickMoveGesture.Command = gesture.release(10.05)
++	_expect("Soltar um clique curto não para nada (o destino já foi pedido)",
++		quick_release == ClickMoveGesture.Command.NONE, "veio %s" % _command_name(quick_release))
++
++	gesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	gesture.update(gesture.hold_seconds, true)
++	gesture.release(1.0)
++	gesture.press(1.1, Vector2(100, 100))
++	_expect("Segurar, soltar e clicar rápido no mesmo lugar anda (o segurar não conta como 1º clique)",
++		not gesture.is_running, "correu")
++
++
++# Segurar o segundo clique de um clique duplo segue o mouse correndo.
++func _test_gesture_hold_after_double_click() -> void:
++	var gesture: ClickMoveGesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	gesture.release(0.05)
++	gesture.press(0.2, Vector2(100, 100))
++	var start: ClickMoveGesture.Command = gesture.update(0.2 + gesture.hold_seconds, true)
++	_expect("Clique duplo segurado segue o mouse correndo",
++		start == ClickMoveGesture.Command.START_FOLLOW and gesture.is_running,
++		"veio %s, correndo=%s" % [_command_name(start), gesture.is_running])
++	gesture.release(2.0)
++	_expect("Depois de soltar, o trajeto final continua correndo", gesture.is_running, "voltou a andar")
++
++
++# Redes de segurança: soltar que se perdeu e reset().
++func _test_gesture_lost_release_and_reset() -> void:
++	var gesture: ClickMoveGesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	gesture.update(gesture.hold_seconds, true)
++	var lost: ClickMoveGesture.Command = gesture.update(1.0, false)
++	_expect("Botão solto sem o evento chegar cancela o seguir o mouse (sem destino novo)",
++		lost == ClickMoveGesture.Command.CANCEL_FOLLOW and not gesture.is_following and not gesture.is_pressed(),
++		"veio %s" % _command_name(lost))
++
++	gesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	var lost_click: ClickMoveGesture.Command = gesture.update(0.05, false)
++	_expect("Clique curto com o soltar perdido só é encerrado, sem seguir o mouse",
++		lost_click == ClickMoveGesture.Command.NONE and not gesture.is_pressed(),
++		"veio %s, apertado=%s" % [_command_name(lost_click), gesture.is_pressed()])
++
++	gesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	gesture.update(gesture.hold_seconds, true)
++	gesture.reset()
++	_expect("reset() para de seguir e solta o botão", not gesture.is_following and not gesture.is_pressed()
++		and gesture.update(5.0, true) == ClickMoveGesture.Command.NONE, "continuou seguindo")
++
++	gesture = _make_gesture()
++	gesture.press(0.0, Vector2(100, 100))
++	gesture.release(0.05)
++	gesture.reset()
++	gesture.press(0.1, Vector2(100, 100))
++	_expect("reset() esquece o clique anterior (não forma clique duplo)", not gesture.is_running, "correu")
++
++
++# Gesto com os mesmos tempos e distância padrão do Player, fixados aqui pra um ajuste de
++# balanceamento no Inspector não mudar o significado dos casos.
++func _make_gesture() -> ClickMoveGesture:
++	var gesture: ClickMoveGesture = ClickMoveGesture.new()
++	gesture.hold_seconds = 0.25
++	gesture.double_click_seconds = 0.4
++	gesture.double_click_distance = 24.0
++	return gesture
++
++
++# Nome legível de um Command, para as mensagens de falha.
++func _command_name(command: ClickMoveGesture.Command) -> String:
++	return ClickMoveGesture.Command.keys()[command]
++
++
++# ---------------------------------------------------------------------------------------------------
++# Parte 2 — Player de verdade
++# ---------------------------------------------------------------------------------------------------
++
++# Todos os casos do Player. Guarda e devolve o esquema de movimento e solta todas as ações no fim,
++# pra não deixar o jogo (ou o próximo teste) com uma tecla "presa".
++func _run_player_cases_into_report(tree: SceneTree) -> void:
++	_tree = tree
++	var original_scheme: GameManager.MovementScheme = GameManager.movement_scheme
++
++	_lines.append("  Teclado:")
++	await _test_keyboard()
++	_lines.append("  Clique:")
++	await _test_click_walk_and_arrive()
++	await _test_click_double_click_runs()
++	await _test_click_double_click_limits()
++	await _test_click_hold_follows()
++	await _test_click_hold_pointer_near_player()
++	await _test_click_double_click_hold_runs()
++	await _test_click_safety_nets()
++	await _test_click_interruptions()
++	_lines.append("  Teclado + clique:")
++	await _test_both_keyboard_and_click()
++	await _test_both_keyboard_overrides_click()
++
++	_release_all_actions()
++	GameManager.movement_scheme = original_scheme
++
++
++# WASD anda; com SHIFT corre; soltar o SHIFT volta a andar; SHIFT parado não anima corrida.
++func _test_keyboard() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.KEYBOARD)
++
++	Input.action_press(&"move_right")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("WASD sem SHIFT anda", player, player.walk_speed, &"walk_e")
++
++	Input.action_press(&"move_run")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("WASD com SHIFT corre", player, player.run_speed, &"run_e")
++
++	Input.action_release(&"move_run")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Soltar o SHIFT no meio do caminho volta a andar", player, player.walk_speed, &"walk_e")
++
++	Input.action_release(&"move_right")
++	Input.action_press(&"move_run")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("SHIFT sem direção fica parado, com animação de parado", player, 0.0, &"idle_e")
++
++	Input.action_press(&"move_left")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Segurar o SHIFT antes de andar já sai correndo", player, player.run_speed, &"run_w")
++
++	_release_all_actions()
++	await _despawn(player)
++
++	# O SHIFT é só do teclado: no esquema de clique ele não transforma um clique simples em corrida.
++	player = await _spawn_player(GameManager.MovementScheme.CLICK)
++	Input.action_press(&"move_run")
++	await _tap(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("No esquema de clique o SHIFT não faz correr", player, player.walk_speed, &"walk_e")
++	_release_all_actions()
++	await _despawn(player)
++
++
++# Clique simples anda até o ponto e para nele.
++func _test_click_walk_and_arrive() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.CLICK)
++
++	await _tap(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Clique simples anda até o ponto", player, player.walk_speed, &"walk_e")
++
++	var target: Vector2 = player.global_position + Vector2(-200.0, 0.0)
++	await _tap(player, target, Vector2(700, 500))
++	await _step(FRAMES_ARRIVE)
++	_expect_motion("Chegando ao ponto clicado, para com animação de parado", player, 0.0, &"idle_w")
++	_expect("Parou em cima do ponto clicado",
++		player.global_position.distance_to(target) <= Player.CLICK_ARRIVAL_DISTANCE,
++		"parou a %.1f px" % player.global_position.distance_to(target))
++
++	await _despawn(player)
++
++
++# Clique duplo corre; o próximo clique simples volta a andar.
++func _test_click_double_click_runs() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.CLICK)
++
++	await _double_click(player, Vector2(FAR, 0.0), Vector2(900, 500), Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Clique duplo corre até o ponto", player, player.run_speed, &"run_e")
++
++	await _step(FRAMES_PAST_DOUBLE)
++	await _tap(player, Vector2(-FAR, 0.0), Vector2(300, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Clique simples depois de correr volta a andar", player, player.walk_speed, &"walk_w")
++
++	await _step(FRAMES_PAST_DOUBLE)
++	var target: Vector2 = player.global_position + Vector2(250.0, 0.0)
++	await _double_click(player, target, Vector2(900, 500), Vector2(900, 500))
++	await _step(FRAMES_ARRIVE)
++	_expect_motion("Chegando correndo, para com animação de parado", player, 0.0, &"idle_e")
++
++	await _step(FRAMES_PAST_DOUBLE)
++	await _tap(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Depois de chegar correndo, o clique simples seguinte anda", player, player.walk_speed, &"walk_e")
++
++	await _despawn(player)
++
++
++# Dois cliques lentos, ou em lugares diferentes da tela, não correm.
++func _test_click_double_click_limits() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.CLICK)
++
++	await _tap(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_PAST_DOUBLE)
++	await _tap(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Dois cliques lentos no mesmo lugar andam", player, player.walk_speed, &"walk_e")
++
++	await _step(FRAMES_PAST_DOUBLE)
++	await _double_click(player, Vector2(FAR, 0.0), Vector2(900, 500), Vector2(900 + 200, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Dois cliques rápidos em lugares diferentes da tela andam", player, player.walk_speed, &"walk_e")
++
++	await _despawn(player)
++
++
++# Segurar segue o mouse andando, inclusive quando ele muda de lado, e soltar termina no mouse.
++func _test_click_hold_follows() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.CLICK)
++	var repath_frames: int = _frames_for_seconds(player.follow_repath_seconds) + FRAMES_SETTLE
++
++	_press(player, player.global_position, Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	_expect("Segurar o clique passa a seguir o mouse", player._click_gesture.is_following, "não está seguindo")
++	_expect_motion("Segurando com o mouse em cima do personagem: fica parado", player, 0.0, &"idle_s")
++	await _step(FRAMES_SETTLE * 3)
++	_expect_motion("... e continua parado, sem tremer", player, 0.0, &"idle_s")
++
++	player.fake_pointer = player.global_position + Vector2(FAR, 0.0)
++	await _step(repath_frames)
++	_expect_motion("Mouse se afasta com o botão segurado: vai atrás dele andando", player,
++		player.walk_speed, &"walk_e")
++
++	player.fake_pointer = player.global_position + Vector2(-FAR, 0.0)
++	await _step(repath_frames)
++	_expect_motion("Mouse muda de lado com o botão segurado: o personagem vira e vai atrás", player,
++		player.walk_speed, &"walk_w")
++
++	var release_point: Vector2 = player.global_position + Vector2(150.0, 0.0)
++	player.fake_pointer = release_point
++	_release(player, Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect("Soltar para de seguir o mouse", not player._click_gesture.is_following, "continua seguindo")
++	_expect_motion("Depois de soltar, termina o trajeto até o mouse, andando", player, player.walk_speed, &"walk_e")
++
++	player.fake_pointer = player.global_position + Vector2(0.0, 4000.0)
++	await _step(FRAMES_ARRIVE)
++	_expect("Soltou: mexer o mouse não puxa mais o personagem",
++		player.global_position.distance_to(release_point) <= Player.CLICK_ARRIVAL_DISTANCE,
++		"parou a %.1f px do ponto em que soltou" % player.global_position.distance_to(release_point))
++	_expect_motion("Chegou ao ponto em que soltou e parou", player, 0.0, &"idle_e")
++
++	await _despawn(player)
++
++
++# Segurar com o mouse parado na tela, perto do personagem: como a câmera o segue, o mouse anda junto
++# com ele e fica sempre à mesma distância. O personagem precisa andar liso, sem parar um frame a cada
++# retraçado do caminho (o bug que isso cobre: o destino era o mouse de até follow_repath_seconds atrás,
++# e com o mouse perto ele alcançava esse ponto velho antes do retraçado seguinte).
++func _test_click_hold_pointer_near_player() -> void:
++	for is_running: bool in [false, true]:
++		var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.CLICK)
++		var gait: String = "correndo" if is_running else "andando"
++		var expected_speed: float = player.run_speed if is_running else player.walk_speed
++		var prefix: String = "run_" if is_running else "walk_"
++		player.pointer_offset = Vector2(30.0, 0.0)
++		player.pointer_follows_player = true
++
++		if is_running:
++			await _tap(player, Vector2.ZERO, Vector2(900, 500))
++			await _step(FRAMES_TAP * 2)
++		_press(player, Vector2.ZERO, Vector2(900, 500))
++		await _step(FRAMES_PAST_HOLD)
++
++		var stopped_frames: int = 0
++		var animation_changes: int = 0
++		var sprite: AnimatedSprite2D = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
++		var last_animation: StringName = sprite.animation
++		for i: int in FRAMES_ARRIVE:
++			await _tree.physics_frame
++			if absf(player.velocity.length() - expected_speed) > SPEED_TOLERANCE:
++				stopped_frames += 1
++			if sprite.animation != last_animation:
++				animation_changes += 1
++				last_animation = sprite.animation
++		_expect("Segurando %s com o mouse perto do personagem: anda liso, sem parar a cada retraçado" % gait,
++			stopped_frames == 0 and animation_changes == 0 and String(sprite.animation).begins_with(prefix),
++			"%d frame(s) fora da velocidade, %d troca(s) de animação, terminou em \"%s\""
++				% [stopped_frames, animation_changes, sprite.animation])
++
++		player.pointer_offset = Vector2(2.0, 0.0)
++		await _step(FRAMES_SETTLE)
++		_expect_motion("Segurando %s com o mouse em cima do personagem: para" % gait, player, 0.0, &"idle_e")
++		await _step(_frames_for_seconds(player.follow_repath_seconds) * 3)
++		_expect_motion("... e continua parado, sem tremer", player, 0.0, &"idle_e")
++
++		_release(player, Vector2(900, 500))
++		await _despawn(player)
++
++
++# Clique duplo com o segundo clique segurado segue o mouse correndo.
++func _test_click_double_click_hold_runs() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.CLICK)
++
++	await _tap(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_TAP * 2)
++	_press(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	_expect("Clique duplo segurado segue o mouse", player._click_gesture.is_following, "não está seguindo")
++	_expect_motion("Clique duplo segurado corre", player, player.run_speed, &"run_e")
++
++	player.fake_pointer = player.global_position + Vector2(-FAR, 0.0)
++	await _step(_frames_for_seconds(player.follow_repath_seconds) + FRAMES_SETTLE)
++	_expect_motion("Correndo atrás do mouse, vira junto com ele", player, player.run_speed, &"run_w")
++
++	_release(player, Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Soltar depois do clique duplo termina o trajeto correndo", player, player.run_speed, &"run_w")
++
++	await _despawn(player)
++
++
++# Redes de segurança: soltar que se perdeu, soltar órfão.
++func _test_click_safety_nets() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.CLICK)
++
++	_release(player, Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Soltar sem ter apertado (apertar engolido pela UI) não move", player, 0.0, &"idle_s")
++
++	_press(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	# O botão sobe, mas o evento de soltar nunca chega ao Player (jogo pausado, menu por cima) — e o
++	# mouse agora está em outro lugar, como em cima do "Continuar" do menu de pausa.
++	player.fake_pointer = player.global_position + Vector2(-FAR, 0.0)
++	Input.action_release(&"move_click")
++	await _step(FRAMES_SETTLE)
++	_expect("Botão solto sem o evento chegar: para de seguir o mouse", not player._click_gesture.is_following,
++		"continua seguindo")
++	_expect_motion("... e para onde está, sem ir até onde o mouse foi parar", player, 0.0, &"idle_e")
++	await _step(FRAMES_PAST_HOLD)
++	_expect_motion("... e continua parado", player, 0.0, &"idle_e")
++
++	await _despawn(player)
++
++
++# Conversa e troca de esquema interrompem o movimento e não deixam o gesto pendurado.
++func _test_click_interruptions() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.CLICK)
++
++	_press(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	# Chamado direto no Player, e não pelo EventBus: emitir o evento de verdade acordaria os outros
++	# ouvintes da conversa (relógio, diálogo), que não fazem parte deste teste.
++	player._on_conversation_started(&"__selftest", &"__selftest")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Conversa começando com o botão segurado: para na hora", player, 0.0, &"idle_e")
++	player._on_conversation_ended(&"__selftest", &"__selftest")
++	await _step(FRAMES_PAST_HOLD)
++	_expect_motion("Fim da conversa com o botão ainda segurado: não volta a seguir sozinho", player, 0.0, &"idle_e")
++	_release(player, Vector2(900, 500))
++
++	await _step(FRAMES_PAST_DOUBLE)
++	await _tap(player, Vector2(-FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Depois da conversa, clique simples volta a funcionar (andando)", player, player.walk_speed, &"walk_w")
++
++	await _step(FRAMES_PAST_DOUBLE)
++	_press(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	GameManager.movement_scheme = GameManager.MovementScheme.KEYBOARD
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Trocar para o teclado com o botão segurado: para", player, 0.0, &"idle_e")
++	GameManager.movement_scheme = GameManager.MovementScheme.CLICK
++	await _step(FRAMES_PAST_HOLD)
++	_expect_motion("Voltar para o clique com o botão ainda segurado: não retoma sozinho", player, 0.0, &"idle_e")
++	_release(player, Vector2(900, 500))
++
++	await _despawn(player)
++
++
++# Esquema com os dois ligados: cada um continua com as próprias regras de andar/correr.
++func _test_both_keyboard_and_click() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.BOTH)
++
++	Input.action_press(&"move_right")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Teclado + clique: WASD anda", player, player.walk_speed, &"walk_e")
++	Input.action_press(&"move_run")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Teclado + clique: WASD com SHIFT corre", player, player.run_speed, &"run_e")
++	_release_all_actions()
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Teclado + clique: soltar o teclado sem trajeto de clique para", player, 0.0, &"idle_e")
++
++	await _tap(player, Vector2(-FAR, 0.0), Vector2(300, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Teclado + clique: clique simples anda", player, player.walk_speed, &"walk_w")
++
++	await _step(FRAMES_PAST_DOUBLE)
++	await _double_click(player, Vector2(FAR, 0.0), Vector2(900, 500), Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Teclado + clique: clique duplo corre", player, player.run_speed, &"run_e")
++
++	await _step(FRAMES_PAST_DOUBLE)
++	Input.action_press(&"move_run")
++	await _tap(player, Vector2(-FAR, 0.0), Vector2(300, 500))
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Teclado + clique: SHIFT não transforma o clique simples em corrida", player,
++		player.walk_speed, &"walk_w")
++	_release_all_actions()
++
++	await _step(FRAMES_PAST_DOUBLE)
++	_press(player, player.global_position + Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	_expect("Teclado + clique: segurar acompanha o mouse", player._click_gesture.is_following, "não está seguindo")
++	_expect_motion("Teclado + clique: segurando, acompanha andando", player, player.walk_speed, &"walk_e")
++	_release(player, Vector2(900, 500))
++
++	await _step(FRAMES_PAST_DOUBLE)
++	await _tap(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_TAP * 2)
++	_press(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	_expect_motion("Teclado + clique: clique duplo segurado acompanha correndo", player, player.run_speed, &"run_e")
++	_release(player, Vector2(900, 500))
++
++	await _despawn(player)
++
++
++# Com os dois ligados, apertar o teclado toma o controle: descarta o trajeto de clique, e com o
++# botão do mouse ainda segurado volta a seguir o mouse quando o teclado é solto.
++func _test_both_keyboard_overrides_click() -> void:
++	var player: FakePointerPlayer = await _spawn_player(GameManager.MovementScheme.BOTH)
++
++	await _tap(player, Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_SETTLE)
++	Input.action_press(&"move_left")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Teclado no meio de um trajeto de clique: o teclado manda", player, player.walk_speed, &"walk_w")
++	Input.action_release(&"move_left")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("... e soltar o teclado não retoma o trajeto antigo", player, 0.0, &"idle_w")
++
++	await _step(FRAMES_PAST_DOUBLE)
++	player.fake_pointer = player.global_position + Vector2(FAR, 0.0)
++	_press(player, player.fake_pointer, Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	Input.action_press(&"move_left")
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Segurando o clique e apertando o teclado: o teclado manda", player, player.walk_speed, &"walk_w")
++	Input.action_release(&"move_left")
++	await _step(_frames_for_seconds(player.follow_repath_seconds) + FRAMES_SETTLE)
++	_expect_motion("... e soltar o teclado com o botão ainda segurado volta a seguir o mouse", player,
++		player.walk_speed, &"walk_e")
++	_release(player, Vector2(900, 500))
++
++	await _step(FRAMES_PAST_DOUBLE)
++	_press(player, player.global_position + Vector2(FAR, 0.0), Vector2(900, 500))
++	await _step(FRAMES_PAST_HOLD)
++	GameManager.movement_scheme = GameManager.MovementScheme.KEYBOARD
++	await _step(FRAMES_SETTLE)
++	_expect_motion("Trocar de teclado + clique para só teclado com o botão segurado: para", player, 0.0, &"idle_e")
++	_release(player, Vector2(900, 500))
++
++	await _despawn(player)
++
++
++# Cria um Player de teste na raiz da árvore, com o mesmo SpriteFrames do jogo (o que também confere
++# que todas as animações walk_/run_/idle_ pedidas existem), sem colisão com nada, e espera o _ready.
++func _spawn_player(scheme: GameManager.MovementScheme) -> FakePointerPlayer:
++	_release_all_actions()
++	GameManager.movement_scheme = scheme
++
++	var player: FakePointerPlayer = FakePointerPlayer.new()
++	player.name = "PlayerMovementSelfTest"
++	player.motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
++	player.collision_layer = 0
++	player.collision_mask = 0
++
++	var sprite: AnimatedSprite2D = AnimatedSprite2D.new()
++	sprite.name = "AnimatedSprite2D"
++	sprite.sprite_frames = load(SPRITE_FRAMES_PATH) as SpriteFrames
++	sprite.animation = &"idle_s"
++	player.add_child(sprite)
++
++	var shape: CollisionShape2D = CollisionShape2D.new()
++	var circle: CircleShape2D = CircleShape2D.new()
++	circle.radius = 14.0
++	shape.shape = circle
++	player.add_child(shape)
++
++	_tree.root.add_child(player)
++	player.global_position = Vector2.ZERO
++	await _step(1)
++	return player
++
++
++# Remove o Player de teste e solta as ações, pra o caso seguinte começar limpo.
++func _despawn(player: FakePointerPlayer) -> void:
++	_release_all_actions()
++	player.queue_free()
++	await _step(1)
++
++
++# Espera "frames" frames de física completos.
++func _step(frames: int) -> void:
++	for i: int in frames:
++		await _tree.physics_frame
++	# Mais um: physics_frame é emitido ANTES de os nós processarem o frame, então é só no começo do
++	# frame seguinte que o último frame pedido já foi processado por todo mundo.
++	await _tree.physics_frame
++
++
++# Quantos frames de física cobrem "seconds", arredondando pra cima.
++func _frames_for_seconds(seconds: float) -> int:
++	return ceili(seconds * Engine.physics_ticks_per_second)
++
++
++# Aperta o botão com o "mouse" em world_point (mundo) / screen_point (tela, usado pelo clique duplo).
++func _press(player: FakePointerPlayer, world_point: Vector2, screen_point: Vector2) -> void:
++	player.fake_pointer = world_point
++	Input.action_press(&"move_click")
++	player._unhandled_input(_mouse_button_event(true, screen_point))
++
++
++# Solta o botão: o estado da ação (lido pelo gesto a cada frame) e o evento (lido no _unhandled_input).
++func _release(player: FakePointerPlayer, screen_point: Vector2) -> void:
++	Input.action_release(&"move_click")
++	player._unhandled_input(_mouse_button_event(false, screen_point))
++
++
++# Um clique normal: aperta, segura por FRAMES_TAP e solta.
++func _tap(player: FakePointerPlayer, world_point: Vector2, screen_point: Vector2) -> void:
++	_press(player, world_point, screen_point)
++	await _step(FRAMES_TAP)
++	_release(player, screen_point)
++
++
++# Dois cliques normais com FRAMES_TAP * 2 entre eles: bem dentro da janela de clique duplo padrão.
++func _double_click(player: FakePointerPlayer, world_point: Vector2, first_screen: Vector2,
++		second_screen: Vector2) -> void:
++	await _tap(player, world_point, first_screen)
++	await _step(FRAMES_TAP * 2)
++	await _tap(player, world_point, second_screen)
++
++
++# Evento de botão esquerdo do mouse, igual ao que a engine entrega (casa com a ação move_click).
++func _mouse_button_event(pressed: bool, screen_point: Vector2) -> InputEventMouseButton:
++	var event: InputEventMouseButton = InputEventMouseButton.new()
++	event.button_index = MOUSE_BUTTON_LEFT
++	event.pressed = pressed
++	event.position = screen_point
++	event.global_position = screen_point
++	return event
++
++
++# Solta todas as ações que os casos apertam. Chamado entre casos e no fim, pra nenhuma ficar "presa".
++func _release_all_actions() -> void:
++	for action: StringName in [&"move_click", &"move_run", &"move_left", &"move_right", &"move_up", &"move_down"]:
++		Input.action_release(action)
++
++
++# Confere de uma vez a velocidade (módulo) e a animação tocando.
++func _expect_motion(label: String, player: FakePointerPlayer, expected_speed: float,
++		expected_animation: StringName) -> void:
++	var sprite: AnimatedSprite2D = player.get_node("AnimatedSprite2D") as AnimatedSprite2D
++	var actual_speed: float = player.velocity.length()
++	var speed_ok: bool = absf(actual_speed - expected_speed) <= SPEED_TOLERANCE
++	var animation_ok: bool = sprite.animation == expected_animation
++	_expect(label, speed_ok and animation_ok, "esperado %.0f px/s em \"%s\", veio %.0f px/s em \"%s\""
++		% [expected_speed, expected_animation, actual_speed, sprite.animation])
++
++
++# ---------------------------------------------------------------------------------------------------
++# Registro
++# ---------------------------------------------------------------------------------------------------
++
++# Registra um caso: ✓ quando passou, ✗ com o detalhe quando falhou.
++func _expect(label: String, passed: bool, failure_detail: String) -> void:
++	if passed:
++		passed_count += 1
++		_lines.append("    %s %s" % [CHECK, label])
++		return
++	failed_count += 1
++	_lines.append("    %s %s — %s" % [CROSS, label, failure_detail])
+diff --git a/scripts/player/PlayerMovementSelfTest.gd.uid b/scripts/player/PlayerMovementSelfTest.gd.uid
+new file mode 100644
+index 0000000..6d1e4da
+--- /dev/null
++++ b/scripts/player/PlayerMovementSelfTest.gd.uid
+@@ -0,0 +1 @@
++uid://2l8l6qu8a11n
+diff --git a/scripts/settings/Settings.gd b/scripts/settings/Settings.gd
+index b61da98..9a2eb1c 100644
+--- a/scripts/settings/Settings.gd
++++ b/scripts/settings/Settings.gd
+@@ -161,6 +161,7 @@ func _populate_movement_options() -> void:
+ 	movement_option.clear()
+ 	movement_option.add_item(tr("MENU_MOVEMENT_KEYBOARD"), 0) # índice 0 = MovementScheme.KEYBOARD
+ 	movement_option.add_item(tr("MENU_MOVEMENT_CLICK"), 1)    # índice 1 = MovementScheme.CLICK
++	movement_option.add_item(tr("MENU_MOVEMENT_BOTH"), 2)     # índice 2 = MovementScheme.BOTH
+ 	movement_option.selected = selected if selected != -1 else int(GameManager.movement_scheme)
+ 
+ # Repassa o esquema escolhido pro GameManager, que aplica e persiste a escolha
+diff --git a/scripts/shared/Isometric.gd b/scripts/shared/Isometric.gd
+index 1fa5eff..9756719 100644
+--- a/scripts/shared/Isometric.gd
++++ b/scripts/shared/Isometric.gd
+@@ -47,9 +47,10 @@ static func facing_from_direction(direction: Vector2) -> Facing:
+ 	return posmod(sector, DIRECTION_SUFFIXES.size()) as Facing
+ 
+ 
+-# Monta o nome da animação a partir do prefixo (correndo/parado) e do sufixo da direção. Os nomes
+-# montados aqui precisam existir na SpriteFrames do AnimatedSprite2D: idle_e, idle_se, ..., run_e,
+-# run_se, ... — as 8 direções do spritesheet (ver res://resources/player_sprite_frames.tres).
++# Monta o nome da animação a partir do prefixo (parado/andando/correndo) e do sufixo da direção. Os
++# nomes montados aqui precisam existir na SpriteFrames do AnimatedSprite2D: idle_e, idle_se, ...,
++# walk_e, walk_se, ..., run_e, run_se, ... — as 8 direções do spritesheet (ver
++# res://resources/player_sprite_frames.tres).
+ static func animation_name(prefix: StringName, facing: Facing) -> StringName:
+ 	return StringName("%s_%s" % [prefix, DIRECTION_SUFFIXES[facing]])
+ 
+diff --git a/scripts/singletons/GameManager.gd b/scripts/singletons/GameManager.gd
+index d226b37..a172c43 100644
+--- a/scripts/singletons/GameManager.gd
++++ b/scripts/singletons/GameManager.gd
+@@ -15,8 +15,13 @@ signal dialogue_preferences_changed
+ ## Espaço para variáveis
+ 
+ # Esquemas de movimentação que o jogador pode escolher nas configurações. A ordem importa: é a
+-# mesma em que as opções aparecem no OptionButton da tela de Settings.
+-enum MovementScheme { KEYBOARD, CLICK }
++# mesma em que as opções aparecem no OptionButton da tela de Settings, e o número de cada um é o que
++# vai para o arquivo de configurações (por isso um esquema novo entra sempre no fim).
++#   KEYBOARD  só WASD/setas/analógico.
++#   CLICK     só point and click.
++#   BOTH      os dois ao mesmo tempo: o teclado assume enquanto alguma direção estiver apertada, e o
++#             clique vale no resto do tempo (ver Player._get_movement_direction).
++enum MovementScheme { KEYBOARD, CLICK, BOTH }
+ 
+ # Modo de revelação do texto de diálogo (SPEC §14): instantâneo mostra a fala inteira de uma vez;
+ # progressivo é o typewriter (DialogueScreen._await_entry_then_continue).
+@@ -79,6 +84,17 @@ func _ready() -> void:
+ 
+ ## Espaço para funções personalizadas
+ 
++# Diz se o esquema ativo aceita o teclado (WASD/setas/analógico). Ponto único para essa pergunta,
++# para quem lê o esquema não precisar listar à mão quais esquemas incluem o teclado.
++func is_keyboard_movement_enabled() -> bool:
++	return movement_scheme == MovementScheme.KEYBOARD or movement_scheme == MovementScheme.BOTH
++
++
++# Diz se o esquema ativo aceita o point and click. Ver is_keyboard_movement_enabled().
++func is_click_movement_enabled() -> bool:
++	return movement_scheme == MovementScheme.CLICK or movement_scheme == MovementScheme.BOTH
++
++
+ # Troca o esquema de movimentação e persiste a escolha. Usar sempre este método (nunca a
+ # variável movement_scheme direto) quando a troca vier do jogador.
+ func set_movement_scheme(scheme: MovementScheme) -> void:
+diff --git a/tests/run_player_movement_self_test.gd b/tests/run_player_movement_self_test.gd
+new file mode 100644
+index 0000000..2dcd161
+--- /dev/null
++++ b/tests/run_player_movement_self_test.gd
+@@ -0,0 +1,36 @@
++# run_player_movement_self_test.gd — Roda o autoteste da movimentação do jogador (andar/correr nos dois
++# esquemas) pela linha de comando.
++#
++#     godot --headless --path . --script res://tests/run_player_movement_self_test.gd
++#
++# Sai com código 0 quando todos os casos passam e 1 quando algum falha, para poder virar verificação
++# automática antes de PR. Os casos ficam em PlayerMovementSelfTest: a parte do gesto de clique é a mesma
++# da ação "Autoteste do clique" do menu de debug; a parte que move um Player de verdade só roda por aqui.
++#
++# Leva alguns segundos porque espera frames de física reais. Com --fixed-fps 60 os frames deixam de
++# esperar o relógio e o teste roda o mais rápido que a máquina aguenta, com o mesmo resultado (os casos
++# contam frames, não segundos).
++extends SceneTree
++
++# Carregado por caminho, e não pelo nome da classe: com --script, este arquivo é compilado antes de os
++# Autoloads existirem, e citar PlayerMovementSelfTest aqui forçaria a compilação dele (e do Player, que
++# usa EventBus, GameManager e DebugMenu) cedo demais — "Identifier not found".
++const SELF_TEST_PATH: String = "res://scripts/player/PlayerMovementSelfTest.gd"
++
++
++func _initialize() -> void:
++	# Adiado para o primeiro quadro: os Autoloads ainda estão entrando na árvore quando _initialize() roda.
++	_run.call_deferred()
++
++
++# Executa o autoteste, imprime o relatório e encerra com o código de saída do resultado.
++func _run() -> void:
++	var self_test_script: GDScript = ResourceLoader.load(SELF_TEST_PATH, "", ResourceLoader.CACHE_MODE_IGNORE) as GDScript
++	if self_test_script == null or not self_test_script.can_instantiate():
++		push_error("[Player] - ERRO: autoteste da movimentação não compilou (%s)" % SELF_TEST_PATH)
++		quit(1)
++		return
++	var self_test: RefCounted = self_test_script.new()
++	await self_test.call(&"run", self)
++	print(self_test.call(&"report"))
++	quit(0 if int(self_test.get(&"failed_count")) == 0 else 1)
+diff --git a/tests/run_player_movement_self_test.gd.uid b/tests/run_player_movement_self_test.gd.uid
+new file mode 100644
+index 0000000..0c9ed40
+--- /dev/null
++++ b/tests/run_player_movement_self_test.gd.uid
+@@ -0,0 +1 @@
++uid://djx1dami7evsg
+diff --git a/translations/translations.csv b/translations/translations.csv
+index 7e84445..cbec104 100644
+--- a/translations/translations.csv
++++ b/translations/translations.csv
+@@ -9,6 +9,7 @@ MENU_LANG_PT_BR,Português (Brasil),Português (Brasil)
+ MENU_MOVEMENT,Movement,Movimentação
+ MENU_MOVEMENT_KEYBOARD,Keyboard (WASD),Teclado (WASD)
+ MENU_MOVEMENT_CLICK,Mouse click,Clique do mouse
++MENU_MOVEMENT_BOTH,Keyboard + mouse click,Teclado + clique do mouse
+ MENU_PAUSED,Paused,Pausado
+ MENU_RESUME,Resume,Continuar
+ MENU_MAIN_MENU,Main Menu,Menu Principal
+diff --git a/translations/translations.en.translation b/translations/translations.en.translation
+index 52b588ca5805a5b2b71561f911f9ff2d14e8f899..db4f6e2dde7f0a2e6ba1cafb101839441ccafe62 100644
+GIT binary patch
+delta 3401
+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
+QUoWG}!#7$|a#H-i0cuQ0FaQ7m
+
+delta 3392
+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
+
+diff --git a/translations/translations.pt_BR.translation b/translations/translations.pt_BR.translation
+index c107ef602f75464a397e9ff123ff23cef805e45d..0270ad49b864a79aaa5106e2f60f33d98f1747a4 100644
+GIT binary patch
+delta 4863
+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
+Mp~tflG%d*I|3-O_r2qf`
+
+delta 4829
+zcmZu#3sjBi8vaE!Q7XDh>?FIUR8r#POes`UC>6PtriP-9%Zy^`PpQZ)ZPMtFd#4#k
+zja<$N9mGsp3?+0Lg)vBCoJCE-a-Mg$-~9H{>S_Pq^S$@)eZT#$S{GF=DqF2BzQ<2X
+zA3>l``gyK;))E9k26STG3!j9j;>{zhj0C|2&t8BAKzzvs`(y5S(8e>tvuvJe4)o0M
+zYyq(TvDEu}`|Ah-*(N|=RBrkO_1jwlslFfy?Ky=>vml{~X963zbkuQJ2m){bH(J7P
+z^cZ>AQDT_oZ>*oN<b>e|hs+xfe;EHY^gj~@(w`3wa;EMn(Nt{w%t_P%eI7e~pu=jZ
+zHn*Pb((QKbC(%0D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
+
+-- 
+2.43.0
+

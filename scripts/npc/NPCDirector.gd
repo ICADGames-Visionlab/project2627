@@ -90,12 +90,11 @@ var _travel_times: Dictionary = {}
 # é medido uma vez só.
 var _travel_cache: Dictionary = {}
 
-# Achatamento e fator vertical do corpo do NPC, lidos da cena dele na primeira vez que a caminhada precisa
-# ser calculada. São exports do NPC.gd, e a conta de velocidade (Isometric) tem que usar os mesmos números
-# que o corpo usa pra andar.
+# Fator vertical do corpo do NPC, lido da cena dele na primeira vez que a caminhada precisa ser calculada.
+# É export do NPC.gd, e a conta de velocidade (TopDown) tem que usar o mesmo número que o corpo usa pra
+# andar.
 var _walk_shape_loaded: bool = false
-var _y_ratio: float = 0.5
-var _vertical_factor: float = 0.75
+var _vertical_factor: float = 0.71
 
 # [DEBUG] Estado dos controles do menu de debug.
 var _draw_paths: bool = false
@@ -172,6 +171,22 @@ func get_emotion_slot(id: StringName) -> int:
 # quest) vão achar um NPC sem precisar varrer a árvore.
 func get_body(id: StringName) -> NPC:
 	return _bodies.get(id) as NPC
+
+
+# Os ids dos NPCs que têm corpo nesta cena agora.
+func get_body_ids() -> Array[StringName]:
+	var result: Array[StringName] = []
+	for id: StringName in _bodies.keys():
+		result.append(id)
+	return result
+
+
+# A última decisão de rotina de um NPC (onde ele deveria estar e por quê), ou null antes da primeira
+# resolução e no sonho. O diário lê pra anotar o trecho de rotina que o jogador viu.
+func get_decision(id: StringName) -> NPCRoutineResolver.Decision:
+	if GameClock.is_dreaming():
+		return null
+	return _decisions.get(id) as NPCRoutineResolver.Decision
 
 
 # Escolhe a emoção vigente de cada NPC para o dia.
@@ -290,7 +305,7 @@ func _get_travel(definition: NPCDefinition) -> NPCRoutineException.TravelTimes:
 # Quantos minutos de jogo o NPC leva pra andar de um waypoint a outro desta cena.
 #
 # É o caminho de verdade (Pathfinder, entre os pontos EXATOS onde este NPC para, com o deslocamento dele)
-# percorrido na velocidade de verdade (a conta do movimento, Isometric.walk_seconds), passado pra minutos
+# percorrido na velocidade de verdade (a conta do movimento, TopDown.walk_seconds), passado pra minutos
 # de jogo pelo ritmo do relógio. Arredonda PRA CIMA em blocos de TICK_MINUTES: o relógio só anuncia a
 # passagem do tempo a cada tique, então uma caminhada que terminasse fora dele só seria notada no tique
 # seguinte, e arredondar pra cima garante que a parada nunca dure menos do que o design pediu. Menos de
@@ -321,8 +336,8 @@ func _travel_minutes(from_id: StringName, to_id: StringName, definition: NPCDefi
 			path = found
 
 	_load_walk_shape()
-	var seconds: float = Isometric.walk_seconds(
-		from_position, path, definition.walk_speed, _y_ratio, _vertical_factor)
+	var seconds: float = TopDown.walk_seconds(
+		from_position, path, definition.walk_speed, _vertical_factor)
 	var minutes: float = seconds / GameClock.settings.seconds_per_game_minute()
 
 	var rounded: int = 0
@@ -332,7 +347,7 @@ func _travel_minutes(from_id: StringName, to_id: StringName, definition: NPCDefi
 	return rounded
 
 
-# Lê o achatamento e o fator vertical da cena do NPC (o corpo é quem os tem como export), uma vez só.
+# Lê o fator vertical da cena do NPC (o corpo é quem o tem como export), uma vez só.
 # Instancia sem pôr na árvore: o _ready não roda e o corpo de teste some logo em seguida.
 func _load_walk_shape() -> void:
 	if _walk_shape_loaded:
@@ -342,7 +357,6 @@ func _load_walk_shape() -> void:
 	var probe: NPC = npc_scene.instantiate() as NPC
 	if probe == null:
 		return
-	_y_ratio = probe.isometric_y_ratio
 	_vertical_factor = probe.vertical_speed_factor
 	probe.free()
 
@@ -398,10 +412,7 @@ func _scattered_position(waypoint: Waypoint, definition: NPCDefinition) -> Vecto
 		return waypoint.global_position
 
 	var angle: float = fmod(absf(float(hash(definition.id))), TAU)
-	var offset: Vector2 = Vector2.from_angle(angle) * waypoint_scatter
-	# Achatado em Y como todo o resto do chão: um círculo na tela seria uma elipse no chão isométrico.
-	offset.y *= 0.5
-	return waypoint.global_position + offset
+	return waypoint.global_position + Vector2.from_angle(angle) * waypoint_scatter
 
 
 # Diz se um caminho de cena é a cena que está rodando agora. É a comparação que decide se o NPC

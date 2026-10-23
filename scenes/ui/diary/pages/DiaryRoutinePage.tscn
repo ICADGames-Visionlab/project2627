@@ -1,0 +1,88 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/diary/DiaryRoutinePage.gd" id="1_page"]
+[ext_resource type="Script" path="res://scripts/ui/diary/DiaryRoutineChart.gd" id="2_chart"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_chart_frame"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.3, 0.18, 0.09, 1)
+
+[node name="DiaryRoutinePage" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_page")
+
+[node name="Header" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 0.5
+offset_left = 48.0
+offset_top = 36.0
+offset_right = -40.0
+offset_bottom = 110.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
+
+[node name="Title" type="Label" parent="Header"]
+layout_mode = 2
+theme_type_variation = &"DiaryTitle"
+text = "DIARY_ROUTINE_TITLE"
+
+[node name="Person" type="Label" parent="Header"]
+unique_name_in_owner = true
+auto_translate_mode = 2
+layout_mode = 2
+size_flags_vertical = 8
+theme_type_variation = &"DiarySmall"
+theme_override_font_sizes/font_size = 26
+text = "Pessoa"
+
+[node name="Chart" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 36.0
+offset_top = 130.0
+offset_right = -36.0
+offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("2_chart")
+
+[node name="Frame" type="Panel" parent="Chart"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_chart_frame")
+
+[node name="Hint" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 48.0
+offset_top = -66.0
+offset_right = -48.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_type_variation = &"DiarySmall"
+text = "DIARY_ROUTINE_HINT"

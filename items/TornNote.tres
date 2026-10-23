@@ -9,5 +9,3 @@ id = &"torn_note"
 display_name_key = &"PLACEHOLDER_EVIDENCE_TORN_NOTE_NAME"
 description_key = &"PLACEHOLDER_EVIDENCE_TORN_NOTE_DESC"
 icon = ExtResource("2_icon")
-max_stack = 1
-destructible = false

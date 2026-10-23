@@ -72,6 +72,11 @@ func refresh() -> void:
 	if _line == null:
 		return
 	var content: String = _sanitized_text()
+	# O clear() apaga os links, mas o RichTextLabel (Godot 4.7) continua guardando o link que estava
+	# sob o mouse e o lê no próximo movimento: memória já liberada. Acontece sempre que a palavra é
+	# colhida, porque o clique deixa o mouse em cima dela. A saída do mouse é o único caminho da engine
+	# que zera esse link (o meta_hover_ended que ela emite só limpa _hovered_word_payload, como abaixo).
+	_text_label.notification(Control.NOTIFICATION_MOUSE_EXIT)
 	_text_label.clear()
 	# O clear() apaga os links sem emitir meta_hover_ended: sem isto, a palavra que acabou de ser
 	# colhida continuaria "sob o mouse" e o próximo clique a colheria de novo.

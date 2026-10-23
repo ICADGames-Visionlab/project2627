@@ -15,7 +15,12 @@
 ## glossário, e ela é do sistema de profiling, não do de diálogo. Hoje ela é usada no texto da
 ## história resolvida; quando a tela de diálogo existir (outra branch), ela troca o Label dela por
 ## este nó e as palavras das falas passam a ser clicáveis sem nenhuma edição aqui. O mesmo vale pro
-## sistema de inventário, que vai fazer as evidências chamarem ProfilingJournal.discover_word.
+## EvidenceViewer, que mostra o texto das evidências do mundo.
+##
+## HOVER: com o mouse em cima, a palavra troca o sublinhado por fundo vermelho e letra branca. O par
+## dela acende junto ("[MARCOS] [CASTRO]" ou "[MARCOS]/[CASTRO]"), porque o par vem do atributo
+## paired_words da palavra (ProfilingCatalog.find_pair_group), não da marcação: é o mesmo par que o
+## clique colhe.
 ##
 ## O AVISO NA TELA ("Palavra adicionada ao Glossário do Zé") e a animação da palavra descendo pro
 ## canto não são feitos aqui: quem faz é o WordDiscoveryToast, escutando o EventBus. Este nó só
@@ -55,6 +60,15 @@ const PAYLOAD_SEPARATOR: String = "|"
 var _npc_id: StringName = &""
 # A marcação original, guardada pra o texto poder ser remontado quando uma palavra sai do vermelho.
 var _source: String = ""
+# O payload ("faca" ou "marcos|castro") da palavra sob o mouse, ou vazio.
+var _hovered_payload: String = ""
+# O RichTextLabel voltou a acompanhar a palavra sob o mouse depois do último refresh (que zera o
+# acompanhamento dele, ver _forget_native_hover). Até lá, se o mouse sair da palavra, ninguém avisa e
+# o fundo vermelho ficaria preso. Ver _on_text_gui_input.
+var _hover_confirmed: bool = false
+# Liga só durante _forget_native_hover, para os sinais que ela provoca não serem lidos como o mouse
+# saindo da palavra.
+var _forgetting_hover: bool = false
 
 ## Espaço para funções nativas
 
@@ -65,7 +79,14 @@ func _ready() -> void:
 	# O texto que entra aqui já foi traduzido por quem chamou set_marked_text; deixar a tradução
 	# automática ligada faria o Godot procurar a FRASE como chave do CSV.
 	auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	# O sublinhado é desenhado pela marcação ([u]); o do link por cima dele apareceria também sob a
+	# palavra acesa, onde não deve haver sublinhado nenhum.
+	meta_underlined = false
 	meta_clicked.connect(_on_meta_clicked)
+	meta_hover_started.connect(_on_word_hover_started)
+	meta_hover_ended.connect(_on_word_hover_ended)
+	mouse_exited.connect(_on_word_hover_ended.bind(null))
+	gui_input.connect(_on_text_gui_input)
 
 ## Espaço para funções personalizadas
 
@@ -82,7 +103,10 @@ func set_marked_text(source: String, npc_id: StringName = &"") -> void:
 # Remonta o texto a partir da marcação guardada. Chamada quando o diário muda: a palavra que acabou
 # de ser colhida precisa sair do vermelho, e o BBCode já montado não tem mais a marcação pra reler.
 func refresh() -> void:
-	text = render_markup(_source, _npc_id, clickable_color, discovered_color)
+	_forget_native_hover()
+	text = render_markup(_source, _npc_id, clickable_color, discovered_color, true,
+		hover_group(_hovered_payload))
+	_hover_confirmed = false
 
 
 # Converte a marcação em BBCode. Palavras de um mesmo grupo ([A]/[B]) recebem o mesmo payload, então
@@ -90,8 +114,10 @@ func refresh() -> void:
 #
 # clickable desligado desenha a palavra ainda não descoberta sublinhada, mas sem link: é o insight,
 # em que as palavras vão pro glossário sozinhas quando a caixa fecha.
+#
+# hovered_ids são as palavras acesas pelo hover (ver hover_group): fundo clickable_color, letra branca.
 static func render_markup(source: String, npc_id: StringName, clickable_color: Color,
-		discovered_color: Color, clickable: bool = true) -> String:
+		discovered_color: Color, clickable: bool = true, hovered_ids: Array[StringName] = []) -> String:
 	if source.is_empty():
 		return ""
 
@@ -109,7 +135,7 @@ static func render_markup(source: String, npc_id: StringName, clickable_color: C
 		if found.get_start() > cursor:
 			result += source.substr(cursor, found.get_start() - cursor)
 		result += _render_token(found.get_string(1), payloads[index], npc_id, clickable_color,
-			discovered_color, clickable)
+			discovered_color, clickable, hovered_ids)
 		cursor = found.get_end()
 
 	if cursor < source.length():
@@ -139,6 +165,30 @@ static func find_word_ids(source: String) -> Array[StringName]:
 		var word_id: StringName = StringName(found.get_string(1).to_lower())
 		if not result.has(word_id):
 			result.append(word_id)
+	return result
+
+
+# Diz se o jogador já colheu todas as palavras marcadas no texto: é o que libera fechar uma evidência.
+# Palavra que nenhum NPC tem no pool fica de fora: ela nunca entra em glossário nenhum
+# (discover_word só avisa no console), e contá-la prenderia o jogador num texto que não fecha.
+static func all_words_collected(source: String, npc_id: StringName = &"") -> bool:
+	for word_id: StringName in find_word_ids(source):
+		if ProfilingCatalog.find_profiles_with_word(word_id).is_empty():
+			continue
+		if not is_word_collected(word_id, npc_id):
+			return false
+	return true
+
+
+# As palavras que acendem juntas com o hover de um payload: as dele e os pares de cada uma
+# (paired_words). Pelo par, e não só pelo payload, para "[MARCOS] [CASTRO]" separados por espaço
+# também acenderem juntos: o clique em um colhe os dois, então o hover precisa mostrar os dois.
+static func hover_group(payload: String) -> Array[StringName]:
+	var result: Array[StringName] = []
+	for token: String in payload.split(PAYLOAD_SEPARATOR, false):
+		for member: StringName in ProfilingCatalog.find_pair_group(StringName(token.to_lower())):
+			if not result.has(member):
+				result.append(member)
 	return result
 
 
@@ -188,7 +238,7 @@ static func build_payloads(source: String, matches: Array[RegExMatch]) -> Packed
 # Desenha uma palavra marcada. Palavra que não existe no projeto aparece como texto normal e avisa no
 # console: um id errado no CSV não pode virar uma frase quebrada na cara do jogador.
 static func _render_token(token: String, payload: String, npc_id: StringName, clickable_color: Color,
-		discovered_color: Color, clickable: bool) -> String:
+		discovered_color: Color, clickable: bool, hovered_ids: Array[StringName]) -> String:
 	var word_id: StringName = StringName(token.to_lower())
 	var word: GlossaryWord = ProfilingCatalog.find_word(word_id)
 	if word == null:
@@ -201,6 +251,9 @@ static func _render_token(token: String, payload: String, npc_id: StringName, cl
 	var underlined: String = "[color=#%s][u]%s[/u][/color]" % [clickable_color.to_html(false), display]
 	if not clickable:
 		return underlined
+	if hovered_ids.has(word_id):
+		return "[url=%s][bgcolor=#%s][color=#ffffff]%s[/color][/bgcolor][/url]" % [
+			payload, clickable_color.to_html(false), display]
 	return "[url=%s]%s[/url]" % [payload, underlined]
 
 
@@ -226,4 +279,56 @@ func _on_meta_clicked(meta: Variant) -> void:
 
 	if discovered_anything:
 		print("[Profiling] - Palavra(s) \"%s\" colhida(s) do texto" % payload)
+		# A palavra colhida deixa de ser link: não há mais o que acender sob o mouse.
+		_hovered_payload = ""
+		mouse_default_cursor_shape = Control.CURSOR_ARROW
 		refresh()
+
+
+# Acende a palavra (e o par) sob o mouse e troca o cursor pra mãozinha. O redesenho é adiado: trocar
+# o texto DENTRO do sinal de hover apagaria o link que o RichTextLabel ainda está usando ao emiti-lo.
+func _set_hovered(payload: String) -> void:
+	if payload == _hovered_payload:
+		return
+	_hovered_payload = payload
+	mouse_default_cursor_shape = (
+		Control.CURSOR_POINTING_HAND if not payload.is_empty() else Control.CURSOR_ARROW)
+	refresh.call_deferred()
+
+
+func _on_word_hover_started(meta: Variant) -> void:
+	if _forgetting_hover:
+		return
+	if str(meta) == _hovered_payload:
+		# O mesmo link de novo, depois de um refresh: o RichTextLabel voltou a acompanhá-lo.
+		_hover_confirmed = true
+		return
+	_set_hovered(str(meta))
+
+
+func _on_word_hover_ended(_meta: Variant) -> void:
+	if not _forgetting_hover:
+		_set_hovered("")
+
+
+# Trocar o texto apaga os links, mas o RichTextLabel (Godot 4.7) continua guardando o link que estava
+# sob o mouse e o lê no próximo movimento: memória já liberada. O hover redesenha o texto com o mouse
+# em cima da palavra, então isso aconteceria a cada palavra acesa. A saída do mouse é o único caminho
+# da engine que zera esse link; os sinais que ela emite aqui são ignorados.
+func _forget_native_hover() -> void:
+	_forgetting_hover = true
+	notification(NOTIFICATION_MOUSE_EXIT)
+	_forgetting_hover = false
+
+
+# Depois de um refresh, o primeiro movimento do mouse diz se ele ainda está na palavra: se estiver, o
+# RichTextLabel emite meta_hover_started de novo (ainda neste evento, depois deste sinal) e
+# _hover_confirmed liga; se não, nada é emitido e a checagem adiada apaga o hover que ficou para trás.
+func _on_text_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and not _hovered_payload.is_empty() and not _hover_confirmed:
+		_drop_lost_hover.call_deferred()
+
+
+func _drop_lost_hover() -> void:
+	if not _hover_confirmed:
+		_set_hovered("")

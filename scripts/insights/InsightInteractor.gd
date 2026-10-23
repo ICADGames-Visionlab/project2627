@@ -16,7 +16,7 @@
 #     qualquer botão/analógico do controle, e desliga quando o mouse se move. Quem joga de mouse não
 #     vê um anel pulando entre orbes a cada passo.
 #   - Enquanto o modo teclado/controle está ligado, o hover do mouse não destaca orbe nenhum. Sem
-#     isso, clicar num orbe e apertar Tab deixava o orbe sob o cursor parado "em hover" ao lado do
+#     isso, clicar num orbe e apertar E deixava o orbe sob o cursor parado "em hover" ao lado do
 #     orbe em foco — dois destaques e a mãozinha presa.
 #
 # Clique do mouse: com a movimentação por clique ligada, o clique esquerdo num orbe precisa abrir o

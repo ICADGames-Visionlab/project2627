@@ -10,13 +10,13 @@ escuta o sinal `closed` (o cabeçalho do `Settings.gd` mostra como conectar).
 | --- | --- | --- | --- |
 | Geral | Idioma | `Settings.gd` | `user://settings.cfg` |
 | Geral | Movimentação | `GameManager.set_movement_scheme()` | `user://gameplay_settings.cfg` |
-| Vídeo | Modo de tela | `Settings.gd` | `user://settings.cfg` |
+| Vídeo | Modo de tela, proporção, resolução | `GameManager.set_video_preference()` | `user://video_settings.cfg` |
 | Áudio | Volume geral | `AudioManager.set_general_volume()` | `user://audio_settings.cfg` |
 | Diálogo | Tamanho do texto, fonte sem serifa, opacidade do painel, revelação do texto, animação | `GameManager.set_dialogue_preference()` | `user://gameplay_settings.cfg` |
 
 A tela não é dona dos valores: ela mostra o valor atual e repassa a escolha para o sistema dono, que
-aplica e salva. A exceção é vídeo e idioma, que não têm outro dono e são salvos pelo próprio
-`Settings.gd`. Isso evita duas fontes de verdade para o mesmo valor.
+aplica e salva. A exceção é o idioma, que não tem outro dono e é salvo pelo próprio `Settings.gd`.
+Isso evita duas fontes de verdade para o mesmo valor.
 
 ## Como a cena está montada
 
@@ -31,7 +31,7 @@ Settings (Control, tema com fonte 24)
       │  │  └─ Rows
       │  │     ├─ LanguageRow   Label + %LanguageOption
       │  │     └─ MovementRow   Label + %MovementOption
-      │  ├─ Video        ScreenModeRow
+      │  ├─ Video        ScreenModeRow, AspectRatioRow, ResolutionRow
       │  ├─ Audio        GeneralVolumeRow (slider + valor ao lado)
       │  └─ Dialogue     TextScaleRow, AltFontRow, PanelOpacityRow, TextRevealRow, AnimationRow
       └─ CloseButton (%CloseButton)  "SETTINGS_BACK"
@@ -68,7 +68,7 @@ Settings (Control, tema com fonte 24)
 5. Se for um slider, acrescente o valor dele em `_refresh_value_labels()`.
 
 O valor sempre pertence a um sistema (AudioManager, GameManager...), que aplica e salva. Só guarde
-direto no `Settings.gd` o que não tiver outro dono, como vídeo e idioma. Nesse caso, lembre que
+direto no `Settings.gd` o que não tiver outro dono, como o idioma. Nesse caso, lembre que
 `_save_settings()` reescreve o arquivo inteiro: inclua a chave nova lá também.
 
 ## Como adicionar uma aba
@@ -94,5 +94,3 @@ direto no `Settings.gd` o que não tiver outro dono, como vídeo e idioma. Nesse
   aponte o `MenuFocus` para `../Content/Column/CloseButton`. O foco inicial pode ficar no padrão do
   `MenuFocus` (o primeiro controle focável, que é a barra de abas). Vale também mapear o LB/RB para
   trocar de aba (`tabs.select_previous_available()` / `select_next_available()`).
-- **Corrida (#54):** essa branch acrescenta o esquema "Teclado + clique do mouse" (`MovementScheme.BOTH`)
-  em `_populate_movement_options()`. Ao resolver o conflito, mantenha o terceiro item na mesma função.

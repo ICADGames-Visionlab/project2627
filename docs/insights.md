@@ -208,7 +208,7 @@ continua na tela, e a tecla só aciona o que o jogador já vê.
 | Ação | Teclado | Controle | O que faz |
 | --- | --- | --- | --- |
 | `insight_interact` | E | A | Aciona o orbe em foco. De novo num orbe de ambiente com a caixa aberta, fecha a caixa |
-| `insight_cycle` | Tab | RB | Passa o foco para o próximo orbe na tela e fixa a escolha |
+| `insight_cycle` | — | RB | Passa o foco para o próximo orbe na tela e fixa a escolha |
 
 O foco aparece como um anel branco em volta do orbe. Sem escolha do jogador, ele segue o orbe de
 ambiente mais perto, ou a primeira cabeça se não houver orbe de ambiente na tela. O ciclo percorre os
@@ -223,18 +223,18 @@ pulando de orbe em orbe a cada passo.
 
 Mouse e teclado/controle nunca destacam orbes ao mesmo tempo. Enquanto o modo teclado/controle está
 ligado, o hover do mouse não conta: o orbe sob o cursor não cresce, não mostra o nome e não troca o
-cursor pela mãozinha. Sem isso, clicar num orbe e apertar Tab deixava dois orbes em destaque (o que
+cursor pela mãozinha. Sem isso, clicar num orbe e apertar E deixava dois orbes em destaque (o que
 ficou sob o cursor parado e o que recebeu o foco). O `InsightInteractor` liga e desliga isso em todos
 os orbes pelo grupo `insight_markers` (`InsightMarker.set_mouse_hover_suppressed()`). Ao mexer o
 mouse de novo, o modo teclado/controle desliga e o orbe sob o cursor volta ao destaque na hora.
 
-O Tab é também o atalho padrão da ação embutida `ui_focus_next` do Godot (e Shift+Tab o de
-`ui_focus_prev`), que passa o foco de teclado entre os `Control`s da tela. A GUI trata essa ação antes
-do `_unhandled_input` do `InsightInteractor`: com os padrões da engine, apertar Tab pegava o primeiro
-botão focável da tela e desenhava nele o estilo de foco, que parece um hover, e o ciclo de orbes nem
-chegava a rodar. Por isso as duas ações estão sobrescritas no `project.godot` sem nenhuma tecla. A
-navegação de menus por teclado e controle continua pelas setas e pelo D-pad (`ui_up`, `ui_down`,
-`ui_left`, `ui_right`). Não devolva o Tab a `ui_focus_next` sem trocar a tecla de `insight_cycle`.
+O Tab não faz nada no jogo, de propósito (issue #58). Ligado à ação embutida `ui_focus_next` do Godot
+(e Shift+Tab a `ui_focus_prev`), ele pegava o primeiro botão focável da tela e desenhava nele o estilo
+de foco, que parece um hover. Ligado a `insight_cycle`, ele fazia o anel de foco pular de orbe em orbe,
+o que também parece um hover. Por isso `ui_focus_next` e `ui_focus_prev` estão sobrescritas no
+`project.godot` sem nenhuma tecla, e `insight_cycle` não tem tecla no teclado. A navegação de menus por
+teclado e controle continua pelas setas e pelo D-pad (`ui_up`, `ui_down`, `ui_left`, `ui_right`). Não
+devolva o Tab a nenhuma das três ações.
 
 O acionamento passa por `InsightMarker.activate()`, o mesmo caminho do clique. A fonte e a órbita não
 sabem se o orbe foi clicado ou acionado por tecla.

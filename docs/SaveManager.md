@@ -16,8 +16,8 @@ aberto, junta o que cada sistema tem a guardar e é o **único** que escreve e l
    continue_game, delete_slot                  InsightJournal     "insights"
  PauseMenu: end_session                        ProfilingJournal   "profiling"
  Janela fechando: save_now                     DialogueState      "dialogue"
- EventBus.day_changed: request_save            GameSession        "world" (+ Player), "pickups"
-                                               Inventory          "inventory"
+ EventBus.day_changed: request_save            GameSession        "world" (+ Player)
+                                               Diary              "diary"
             |                                              |
             |        register_participant(chave, to_dict, from_dict)
             |        request_save() a cada mudança de fato
@@ -194,7 +194,7 @@ O arquivo é JSON, e o JSON não tem `int`, `StringName` nem `Vector2`. O que vo
 
 ### Participante de cena
 
-Nó que nasce e morre com a cena (a `GameSession` e o `Inventory` do `Player`) registra no `_ready()` e
+Nó que nasce e morre com a cena (a `GameSession`) registra no `_ready()` e
 **sai no `_exit_tree()`**:
 
 ```gdscript
@@ -214,11 +214,10 @@ deixe a verificação que precisa da cena montada para o primeiro frame.
 Sem `unregister_participant`, o `SaveManager` descarta o `Callable` morto na gravação seguinte, com
 um aviso no log. É rede de segurança, não caminho.
 
-**A seção é o que atravessa a troca de cena.** O `Player` (e o `Inventory` dentro dele) nasce de novo em
-cada cena; quem leva o inventário de uma para a outra é a seção guardada no `SaveManager`. Mudança feita
-depois da última gravação e antes de a cena sair volta ao estado da gravação, em **todos** os
-participantes de cena juntos (largar um item e sair no mesmo instante devolve o item ao inventário e o
-tira do chão). Sem partida ativa (F6) não há seção, e o inventário recomeça vazio a cada cena.
+**A seção é o que atravessa a troca de cena.** O participante de cena nasce de novo em cada cena; quem
+leva o estado dele de uma para a outra é a seção guardada no `SaveManager`. Mudança feita depois da
+última gravação e antes de a cena sair volta ao estado da gravação, em **todos** os participantes de cena
+juntos. Sem partida ativa (F6) não há seção, e o participante recomeça do zero a cada cena.
 
 ### Participante static (sem `_ready`)
 
@@ -242,8 +241,9 @@ func _on_session_opened(_slot: int) -> void:
 	clear()   # e refaz o que deriva dos fatos, se houver
 ```
 
-Hoje só o `Diary` escuta. É signal direto do `SaveManager`, não evento de bus: a relação é direta e
-permanente.
+Hoje só o `Diary` escuta. Ele grava os fatos que são só dele (seção `diary`) e, ao abrir a partida, volta o livro
+pra capa; as páginas em si nunca vão para o arquivo (derivam dos fatos). É signal direto do
+`SaveManager`, não evento de bus: a relação é direta e permanente.
 
 ### Quem já participa
 
@@ -253,9 +253,8 @@ permanente.
 | `insights` | `InsightJournal` | Autoload | `read` (ids lidos), `flags` |
 | `profiling` | `ProfilingJournal` | Autoload | `discovered`, `fills`, `solved`, `marks`, `emotions`, `met` |
 | `dialogue` | `DialogueState` | static, primeira consulta | `chosen`, `visited` |
+| `diary` | `Diary` | Autoload | `people` (ordem de descoberta), `evidences` (fechadas, na ordem), `notes` (`id` + `day`), `routines` (trechos vistos por NPC) |
 | `world` | `GameSession` | nó de cena | `location` (id do local), `position` `[x, y]` |
-| `pickups` | `GameSession` | nó de cena | por local: `collected` (itens e evidências da cena já pegos), `dropped` (largados) |
-| `inventory` | `Inventory` (do `Player`) | nó de cena | `items` (`{id do item: quantidade}`) |
 
 ### Antes de abrir PR com um participante novo
 
@@ -292,10 +291,8 @@ arquivo real sai com um item por linha):
 	"data": {
 		"clock": { "total_minutes": 6260 },
 		"dialogue": { "chosen": ["ze_ana_feira:DIALOGUE_ZE_ANA_FEIRA_OPT_CHUVA"], "visited": ["inicio"] },
+		"evidences": { "ids": ["torn_note"] },
 		"insights": { "flags": ["puddle_examined"], "read": ["city_ground_puddle"] },
-		"inventory": { "items": { "mysterious_note": 2 } },
-		"pickups": { "city": { "collected": ["YSort/Evidencias/Bilhete"],
-			"dropped": [{ "amount": 1, "item": "mysterious_note", "position": [380.0, -40.0] }] } },
 		"profiling": { "discovered": { "ze": ["barco", "rede"] }, "fills": {}, "marks": {}, "met": [],
 			"solved": [], "emotions": { "ze": { "next_day": 6, "next_slot": 1 } } },
 		"world": { "location": "city", "position": [412.5, -96.0] }
@@ -313,9 +310,7 @@ arquivo real sai com um item por linha):
 | `clock.total_minutes` | int | Único estado do relógio. 6260 = dia 5, sexta, 14:20 |
 | `world.location` | String | Id do local, não caminho de cena: renomear o `.tscn` não quebra o save |
 | `world.position` | [float, float] | Última posição segura. `Vector2` não sobrevive ao JSON |
-| `inventory.items` | Dictionary | Id do item → quantidade. O `ItemData` volta pelo `ItemCatalog` |
-| `pickups.<local>.collected` | [String] | `ItemPickup` e `Interactable` de evidência postos na cena que o jogador já pegou, pelo caminho do nó na cena |
-| `pickups.<local>.dropped` | [Dictionary] | Itens que o jogador largou: `item` (id), `amount`, `position` |
+| `diary.evidences` | [String] | Evidências fechadas pelo jogador (id do `ItemData`). Saves antigos com a seção `evidences` (`ids`) são lidos uma vez pelo `Diary` |
 
 O rótulo do slot ("Dia 5, Sexta, 14:20 — Cidade") é **derivado** de `clock` e `world` na hora de
 desenhar. Nada derivado é gravado, então trocar o idioma com slots cheios não toca o arquivo.
@@ -421,14 +416,13 @@ func _migrate_v1_to_v2(sections: Dictionary) -> Dictionary:     # 3. escreve o p
 ### Checklist: "renomeei um id de conteúdo"
 
 Id de conteúdo vive dentro dos saves: ids de insight (`insights.read`), flags (`insights.flags`), NPC,
-palavra e história (`profiling`), escolha e nó de diálogo (`dialogue`), local (`world.location` e as chaves
-de `pickups`), item (`inventory`, `pickups.*.dropped`) e o caminho na cena de um `ItemPickup` ou de
-um `Interactable` de evidência posto no editor (`pickups.*.collected`). Se você vai renomear um que já pode estar gravado:
+palavra e história (`profiling`), escolha e nó de diálogo (`dialogue`), local (`world.location`) e
+evidência (`evidences.ids`). Se você vai renomear um que já pode estar gravado:
 
 - [ ] **Alguém tem esse id num save?** Se ele só existe na sua branch, renomeie e siga.
 - [ ] **Sem migração**, o dono ignora o id velho (sem erro): o insight reaparece, a palavra some da
-      página, a história volta a "não resolvida", o item some do inventário, e um item da cena que o
-      jogador já tinha pego volta ao chão. Decida se isso é aceitável.
+      página, a história volta a "não resolvida" e a evidência some do diário. Decida se isso é
+      aceitável.
 - [ ] Senão, escreva o **`_migrate_vN_to_vN1`** que troca o id velho pelo novo em **todas** as seções onde
       ele aparece (listas e chaves de `Dictionary`), com literais.
 - [ ] **Suba `FORMAT_VERSION`** e encadeie o passo em `_migrate`.
@@ -531,5 +525,6 @@ significar outra coisa. Use o literal.
 | [`SaveSlotInfo.gd`](../scripts/save/SaveSlotInfo.gd) | O retrato de um slot: estado, versão, data, seções |
 | [`SaveSlotMenu.gd`](../scripts/ui/SaveSlotMenu.gd) | A tela de slots (Continuar, Novo jogo, Apagar) |
 | [`SaveIndicator.gd`](../scripts/ui/SaveIndicator.gd) | O aviso "Jogo salvo" / "Falha ao salvar" |
-| [`GameSession.gd`](../scripts/world/GameSession.gd) | Participantes `world` e `pickups`, e a tabela de locais |
-| [`ItemCatalog.gd`](../scripts/items/ItemCatalog.gd) | Do id do item de volta ao `ItemData`, para o inventário e os itens no chão |
+| [`GameSession.gd`](../scripts/world/GameSession.gd) | Participante `world` e a tabela de locais |
+| [`Diary.gd`](../scripts/singletons/Diary.gd) | Participante `diary` |
+| [`ItemCatalog.gd`](../scripts/items/ItemCatalog.gd) | Do id da evidência de volta ao `ItemData`, para o diário refazer as páginas |

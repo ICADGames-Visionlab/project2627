@@ -2,8 +2,8 @@
 ## diário, e do lado aparece "Palavra adicionada ao Glossário do Zé".
 ##
 ## COMO USAR: instancie WordDiscoveryToast.tscn uma vez na cena de jogo. Nada a configurar — ele
-## escuta EventBus.glossary_word_discovered e se cuida. Quem descobre a palavra (o texto clicável, o
-## inventário quando existir, o menu de debug) não conhece esta cena.
+## escuta EventBus.glossary_word_discovered e se cuida. Quem descobre a palavra (o texto clicável, a
+## evidência vista de perto, o menu de debug) não conhece esta cena.
 ##
 ## O layout está na cena: o canto, a mensagem e o retângulo do diário. A palavra que voa é a cena
 ## apontada em "Flying Word Scene" (FlyingWord.tscn) — fonte e contorno dela se mexem lá, não aqui.
@@ -55,6 +55,9 @@ func _ready() -> void:
 	# continuar animando com a árvore pausada.
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	EventBus.glossary_word_discovered.connect(_on_glossary_word_discovered)
+	# O mesmo canto avisa a anotação nova do diário: é o canto do ícone do diário, e duas mensagens
+	# em cantos diferentes disputariam o olho do jogador.
+	Diary.note_added.connect(_on_diary_note_added)
 	_message.hide()
 
 ## Espaço para funções personalizadas
@@ -80,10 +83,15 @@ func show_word(npc_id: StringName, word_id: StringName) -> void:
 	_fly_word(word)
 	# replace(), e não o operador %: se alguém esquecer a chave no CSV, tr() devolve a própria chave
 	# (que não tem "%s") e o operador % viraria erro em tempo de execução no meio do jogo.
-	_message.text = tr("PROFILING_WORD_ADDED").replace("%s", _get_npc_name(npc_id))
+	show_message(tr("PROFILING_WORD_ADDED").replace("%s", _get_npc_name(npc_id)))
+
+
+# Mostra uma mensagem no canto, pelo mesmo tempo do aviso de palavra.
+func show_message(text: String) -> void:
+	_message.text = text
 	_message.show()
-	# Cada palavra nova reinicia a contagem: com duas palavras seguidas, a mensagem da segunda não
-	# pode ser apagada pelo timer da primeira.
+	# Cada mensagem nova reinicia a contagem: com duas seguidas, a da segunda não pode ser apagada
+	# pelo timer da primeira.
 	var timer: SceneTreeTimer = get_tree().create_timer(travel_seconds + message_seconds, true)
 	timer.timeout.connect(_on_message_timeout.bind(_message.text))
 
@@ -147,3 +155,7 @@ func _get_npc_name(npc_id: StringName) -> String:
 
 func _on_glossary_word_discovered(npc_id: StringName, word_id: StringName) -> void:
 	show_word(npc_id, word_id)
+
+
+func _on_diary_note_added(_note_id: StringName) -> void:
+	show_message(tr(&"DIARY_NOTE_ADDED"))
