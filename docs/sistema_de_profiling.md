@@ -206,6 +206,11 @@ O perfil **não** mora dentro do `NPCDefinition`: o NPC existe no mundo acordado
 profiling, e um NPC novo entra na cidade sem obrigar ninguém a escrever história nenhuma. NPC sem
 perfil simplesmente não tem espírito no sonho.
 
+Só o NPC **principal** tem profiling. O **auxiliar** e o **estático** (ver `docs/sistema_de_npc.md`,
+"Tipos de NPC") não têm espírito, não aparecem no sonho, não têm a emoção trocada pelo jogador e não
+liberam cabeça — mesmo que exista um perfil com o id deles: a tela do espírito recusa abrir, e a
+validação aponta o perfil.
+
 **Cada NPC tem o pool dele**, e os pools não precisam ser iguais: hoje o Zé tem 17 palavras, a Ana 16
 e o policial 20, com algumas palavras aparecendo em mais de um pool (`VINHO` está no da Ana e no do
 policial). O glossário é por NPC — descobrir uma palavra para o Zé não a põe no glossário da Ana.
@@ -480,7 +485,7 @@ Seção **Profiling** no menu (F4) e no console (F1):
 | *Resolver história* | Preenche a história com a solução e a marca como resolvida. |
 | *Abrir espírito* | Abre a tela de profiling de um NPC sem precisar achá-lo no sonho. |
 | *Listar estado do profiling* | Palavras, histórias e emoção de cada NPC, com o resultado da correção de cada página. |
-| *Validar conteúdo do profiling* | Varre o projeto: preenchimento dos recursos, chave que não existe no CSV, perfil de NPC fora do roster, história numa emoção que o NPC não tem. |
+| *Validar conteúdo do profiling* | Varre o projeto: preenchimento dos recursos, chave que não existe no CSV, perfil de NPC fora do roster, perfil de NPC auxiliar ou estático (que não tem profiling), história numa emoção que o NPC não tem. |
 | *Autoteste do profiling* | Roda `ProfilingSelfTest`. |
 | *Recarregar catálogo* | Descarta a varredura, pra editar um `.tres` e ver o resultado sem reabrir o jogo. |
 | *Resetar profiling* | Zera o diário da partida ativa e pede gravação. |

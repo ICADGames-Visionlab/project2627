@@ -21,6 +21,11 @@
 ##      Entrada nesta cena e corpo já em cena   -> anda até o waypoint.
 ##      Entrada em outra cena e corpo em cena   -> desaparece.
 ##
+## O TIPO DO NPC (NPCDefinition.kind) não abre um caminho à parte: o estático passa pelo mesmo ciclo,
+## e o resolver devolve sempre a posição fixa dele, então ele nasce lá e nunca anda. O que muda por
+## tipo aqui é só o que vem do profiling — a emoção escolhida no sonho e a presença no sonho —, que
+## vale apenas para o NPC principal.
+##
 ## O guia completo está em docs/sistema_de_npc.md.
 class_name NPCDirector
 extends Node2D
@@ -150,6 +155,9 @@ func set_emotion_slot(id: StringName, slot: int) -> void:
 	if definition == null:
 		push_warning("[NPCDirector] - AVISO: \"%s\" não está no roster" % id)
 		return
+	if not definition.has_routine():
+		print("[NPCDirector] - \"%s\" é NPC estático: sem rotina, não há o que a emoção mudar" % id)
+		return
 
 	_slots[id] = slot
 	var body: NPC = _bodies.get(id) as NPC
@@ -184,10 +192,18 @@ func get_body(id: StringName) -> NPC:
 # A conta de "qual escolha já venceu" é do ProfilingJournal (ele é o dono desse estado e o que o
 # grava no save); ver ProfilingJournal.resolve_emotion_slot e docs/sistema_de_profiling.md. O resto
 # deste sistema continua só consultando o slot já decidido, sem saber nada sobre o que causa emoção.
+#
+# Só o NPC principal tem profiling. O auxiliar e o estático ficam na emoção inicial do .tres sem
+# passar pelo diário: ninguém escolhe emoção pra eles, e uma escolha que tenha ficado no save (de
+# quando o NPC ainda era principal) não vale mais.
 func _refresh_emotion_slots() -> void:
 	for definition: NPCDefinition in roster.npcs:
-		if definition != null:
+		if definition == null:
+			continue
+		if definition.has_profiling():
 			_slots[definition.id] = ProfilingJournal.resolve_emotion_slot(definition)
+		else:
+			_slots[definition.id] = definition.get_starting_slot()
 
 
 # Resolve a rotina de todos os NPCs e ajusta a cena.
@@ -228,13 +244,15 @@ func _apply_routines(snap: bool) -> void:
 # sonho. Quem não tem posição de sonho some — diferente do dia, em que o NPC sem rotina fica onde
 # está, porque no sonho "onde ele estava" é justamente o mundo acordado. Some também quem o jogador
 # ainda não encontrou no mundo real: pelo GDD, o espírito só aparece depois de uma conversa (ver
-# ProfilingJournal.can_appear_in_dream).
+# ProfilingJournal.can_appear_in_dream). E some quem não tem profiling (auxiliar e estático): o sonho
+# é onde se investiga o espírito, e eles não têm espírito pra investigar.
 func _apply_dream_positions() -> void:
 	for definition: NPCDefinition in roster.npcs:
 		if definition == null:
 			continue
 
-		if definition.dream_entry == null or not ProfilingJournal.can_appear_in_dream(definition.id):
+		if not definition.has_profiling() or definition.dream_entry == null \
+				or not ProfilingJournal.can_appear_in_dream(definition.id):
 			var body: NPC = _bodies.get(definition.id) as NPC
 			if body != null:
 				_despawn(definition.id, body)
@@ -582,13 +600,22 @@ func _debug_list_npcs() -> void:
 			continue
 
 		var here: String = "em cena" if _bodies.has(definition.id) else "fora de cena"
+
+		# O estático não tem emoção, tipo de dia nem próxima entrada que valha mostrar: só o lugar.
+		if not definition.has_routine():
+			print("  %s — estático, %s" % [definition.id, here])
+			print("      parado em: %s" % (
+				decision.entry.describe_place() if decision.entry != null else "sem posição fixa"))
+			continue
+
 		var entry_text: String = decision.entry.describe() if decision.entry != null else "sem entrada"
 		var next_text: String = "—"
 		if decision.next_entry != null:
 			next_text = "%s (em %d min)" % [decision.next_entry.describe(), decision.minutes_until_next]
 
-		print("  %s — %s, %s, %s" % [
+		print("  %s — %s, %s, %s, %s" % [
 			definition.id,
+			NPCDefinition.KIND_NAMES[definition.kind],
 			definition.describe_slot(get_emotion_slot(definition.id)),
 			NPCDefinition.DAY_TYPE_NAMES[decision.day_type],
 			here])
@@ -630,6 +657,12 @@ func _debug_validate_routines() -> void:
 		for issue: String in definition.collect_issues():
 			print("  - %s: %s" % [definition.id, issue])
 			problems += 1
+
+		# O estático não tem rotina a varrer: só a posição fixa. Rotinas que tenham sobrado no .tres
+		# dele não valem, então não são conferidas.
+		if not definition.has_routine():
+			problems += _validate_fixed_entry(definition)
+			continue
 
 		for slot: int in NPCDefinition.EmotionSlot.values():
 			for day_type: int in NPCDefinition.DayType.values():
@@ -678,6 +711,23 @@ func _validate_entries(label: String, routine: NPCRoutine, wake_hour: int, day_l
 			problems += 1
 
 	return problems
+
+
+# [DEBUG] Confere a posição fixa de um NPC estático contra o mundo de verdade: cena que não existe e
+# waypoint que não existe nesta cena. O horário dela não é conferido, porque não vale nada. A falta da
+# posição já saiu do NPCDefinition.collect_issues. Devolve quantos problemas achou.
+func _validate_fixed_entry(definition: NPCDefinition) -> int:
+	var entry: NPCRoutineEntry = definition.get_fixed_entry()
+	if entry == null:
+		return 0
+
+	if not ResourceLoader.exists(entry.scene_path):
+		print("  - %s: a cena \"%s\" da posição fixa não existe" % [definition.id, entry.scene_path])
+		return 1
+	if _is_current_scene(entry.scene_path) and Waypoint.find(get_tree(), entry.waypoint) == null:
+		print("  - %s: o waypoint \"%s\" da posição fixa não existe nesta cena" % [definition.id, entry.waypoint])
+		return 1
+	return 0
 
 
 # [DEBUG] Confere as exceções de uma rotina contra o mundo de verdade, do mesmo jeito que

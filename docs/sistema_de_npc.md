@@ -2,7 +2,8 @@
 
 Cada NPC do HopeFarm cumpre uma rotina própria, e qual rotina ele cumpre depende de duas coisas: a
 **emoção vigente** dele e se hoje é **dia de trabalho ou de folga** pra ele. São seis rotinas por
-NPC, todas definidas em arquivos que o design abre no Inspector.
+NPC, todas definidas em arquivos que o design abre no Inspector. A exceção é o NPC estático, que fica
+sempre no mesmo lugar (ver [Tipos de NPC](#tipos-de-npc)).
 
 ---
 
@@ -34,6 +35,64 @@ Quem escolhe a rotina é a combinação de emoção e calendário:
 > **E quem não cabe nesse molde?** Um policial que ronda a cidade não *fica* em lugar nenhum entre
 > 08:00 e 17:00: ele circula. Esses casos têm um espaço próprio e opcional na rotina, as
 > [exceções](#exceções-de-rotina).
+
+> **E quem não precisa de tudo isso?** Nem todo NPC é personagem de profiling. O vendedor que só
+> cumpre a rotina dele e o guarda parado na porta são [tipos mais simples](#tipos-de-npc): o
+> auxiliar tem rotina e nada mais, e o estático nem rotina tem.
+
+---
+
+## Tipos de NPC
+
+Todo NPC tem um **tipo** (`kind`, no `NPCDefinition`). O tipo diz quais sistemas valem pra ele:
+
+| Tipo | Rotina | Profiling (espírito no sonho, emoção escolhida pelo jogador) | Cabeça nos insights |
+|---|---|---|---|
+| **Principal** (`MAIN`) | sim, as seis | sim | liberada ao completar o profiling |
+| **Auxiliar** (`AUXILIARY`) | sim, as seis | não | não tem |
+| **Estático** (`STATIC`) | não: fica o tempo todo na **posição fixa** | não | não tem |
+
+O principal é o NPC de sempre, com tudo o que este guia descreve. Zé, Ana e o policial são principais,
+e todo NPC criado antes de o tipo existir também é: `MAIN` é o valor padrão.
+
+O que vale pra **todos** os tipos: nome, cor, retrato, conversa (`conversation_id`), os insights que as
+cabeças do jogador têm *sobre* ele (o campo `insights`) e o corpo em cena, povoado pelo `NPCDirector`.
+
+### Sem profiling
+
+O auxiliar e o estático **não têm perfil**. Isso quer dizer, ao mesmo tempo:
+
+- **Não aparecem no mundo dos sonhos.** O sonho é onde se investiga o espírito, e eles não têm espírito.
+  Quando o jogador dorme, eles somem como some quem não tem `dream_entry`.
+- **A emoção não muda.** Quem troca a emoção é o jogador, no espírito. Sem espírito, vale sempre a
+  emoção inicial do `.tres` — que no auxiliar continua escolhendo a rotina, então dá pra fazer um
+  auxiliar que vive na rotina de raiva. O estático fica sempre no neutro.
+- **Não liberam cabeça.** A cabeça de um NPC é o prêmio de completar o profiling dele, e é ela que faz
+  os insights dele passarem a orbitar o jogador. Sem profiling não há o que completar: o
+  `InsightCatalog` só monta cabeça de NPC principal, e o `HeadRegistry` nem conhece os outros.
+
+Um `NPCProfile` com o id de um NPC auxiliar ou estático é **ignorado**: a tela do espírito não abre, e o
+**Validar conteúdo do profiling** aponta o perfil. Quase sempre é um NPC que mudou de tipo e deixou o
+perfil pra trás.
+
+### O estático e a posição fixa
+
+O estático não tem rotina: tem uma **posição fixa** (`fixed_entry`), uma cena e um waypoint no mesmo
+formato de uma entrada de rotina. **O horário dela é ignorado**: ele está ali o dia inteiro, todo dia.
+Não anda, não troca de cena e não muda com o dia de folga.
+
+Ele passa pelo mesmo ciclo dos outros, sem caminho à parte: o `NPCRoutineResolver` devolve a posição
+fixa como a entrada vigente, e o `NPCDirector` faz nascer, ficar e desaparecer como faz com qualquer
+entrada. Por isso continua valendo tudo o que vale pra posição derivada — save, troca de cena, tempo
+pulado. Sem posição fixa preenchida, ele não aparece em lugar nenhum, e o `resumo` avisa.
+
+### No Inspector
+
+Trocar o tipo **esconde os campos que ele não usa**: no estático somem velocidade, emoções, calendário e
+as seis rotinas, e aparece a posição fixa; no auxiliar e no estático somem a arte do espírito, a posição
+no sonho e a letra da cabeça. Esconder não apaga: o valor continua no arquivo e volta a valer se o tipo
+voltar. O `resumo` também muda com o tipo, e só cobra o que o tipo usa — do auxiliar não cobra as duas
+emoções nem a posição no sonho, e só cobra a rotina dos slots que ele usa (o neutro e os que têm emoção).
 
 ---
 
@@ -73,7 +132,7 @@ mesmo preço que Stardew Valley paga ao teleportar o NPC quando a location é ca
 | `scripts/npc/NPCRoutineException.gd` | Uma **exceção** à rotina padrão: faixa de horário em que um comportamento especial assume o NPC. Classe abstrata; opcional. |
 | `scripts/npc/NPCPatrol.gd` | A **ronda**, primeira exceção: o NPC circula por uma lista de pontos. É o caso do policial. |
 | `scripts/npc/NPCRoutine.gd` | Uma rotina inteira, com as exceções opcionais. Reaproveitável entre slots e entre NPCs. |
-| `scripts/npc/NPCDefinition.gd` | Um NPC: nome, cor, velocidade, as 2 emoções, os dias de trabalho e as 6 rotinas. |
+| `scripts/npc/NPCDefinition.gd` | Um NPC: o [tipo](#tipos-de-npc), nome, cor, velocidade, as 2 emoções, os dias de trabalho e as 6 rotinas (ou, no estático, a posição fixa). |
 | `scripts/npc/NPCRoster.gd` | A lista dos NPCs que existem no jogo. |
 | `scripts/npc/NPCRoutineResolver.gd` | A calculadora: cruza NPC + emoção + relógio e diz onde ele deveria estar, na rotina padrão ou numa exceção. Não é Node. |
 | `scripts/npc/NPCDirector.gd` | Nó da cena de gameplay: povoa a cena, move os NPCs quando o relógio anda, registra o debug. |
@@ -98,8 +157,11 @@ aritmética de horário, e assim ela pode ser conferida sem rodar o jogo.
    Vá adicionando entradas; o campo `resumo` mostra a rotina em ordem e aponta o que falta. Se o NPC
    circula em vez de ficar parado (o policial), a rotina ganha uma
    [exceção](#exceções-de-rotina) no campo `Exceptions`.
-3. **Criar o NPC**: `resources/npcs/npc_<nome>.tres`, recurso `NPCDefinition`. Preencher nome, cor,
-   velocidade, as duas emoções, os dias de trabalho e apontar as seis rotinas. A cor (`color`) é uma
+3. **Criar o NPC**: `resources/npcs/npc_<nome>.tres`, recurso `NPCDefinition`. Escolher o
+   [tipo](#tipos-de-npc) primeiro, porque ele decide quais campos aparecem. Num principal, preencher
+   nome, cor, velocidade, as duas emoções, os dias de trabalho e apontar as seis rotinas; num auxiliar,
+   as emoções são opcionais e basta a rotina neutra; num estático, em vez de rotina, a posição fixa
+   (passo 2 não existe pra ele). A cor (`color`) é uma
    só para o NPC inteiro: tinge o sprite, pinta o nome dele no diálogo e o orbe da cabeça dele nos
    insights. O padrão é branco, igual ao nome do jogador, e o resumo avisa se ela ficar assim. O campo `portrait` (a
    cara do NPC, usada pelas telas que o mostram fora de cena — hoje o profiling) pode ficar vazio:
@@ -331,12 +393,12 @@ O que **não** existe ainda: emoção causada pelo mundo (appraisal) e emoção 
 
 | Entrada | O que faz |
 |---|---|
-| **Forçar emoção** | `npc` + `neutro/emocao1/emocao2`. O NPC recalcula a rotina e **anda** até o novo lugar. |
+| **Forçar emoção** | `npc` + `neutro/emocao1/emocao2`. O NPC recalcula a rotina e **anda** até o novo lugar. Vale pro auxiliar também; o estático recusa, porque não tem rotina pra emoção escolher. |
 | **Forçar tipo de dia** | `automatico/trabalho/folga` — pra ver a rotina de folga numa terça. |
 | **Trazer NPC até o player** | Atalho pra ver um NPC de perto. Não muda rotina: no próximo tique ele volta pra dele. |
-| **Listar NPCs** | Emoção vigente, tipo de dia, rotina escolhida, entrada atual, próxima entrada e em quantos minutos. Com uma exceção valendo (a ronda), "agora" é a parada em que ele está, "próxima" é a próxima parada (ou a volta da rotina padrão) e uma linha `exceção:` descreve a ronda. |
+| **Listar NPCs** | Tipo do NPC, emoção vigente, tipo de dia, rotina escolhida, entrada atual, próxima entrada e em quantos minutos. Com uma exceção valendo (a ronda), "agora" é a parada em que ele está, "próxima" é a próxima parada (ou a volta da rotina padrão) e uma linha `exceção:` descreve a ronda. O estático mostra só `parado em:`, a posição fixa. |
 | **Listar waypoints da cena** | Os nomes exatos que as rotinas devem escrever. |
-| **Validar rotinas** | Varre o roster: campo faltando, horário nunca alcançado, cena inexistente, waypoint que não existe. Nas exceções: faixa depois do fim do dia jogável, ronda sem pontos, faixas que se sobrepõem, cena e waypoints da ronda que não existem. |
+| **Validar rotinas** | Varre o roster: campo faltando, horário nunca alcançado, cena inexistente, waypoint que não existe. Nas exceções: faixa depois do fim do dia jogável, ronda sem pontos, faixas que se sobrepõem, cena e waypoints da ronda que não existem. No estático, confere a posição fixa (cena e waypoint) no lugar das rotinas. |
 | **Autoteste das rotinas** | Confere a lógica da resolução (rotina padrão e exceções) contra rotinas montadas em memória. Também roda sem abrir o jogo: `godot --headless --path . --script res://tests/run_npc_routine_self_test.gd`. |
 | **Desenhar caminho dos NPCs** | Desenha o trecho que falta percorrer, de cada NPC em cena. |
 
@@ -458,7 +520,13 @@ level design, não do sistema.
 
 Checklist rápido pra revisão de PR que mexa em NPC:
 
-- [ ] Nenhum NPC colocado à mão na cena — quem povoa é o `NPCDirector`, a partir do roster.
+- [ ] Nenhum NPC colocado à mão na cena — quem povoa é o `NPCDirector`, a partir do roster. Isso vale
+      pro estático também: ele entra no roster com a posição fixa, e não arrastado pra cena.
+- [ ] NPC novo com o [tipo](#tipos-de-npc) certo. Só o principal tem profiling: perfil (`NPCProfile`)
+      pra auxiliar ou estático é ignorado.
+- [ ] Sistema novo que dependa de profiling (espírito, emoção escolhida, cabeça) pergunta
+      `has_profiling()`, e o que dependa de rotina pergunta `has_routine()` — nunca compara o `kind`
+      direto, pra um quarto tipo não exigir caçar comparações pelo projeto.
 - [ ] Nenhum `Timer` usado pra marcar hora de rotina.
 - [ ] Nenhum nome de NPC ou de emoção escrito direto: só chave do CSV (`NPC_NAME_*`, `EMOTION_*`).
 - [ ] NPC novo tem alcunha no CSV, na chave do nome com `_ALCUNHA` (`NPC_NAME_ZE_ALCUNHA`): no diálogo o nome sai como "Nome, Alcunha".

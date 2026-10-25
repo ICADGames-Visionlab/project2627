@@ -1,6 +1,6 @@
 # InsightCatalog.gd — Varredura dos recursos do sistema de insights: todos os .tres de insight, as
-# cabeças (a do jogador, em .tres, e a de cada NPC do roster) e as chaves declaradas no CSV de
-# localização.
+# cabeças (a do jogador, em .tres, e a de cada NPC principal do roster) e as chaves declaradas no CSV
+# de localização.
 #
 # Existe porque três lugares diferentes precisam da mesma varredura e não podem divergir: o
 # HeadRegistry (que monta o elenco), o aviso de configuração da fonte (que confere text_key e
@@ -39,40 +39,50 @@ static func load_all_insights() -> Array[InsightData]:
 # Todas as cabeças do projeto, em ordem de id. A ordem também define o slot canônico de cada cabeça
 # na órbita do jogador (ver HeadOrbitLayer), então mexer nela move orbes de lugar.
 #
-# As de NPC não são arquivo: cada NPC do roster tem a sua, montada da definição dele (ver
-# HeadData.from_npc). NPC novo no roster já tem cabeça, sem ninguém criar .tres nenhum.
+# As de NPC não são arquivo: cada NPC principal do roster tem a sua, montada da definição dele (ver
+# HeadData.from_npc). NPC novo no roster já tem cabeça, sem ninguém criar .tres nenhum. NPC auxiliar
+# e estático não têm: a cabeça é o prêmio de completar o profiling, e eles não têm profiling.
 #
 # Um .tres com o id de um NPC do roster é ignorado: a cabeça do NPC é sempre a montada da definição.
 # Deixar os dois entrarem fazia a ordenação decidir qual sobrevivia ao filtro de id repetido do
-# HeadRegistry — e, se fosse o .tres, o orbe sairia numa cor e o nome do NPC no diálogo em outra.
+# HeadRegistry — e, se fosse o .tres, o orbe sairia numa cor e o nome do NPC no diálogo em outra. Vale
+# também para o NPC sem profiling: um .tres com o id dele daria a ele a cabeça que o tipo dele não tem.
 static func load_all_heads() -> Array[HeadData]:
-	var result: Array[HeadData] = _load_npc_heads()
-	var npc_head_ids: Dictionary = {}
-	for head: HeadData in result:
-		npc_head_ids[head.id] = true
+	var result: Array[HeadData] = []
+	var roster_npcs: Dictionary = {}  # StringName(id) -> NPCDefinition
+	for definition: NPCDefinition in _load_roster_npcs():
+		roster_npcs[definition.id] = definition
+		if definition.has_profiling():
+			result.append(HeadData.from_npc(definition))
+
 	for resource: Resource in _load_folder(HEADS_DIR):
 		var head: HeadData = resource as HeadData
 		if head == null:
 			continue
-		if npc_head_ids.has(head.id):
+		var owner: NPCDefinition = roster_npcs.get(head.id) as NPCDefinition
+		if owner != null and owner.has_profiling():
 			push_warning("[Insights] - AVISO: \"%s\" ignorada: a cabeça do NPC \"%s\" vem do NPCDefinition dele"
 				% [head.resource_path, head.id])
+			continue
+		if owner != null:
+			push_warning("[Insights] - AVISO: \"%s\" ignorada: \"%s\" é NPC %s, que não tem profiling nem cabeça"
+				% [head.resource_path, head.id, NPCDefinition.KIND_NAMES[owner.kind]])
 			continue
 		result.append(head)
 	result.sort_custom(_compare_head_ids)
 	return result
 
 
-# A cabeça de cada NPC do roster. Roster ausente não é erro daqui: sem roster não há NPC, e sem NPC
-# não há cabeça de NPC.
-static func _load_npc_heads() -> Array[HeadData]:
-	var result: Array[HeadData] = []
+# Os NPCs do roster, sem posições vazias nem NPC sem id. Roster ausente não é erro daqui: sem roster
+# não há NPC, e sem NPC não há cabeça de NPC.
+static func _load_roster_npcs() -> Array[NPCDefinition]:
+	var result: Array[NPCDefinition] = []
 	var roster: NPCRoster = ResourceLoader.load(NPC_ROSTER_PATH) as NPCRoster
 	if roster == null:
 		return result
 	for definition: NPCDefinition in roster.npcs:
 		if definition != null and definition.id != &"":
-			result.append(HeadData.from_npc(definition))
+			result.append(definition)
 	return result
 
 

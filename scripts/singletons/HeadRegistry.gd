@@ -1,8 +1,10 @@
 # HeadRegistry.gd — Autoload: o elenco de cabeças e quais delas o jogador já tem.
 #
 # É o único lugar que responde "de que cor é a cabeça X" e "o jogador já tem a cabeça X". O elenco é
-# a cabeça do jogador (.tres em res://resources/heads/) mais uma cabeça por NPC do roster, montada
-# da definição dele (ver InsightCatalog.load_all_heads): NPC novo no roster já tem cabeça.
+# a cabeça do jogador (.tres em res://resources/heads/) mais uma cabeça por NPC principal do roster,
+# montada da definição dele (ver InsightCatalog.load_all_heads): NPC principal novo no roster já tem
+# cabeça. NPC auxiliar e estático não têm profiling, então não entram no elenco: não há cabeça deles
+# para liberar.
 #
 # DERROTA DE NPC: derrotar um NPC é completar o profiling dele, e é isso que dá ao jogador a cabeça
 # desse NPC. Este registro não guarda quem foi derrotado: ele PERGUNTA ao ProfilingJournal
@@ -153,7 +155,7 @@ func _on_profiling_changed() -> void:
 func _debug_unlock_head(head_id: String) -> void:
 	var id: StringName = StringName(head_id)
 	if not _heads.has(id):
-		push_warning("[Insights] - AVISO: cabeça \"%s\" não existe (nem jogador, nem NPC do roster)" % id)
+		push_warning("[Insights] - AVISO: cabeça \"%s\" não existe (nem jogador, nem NPC principal do roster)" % id)
 		return
 	if _debug_unlocked.has(id):
 		return

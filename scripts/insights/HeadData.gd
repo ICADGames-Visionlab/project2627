@@ -2,9 +2,10 @@
 #
 # Existem dois tipos de cabeça, e só um deles é arquivo:
 #   - A do jogador: um .tres em res://resources/heads/, desbloqueada desde o começo.
-#   - A de cada NPC do roster: não tem arquivo. O InsightCatalog a monta a partir do NPCDefinition
-#     (id, nome, cor e letra), então a cor do orbe é sempre a cor do NPC. O jogador ganha a cabeça
-#     quando derrota o NPC, e derrotar é completar o profiling dele (ver HeadRegistry.has_head).
+#   - A de cada NPC principal do roster: não tem arquivo. O InsightCatalog a monta a partir do
+#     NPCDefinition (id, nome, cor e letra), então a cor do orbe é sempre a cor do NPC. O jogador ganha
+#     a cabeça quando derrota o NPC, e derrotar é completar o profiling dele (ver
+#     HeadRegistry.has_head). NPC auxiliar e estático não têm profiling, e por isso não têm cabeça.
 #
 # Um .tres com origin NPC em res://resources/heads/ (ex.: old_fisherman) é cabeça avulsa: não é de
 # NPC nenhum do roster, tem cor própria e só o debug a desbloqueia. Um .tres com o id de um NPC do

@@ -68,11 +68,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Espaço para funções personalizadas
 
-# Diz se há um espírito pra investigar aqui e agora: é preciso estar sonhando, o NPC precisa ter
-# perfil de profiling escrito, e o jogador precisa já tê-lo encontrado no mundo real.
+# Diz se há um espírito pra investigar aqui e agora: é preciso estar sonhando, o NPC precisa ser do
+# tipo que tem profiling (o principal) e ter perfil escrito, e o jogador precisa já tê-lo encontrado
+# no mundo real.
 func _has_spirit() -> bool:
 	var definition: NPCDefinition = _get_definition()
-	if definition == null or not GameClock.is_dreaming():
+	if definition == null or not GameClock.is_dreaming() or not definition.has_profiling():
 		return false
 	if ProfilingCatalog.find_profile(definition.id) == null:
 		return false

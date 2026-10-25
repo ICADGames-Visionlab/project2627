@@ -706,8 +706,9 @@ func _debug_validate() -> void:
 		"nenhum problema" if problems == 0 else "%d problema(s)" % problems))
 
 
-# [DEBUG] Confere um perfil contra o roster de NPCs: perfil de NPC que não existe, e história numa
-# emoção que o NPC não tem (ela nunca apareceria na tela do espírito).
+# [DEBUG] Confere um perfil contra o roster de NPCs: perfil de NPC que não existe, perfil de NPC que
+# não tem profiling (auxiliar ou estático), e história numa emoção que o NPC não tem (ela nunca
+# apareceria na tela do espírito).
 func _validate_against_roster(profile: NPCProfile) -> int:
 	var director: NPCDirector = get_tree().get_first_node_in_group(NPCDirector.GROUP) as NPCDirector
 	if director == null or director.roster == null:
@@ -716,6 +717,12 @@ func _validate_against_roster(profile: NPCProfile) -> int:
 	var definition: NPCDefinition = director.roster.find(profile.npc_id)
 	if definition == null:
 		print("[Profiling] -   \"%s\": não há NPC com este id no roster" % profile.npc_id)
+		return 1
+	# Só o NPC principal tem profiling: o perfil de um auxiliar ou estático nunca abre (ver
+	# ProfilingScreen.open), e é quase sempre um NPC que mudou de tipo e deixou o perfil pra trás.
+	if not definition.has_profiling():
+		print("[Profiling] -   \"%s\": é NPC %s, que não tem profiling; este perfil é ignorado"
+			% [profile.npc_id, NPCDefinition.KIND_NAMES[definition.kind]])
 		return 1
 
 	var problems: int = 0

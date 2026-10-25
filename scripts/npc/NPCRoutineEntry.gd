@@ -78,9 +78,15 @@ func format_clock() -> String:
 
 # Uma linha legível da entrada, usada no resumo do Inspector e no menu de debug.
 func describe() -> String:
+	return "%s  %s" % [format_clock(), describe_place()]
+
+
+# Só o lugar da entrada ("City / praca"), sem o horário. É o que se mostra quando o horário não vale
+# nada: a posição fixa do NPC estático.
+func describe_place() -> String:
 	var scene_name: String = to_scene_path(scene_path).get_file().get_basename() if scene_path != "" else "(sem cena)"
 	var point: String = String(waypoint) if waypoint != &"" else "(sem waypoint)"
-	return "%s  %s / %s" % [format_clock(), scene_name, point]
+	return "%s / %s" % [scene_name, point]
 
 
 # Diz se duas entradas mandam o NPC pro mesmo lugar (mesma cena, mesmo waypoint), ainda que valham

@@ -101,13 +101,17 @@ lugar, vazado, e clicar nele mostra o texto de novo, sem emitir `insight_reveale
 `HeadData` (`scripts/insights/HeadData.gd`): `id`, `display_name_key` (chave do CSV), `origin`
 (`PLAYER` ou `NPC`), `color` e `glyph`. Há dois jeitos de uma cabeça existir:
 
-- **Cabeça de NPC do roster**: não tem arquivo. O `InsightCatalog` monta uma por NPC a partir do
-  `NPCDefinition` (`HeadData.from_npc`): mesmo `id`, nome, `color` e a letra `head_glyph` (vazia = a
-  inicial do id). Por isso o orbe da cabeça, o nome no diálogo e o sprite do NPC têm sempre a mesma
-  cor. Para mudar a cor, mude o `NPCDefinition`.
+- **Cabeça de NPC principal do roster**: não tem arquivo. O `InsightCatalog` monta uma por NPC
+  principal a partir do `NPCDefinition` (`HeadData.from_npc`): mesmo `id`, nome, `color` e a letra
+  `head_glyph` (vazia = a inicial do id). Por isso o orbe da cabeça, o nome no diálogo e o sprite do
+  NPC têm sempre a mesma cor. Para mudar a cor, mude o `NPCDefinition`. NPC **auxiliar** e
+  **estático** não têm cabeça: eles não têm profiling, e a cabeça é o prêmio de completá-lo (ver
+  `docs/sistema_de_npc.md`, "Tipos de NPC"). Os insights *sobre* eles (o campo `insights` do
+  `NPCDefinition`) funcionam normalmente — quem fala é outra cabeça, como a do jogador.
 - **Cabeça em `.tres`** em `res://resources/heads/`: a do jogador e as avulsas, que não são de nenhum NPC
   do roster (`old_fisherman`). Elas têm cor própria. Um `.tres` com o `id` de um NPC do roster é
-  ignorado, com aviso no log, porque a cabeça daquele NPC é a montada da definição dele.
+  ignorado, com aviso no log, porque a cabeça daquele NPC é a montada da definição dele — ou, se ele
+  for auxiliar ou estático, porque ele não tem cabeça.
 
 A cabeça do jogador (`origin = PLAYER`) nasce desbloqueada. As de NPC ficam disponíveis quando o
 profiling do NPC é completado: o `HeadRegistry` pergunta a `ProfilingJournal.is_profile_complete()` e

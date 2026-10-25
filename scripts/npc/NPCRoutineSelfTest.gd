@@ -52,6 +52,7 @@ func run() -> void:
 	_test_incomplete()
 	_test_issues()
 	_test_windows()
+	_test_kinds()
 
 
 # Relatório da última execução, pronto para print(): o resumo na primeira linha e um ✓/✗ por caso.
@@ -422,6 +423,68 @@ func _test_windows() -> void:
 		_patrol(5, 7, 30, [&"a", &"b"]).overlaps_playable_day(WAKE_HOUR, day_length))
 
 
+# Os três tipos de NPC: o principal e o auxiliar cumprem rotina igual, o estático fica na posição fixa
+# o dia inteiro. E cada tipo só é cobrado, no resumo, pelo que ele usa.
+func _test_kinds() -> void:
+	var main: NPCDefinition = _definition([_entry(6, 0, &"casa"), _entry(12, 0, &"praca")], [])
+	_expect_true("Principal: tem rotina e tem profiling", main.has_routine() and main.has_profiling())
+
+	var auxiliary: NPCDefinition = _definition([_entry(6, 0, &"casa"), _entry(12, 0, &"praca")], [])
+	auxiliary.kind = NPCDefinition.Kind.AUXILIARY
+	_expect_true("Auxiliar: tem rotina e não tem profiling", auxiliary.has_routine() and not auxiliary.has_profiling())
+	_expect_waypoint("Auxiliar: cumpre a rotina como o principal", _decide(auxiliary, 13, 0), &"praca")
+	_expect_true("Auxiliar: a próxima entrada é a da rotina, como no principal",
+		_decide(auxiliary, 7, 0).next_entry.waypoint == &"praca")
+
+	# A rotina que sobrou no .tres (de quando ele era de outro tipo) não pode tirar o estático do lugar.
+	var static_npc: NPCDefinition = _definition([_entry(6, 0, &"casa"), _entry(12, 0, &"praca")], [])
+	static_npc.kind = NPCDefinition.Kind.STATIC
+	static_npc.fixed_entry = _entry(15, 0, &"banca")
+	_expect_true("Estático: não tem rotina nem profiling", not static_npc.has_routine() and not static_npc.has_profiling())
+	_expect_waypoint("Estático: de manhã está na posição fixa", _decide(static_npc, 7, 0), &"banca")
+	_expect_waypoint("Estático: na hora de uma entrada da rotina que sobrou, continua na posição fixa",
+		_decide(static_npc, 12, 0), &"banca")
+	_expect_waypoint("Estático: o horário da posição fixa é ignorado (antes dele já está lá)",
+		_decide(static_npc, 14, 0), &"banca")
+	_expect_waypoint("Estático: de madrugada continua na posição fixa", _decide(static_npc, 3, 0), &"banca")
+	var static_decision: NPCRoutineResolver.Decision = _decide(static_npc, 9, 0)
+	_expect_true("Estático: nenhuma rotina, nenhuma próxima entrada, nenhum fallback",
+		static_decision.routine == null and static_decision.next_entry == null
+		and static_decision.minutes_until_next == 0 and static_decision.fallback_reason == "")
+
+	var nowhere: NPCDefinition = _definition([_entry(6, 0, &"casa")], [])
+	nowhere.kind = NPCDefinition.Kind.STATIC
+	_expect_true("Estático sem posição fixa: não tem onde ficar (nem na rotina que sobrou)",
+		_decide(nowhere, 9, 0).entry == null)
+	_expect_issue("Estático sem posição fixa: o resumo avisa", nowhere.collect_issues(), "Sem posição fixa")
+	nowhere.fixed_entry = _entry(8, 0, &"")
+	_expect_true("Estático com posição fixa sem waypoint: também não tem onde ficar", _decide(nowhere, 9, 0).entry == null)
+
+	# A emoção inicial só vale pra quem tem rotina: é a rotina que ela escolhe.
+	main.starting_slot = NPCDefinition.EmotionSlot.FIRST
+	static_npc.starting_slot = NPCDefinition.EmotionSlot.FIRST
+	_expect_true("Principal começa na emoção inicial do .tres",
+		main.get_starting_slot() == NPCDefinition.EmotionSlot.FIRST)
+	_expect_true("Estático começa sempre no neutro, seja qual for a emoção inicial que sobrou",
+		static_npc.get_starting_slot() == NPCDefinition.EmotionSlot.NEUTRAL)
+
+	# Cada tipo só é cobrado pelo que usa.
+	_expect_issue("Principal sem emoções: o resumo cobra", main.collect_issues(), "Sem emoção no slot 1")
+	_expect_issue("Principal sem posição no sonho: o resumo cobra", main.collect_issues(), "mundo dos sonhos")
+	_expect_issue("Principal sem rotina de emoção: o resumo cobra", main.collect_issues(), "Sem rotina emoção 1/trabalho")
+	var auxiliary_issues: PackedStringArray = auxiliary.collect_issues()
+	_expect_no_issue("Auxiliar sem emoções: o resumo não cobra", auxiliary_issues, "Sem emoção")
+	_expect_no_issue("Auxiliar sem posição no sonho: o resumo não cobra", auxiliary_issues, "mundo dos sonhos")
+	_expect_no_issue("Auxiliar sem rotina num slot sem emoção: o resumo não cobra", auxiliary_issues, "emoção 1/")
+	_expect_issue("Auxiliar sem rotina neutro/folga: o resumo ainda avisa", auxiliary_issues, "Sem rotina neutro/folga")
+	var static_issues: PackedStringArray = static_npc.collect_issues()
+	_expect_no_issue("Estático: o resumo não cobra rotina", static_issues, "otina")
+	_expect_no_issue("Estático: o resumo não cobra emoção", static_issues, "Sem emoção")
+	_expect_no_issue("Estático: o resumo não cobra posição no sonho", static_issues, "mundo dos sonhos")
+	_expect_true("Estático: o resumo mostra onde ele fica, sem horário",
+		static_npc.resumo.contains("fica em City / banca") and not static_npc.resumo.contains("15:00"))
+
+
 # Cria uma entrada de rotina em memória.
 func _entry(hour: int, minute: int, waypoint: StringName) -> NPCRoutineEntry:
 	var entry: NPCRoutineEntry = NPCRoutineEntry.new()
@@ -531,6 +594,16 @@ func _expect_issue(label: String, issues: PackedStringArray, fragment: String) -
 			found = true
 			break
 	_record(label, found, "nenhum problema contém \"%s\" (veio: %s)" % [fragment, issues])
+
+
+# Confere que nenhuma frase da lista de problemas contém o trecho dado.
+func _expect_no_issue(label: String, issues: PackedStringArray, fragment: String) -> void:
+	var found: String = ""
+	for issue: String in issues:
+		if issue.contains(fragment):
+			found = issue
+			break
+	_record(label, found.is_empty(), "não devia apontar \"%s\", mas apontou: %s" % [fragment, found])
 
 
 # Registra um caso que não pôde rodar. Não conta como falha nem como acerto.

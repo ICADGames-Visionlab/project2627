@@ -38,7 +38,8 @@ class Decision extends RefCounted:
 	# Se hoje é dia de trabalho ou de folga para este NPC (um NPCDefinition.DayType).
 	var day_type: int = NPCDefinition.DayType.WORKDAY
 
-	# A rotina que valeu, já depois da cadeia de fallback. null = o NPC não tem nem rotina neutra.
+	# A rotina que valeu, já depois da cadeia de fallback. null = o NPC não tem nem rotina neutra, ou é
+	# estático (e aí a entrada é a posição fixa dele).
 	var routine: NPCRoutine
 
 	# Qual slot a rotina veio, depois do fallback. Diferente do slot pedido significa que o design
@@ -71,6 +72,14 @@ static func resolve(definition: NPCDefinition, slot: int, weekday: int, minutes_
 		return decision
 
 	decision.day_type = resolve_day_type(definition, weekday)
+
+	# O NPC estático não tem rotina: está o dia inteiro na posição fixa, e não existe próxima mudança.
+	# As rotinas que sobrarem no .tres dele (de quando ele era de outro tipo) não contam. Sem posição
+	# fixa preenchida, a entrada sai null, como a de uma rotina vazia: ele não nasce.
+	if not definition.has_routine():
+		decision.entry = definition.get_fixed_entry()
+		return decision
+
 	decision.routine = resolve_routine(definition, slot, decision.day_type, decision)
 	if decision.routine == null:
 		return decision

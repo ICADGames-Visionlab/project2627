@@ -65,7 +65,11 @@ func _refresh_summary() -> void:
 			issues.append("A posição %d está vazia." % index)
 			continue
 
-		lines.append("  %s — %d/6 rotinas preenchidas" % [definition.id, _count_routines(definition)])
+		var kind_name: String = NPCDefinition.KIND_NAMES[definition.kind]
+		if definition.has_routine():
+			lines.append("  %s — %s, %d/6 rotinas preenchidas" % [definition.id, kind_name, _count_routines(definition)])
+		else:
+			lines.append("  %s — %s" % [definition.id, kind_name])
 
 		# Id repetido é o erro silencioso mais chato possível aqui: o segundo NPC nunca seria
 		# encontrado pelo menu de debug, e os dois disputariam o mesmo corpo em cena.

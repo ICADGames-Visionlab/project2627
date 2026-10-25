@@ -171,16 +171,24 @@ func _unhandled_input(event: InputEvent) -> void:
 ## Espaço para funções personalizadas
 
 # Abre o espírito de um NPC. NPC sem perfil não abre nada e avisa: espírito sem história é conteúdo
-# faltando, não um estado de jogo.
+# faltando, não um estado de jogo. NPC auxiliar ou estático também não abre, mesmo que exista um
+# perfil com o id dele: esses tipos não têm profiling, e o perfil é conteúdo esquecido (o "Validar
+# conteúdo do profiling" aponta).
 func open(npc_id: StringName) -> void:
 	var profile: NPCProfile = ProfilingCatalog.find_profile(npc_id)
 	if profile == null:
 		push_warning("[Profiling] - AVISO: \"%s\" não tem perfil de profiling" % npc_id)
 		return
 
+	var definition: NPCDefinition = _find_definition(npc_id)
+	if definition != null and not definition.has_profiling():
+		push_warning("[Profiling] - AVISO: \"%s\" é NPC %s, que não tem profiling; o espírito não abre"
+			% [npc_id, NPCDefinition.KIND_NAMES[definition.kind]])
+		return
+
 	_npc_id = npc_id
 	_profile = profile
-	_definition = _find_definition(npc_id)
+	_definition = definition
 	_wake_pending = false
 	_is_revealing = false
 
